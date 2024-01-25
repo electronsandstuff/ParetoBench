@@ -1,0 +1,557 @@
+import numpy as np
+
+from .problem import Problem, ProblemWithPF
+from .utils import get_hyperplane_points, get_nondominated
+
+
+########################################################################################################################
+# Shape functions
+########################################################################################################################
+
+def shape_linear(x):
+    f = []
+    f.append(np.prod(x[:-1], axis=0))
+    for m in range(2, x.shape[0]):
+        f.append(np.prod(x[:-m], axis=0)*(1 - x[-m]))
+    if x.shape[0] > 1:
+        f.append(1-x[0])
+    return np.vstack(f)
+
+
+def shape_convex(x):
+    f = []
+    f.append(np.prod(1 - np.cos(x[:-1]*np.pi/2), axis=0))
+    for m in range(2, x.shape[0]):
+        f.append(np.prod(1 - np.cos(x[:-m]*np.pi/2), axis=0)*(1 - np.sin(x[-m]*np.pi/2)))
+    if x.shape[0] > 1:
+        f.append(1-np.sin(x[0]*np.pi/2))
+    return np.vstack(f)
+
+
+def shape_concave(x):
+    f = []
+    f.append(np.prod(np.sin(x[:-1]*np.pi/2), axis=0))
+    for m in range(2, x.shape[0]):
+        f.append(np.prod(np.sin(x[:-m]*np.pi/2), axis=0)*(np.cos(x[-m]*np.pi/2)))
+    if x.shape[0] > 1:
+        f.append(np.cos(x[0]*np.pi/2))
+    return np.vstack(f)
+
+
+def shape_mixed(x, a, alpha):
+    f = (1 - x[0] - np.cos(2*a*np.pi*x[0] + np.pi/2.0)/2/a/np.pi)**alpha
+    return np.vstack((f,))
+
+
+def shape_disconnected(x, a, alpha, beta):
+    f = 1 - x[0]**alpha*np.cos(a*x[0]**beta*np.pi)**2
+    return np.vstack((f,))
+
+
+def compute_x(t, degenerate):
+    if degenerate:
+        a = np.zeros(t.shape[0] - 1)
+        a[0] = 1.0
+    else:
+        a = np.ones(t.shape[0] - 1)
+
+    x = np.maximum(t[-1][None, :], a[:, None])*(t[:-1, :] - 0.5) + 0.5
+    x = np.append(x, t[-1][None, :], axis=0)
+    return x
+
+
+########################################################################################################################
+# Transformation functions
+########################################################################################################################
+
+def transform_bias_polynomial(y, alpha):
+    return y**alpha
+
+
+def transform_bias_flat_region(y, a, b, c):
+    return a + np.clip(np.floor(y - b), np.finfo("d").min, 0.0)*a*(b - y)/b - np.clip(np.floor(c - y), np.finfo("d").min, 0.0)*(1 - a)*(y - c)/(1 - c)
+
+
+def transform_bias_parameter_dependent(y, u_of_y_prime, a, b, c):
+    v = a - (1 - 2*u_of_y_prime)*np.abs(np.floor(0.5 - u_of_y_prime) + a)
+    return np.power(y, b + (c - b)*v)
+
+
+def transform_shift_linear(y, a):
+    return np.abs(y - a)/np.abs(np.floor(a - y) + a)
+
+
+def transform_shift_deceptive(y, a, b, c):
+    return 1 + (np.abs(y - a) - b)*(np.floor(y - a + b)*(1 - c + (a - b)/b)/(a - b) + np.floor(a + b - y)*(1 - c + (1 - a - b)/b)/(1 - a - b) + 1/b)
+
+
+def transform_shift_multimodal(y, a, b, c):
+    return (1 + np.cos((4*a + 2)*np.pi*(0.5 - np.abs(y - c)/2/(np.floor(c - y) + c))) + 4*b*(np.abs(y - c)/2/(np.floor(c - y) + c))**2)/(b + 2)
+
+
+def transform_reduction_weighted_sum(y, w=None):
+    if w is None:
+        w = np.ones(y.shape[0])
+    return np.sum(y * w[:, None], axis=0) / np.sum(w)
+
+
+def transform_reduction_non_separable(y, a):
+    acc1 = np.zeros(y.shape[1])
+    for j in range(y.shape[0]):
+        acc1 += y[j]
+        acc2 = np.zeros(y.shape[1])
+        for k in range(a - 1):
+            acc2 += np.abs(y[j] - y[(1 + j + k) % y.shape[0]])
+        acc1 += acc2
+    acc1 /= y.shape[0]/a*np.ceil(a/2)*(1 + 2*a - 2*np.ceil(a/2))
+    return acc1
+
+
+########################################################################################################################
+# The test problems
+########################################################################################################################
+
+class WFGx(Problem, ProblemWithPF):
+    def __init__(self, n=24, k=4, m=2):
+        self.n = int(n)
+        self.k = int(k)
+        self.m = int(m)
+        self.d = 1.0
+        self.s = np.array([2*(i + 1) for i in range(self.m)])
+
+    @property
+    def decision_var_bounds(self):
+        bmin = np.zeros(self.n)
+        bmax = np.array([2*(i + 1) for i in range(self.n)])
+        return np.vstack((bmin, bmax))
+    
+    @property
+    def n_decision_vars(self):
+        return self.n
+    
+    @property
+    def n_objectives(self):
+        return self.m
+    
+
+class WFG1(WFGx):
+    def _call(self, x, set_pos_zero=False):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.copy(y)
+        t1[self.k:] = transform_shift_linear(y[self.k:], 0.35)
+
+        # Transition 2
+        t2 = np.copy(t1)
+        t2[self.k:] = transform_bias_flat_region(t1[self.k:], 0.8, 0.75, 0.85)
+        if set_pos_zero:  # Because of some floating point round-off error issues
+            t2[self.k:] = 0.0
+
+        # Transition 3
+        t3 = transform_bias_polynomial(np.clip(t2, 0.0, 100.0), 0.02)
+
+        # Transition 4
+        w = b
+        t4 = []
+        for i in range(1, self.m):
+            start = int((i - 1) * self.k / (self.m - 1))
+            end = int(i * self.k / (self.m - 1))
+            t4.append(transform_reduction_weighted_sum(t3[start:end, :], w[start:end]))
+        t4.append(transform_reduction_weighted_sum(t3[self.k:, :], w[self.k:]))
+        t4 = np.vstack(t4)
+
+        # Find x
+        new_x = compute_x(t4, False)
+
+        # Shape functions
+        h = shape_convex(new_x)
+        h[-1] = shape_mixed(new_x, 5, 1)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+
+    def get_pareto_front(self, n, n_solver_guess=128, n_solver_iter=32):
+        # Invert the convex shape function to find points along the reference vectors
+        # f1 = (1-cos(x0))(1-cos(x1))(1-cos(x2))...(1-cos(x{n-1}))
+        # fi = (1-cos(x0))(1-cos(x1))(1-cos(x2))...(1-sin(x{n-i+1}))
+        # fm = (1-sin(x0))
+        # Note that: fi/f1 = (1-sin(x{n-i+1}))/(1-cos(x{n-i+1}))  /  ((1-cos(x))(1-cos(x))... for remaining terms after n-i+1
+        # Use (1-sin(x))/(1-cos(x)) = y is solved by x = 2*arctan((sqrt(2y) - 1)/(2y-1))
+        r = get_hyperplane_points(self.m, n) + 1e-12  # Hack to avoid some numerical issues
+        theta = np.zeros_like(r)
+        for j in range(1, r.shape[0]):
+            t = r[j]*np.prod(1 - np.cos(theta[-j:-1]), axis=0)
+            theta[-j-1] = 2*np.arctan2((np.sqrt(2*r[0]*t)-r[0]), (2*t-r[0]))%(np.pi)
+        x = theta/np.pi*2
+
+        # Solve for the value of x0 which gives the correct fm/f{m-1} where fm is shape_mixed(...) and f{m-1} is from shape_convex(...) 
+        t = r[-1]/r[-2]*(1 - np.sin(np.pi/2*x[1]))
+        def solve_fun(x):
+            return x+np.cos(10*np.pi*x + np.pi/2)/10/np.pi -1 + t[None, :]*(1 - np.cos(np.pi/2*x))
+        def solve_fun_der(x):
+            return 1 - np.sin(10*np.pi*x + np.pi/2) + np.pi/2*t[None, :]*np.sin(np.pi/2*x)
+        
+        # Make an initial guess
+        x_guess = np.linspace(0, 1, n_solver_guess)
+        x[0] = x_guess[np.argmin(np.abs(solve_fun(x_guess[:, None])), axis=0)]
+        
+        # Newton Raphson iterations
+        for _ in range(n_solver_iter):
+            fun_prime = solve_fun_der(x[0][None, :])
+            fun_prime[fun_prime==0.0] = 1e6  # Avoid divide by zero
+            x[0] = np.clip(x[0] - solve_fun(x[0][None, :]) / fun_prime, 0, 1)
+
+        # Evaluate the objective functions
+        f = shape_convex(x)
+        f[-1] = shape_mixed(x, 5, 1)
+        return f*2*np.arange(1, self.m+1)[:, None]
+    
+
+class WFG2(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.copy(y)
+        t1[self.k:] = np.clip(transform_shift_linear(y[self.k:], 0.35), 0.0, 1.0)
+        # Transition 2
+        t2 = np.empty((self.k + (self.n - self.k)//2, t1.shape[1]))
+        t2[:self.k] = t1[:self.k]
+        for i in range(self.k + 1, self.k + (self.n - self.k)//2 + 1):
+            t2[i - 1] = np.clip(transform_reduction_non_separable(np.vstack((t1[self.k + 2*(i - self.k) - 2], t1[self.k + 2*(i - self.k) - 1])), 2), 0.0, 1.0)
+
+        # Transition 3
+        t3 = []
+        for i in range(1, self.m):
+            start = int((i - 1) * self.k / (self.m - 1))
+            end = int(i * self.k / (self.m - 1))
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
+        t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k:, :]), 0.0, 1.0))
+        t3 = np.vstack(t3)
+
+        # Find x
+        new_x = compute_x(t3, False)
+
+        # Shape functions
+        h = np.empty((self.m, x.shape[1]))
+        h[:-1, :] = shape_convex(new_x)[:-1, :]
+        h[-1] = shape_disconnected(new_x, 5, 1.0, 1.0)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+ 
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n, n_solver_guess=2048, n_solver_iter=32):
+        # Invert the convex shape function to find points along the reference vectors
+        # f1 = (1-cos(x0))(1-cos(x1))(1-cos(x2))...(1-cos(x{n-1}))
+        # fi = (1-cos(x0))(1-cos(x1))(1-cos(x2))...(1-sin(x{n-i+1}))
+        # fm = (1-sin(x0))
+        # Note that: fi/f1 = (1-sin(x{n-i+1}))/(1-cos(x{n-i+1}))  /  ((1-cos(x))(1-cos(x))... for remaining terms after n-i+1
+        # Use (1-sin(x))/(1-cos(x)) = y is solved by x = 2*arctan((sqrt(2y) - 1)/(2y-1))
+        r = get_hyperplane_points(self.m, 2*n) + 1e-12  # Hack to avoid some numerical issues
+        theta = np.zeros_like(r)
+        for j in range(1, r.shape[0]):
+            t = r[j]*np.prod(1 - np.cos(theta[-j:-1]), axis=0)
+            theta[-j-1] = 2*np.arctan2((np.sqrt(2*r[0]*t)-r[0]), (2*t-r[0]))%(np.pi)
+        x = theta/np.pi*2
+
+        # Solve for the value of x0 which gives the correct fm/f{m-1} where fm is shape_mixed(...) and f{m-1} is from shape_convex(...) 
+        t = r[-1]/r[-2]*(1 - np.sin(np.pi/2*x[1]))
+        def solve_fun(x):
+            return x*np.cos(5*np.pi*x)**2 - 1 + t[None, :]*(1 - np.cos(np.pi/2*x))
+        def solve_fun_der(x):
+            return np.cos(5*np.pi*x)**2 - 10*np.pi*x*np.cos(5*np.pi*x)*np.sin(5*np.pi*x) + np.pi/2*t[None, :]*np.sin(np.pi/2*x)
+        
+        # Make an initial guess (biased toward small x)
+        x_guess = np.linspace(0, 1, n_solver_guess)
+        x[0] = x_guess[np.min(np.argsort(np.abs(solve_fun(x_guess[:, None])), axis=0)[:8], axis=0)]
+        
+        # Newton Raphson iterations
+        for _ in range(n_solver_iter):
+            fun_prime = solve_fun_der(x[0][None, :])
+            fun_prime[fun_prime==0.0] = 1e6  # Avoid divide by zero
+            x[0] = np.clip(x[0] - solve_fun(x[0][None, :]) / fun_prime, 0, 1)
+
+        # Evaluate the objective functions
+        f = shape_convex(x)
+        f[-1] = shape_disconnected(x, 5, 1, 1)
+        f = f[:, get_nondominated(f)]
+        return f*2*np.arange(1, self.m+1)[:, None]
+
+
+class WFG3(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.copy(y)
+        t1[self.k:] = np.clip(transform_shift_linear(y[self.k:], 0.35), 0.0, 1.0)
+
+        # Transition 2
+        t2 = np.empty((self.k + (self.n - self.k)//2, t1.shape[1]))
+        t2[:self.k] = t1[:self.k]
+        for i in range(self.k + 1, self.k + (self.n - self.k)//2 + 1):
+            t2[i - 1] = np.clip(transform_reduction_non_separable(np.vstack((t1[self.k + 2*(i - self.k) - 2], t1[self.k + 2*(i - self.k) - 1])), 2), 0.0, 1.0)
+
+        # Transition 3
+        t3 = []
+        for i in range(1, self.m):
+            start = int((i - 1) * self.k / (self.m - 1))
+            end = int(i * self.k / (self.m - 1))
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
+        t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k:, :]), 0.0, 1.0))
+        t3 = np.vstack(t3)
+
+        # Find x
+        new_x = compute_x(t3, True)
+
+        # Shape functions
+        h = shape_linear(new_x)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n):
+        f = np.vstack((np.linspace(0, 1, n), np.full((self.m-2, n), 1/2), np.zeros((1, n))))
+        f = shape_linear(f)
+        return f*2*np.arange(1, self.m+1)[:, None]
+
+
+class WFG4(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.clip(transform_shift_multimodal(y, 30, 10, 0.35), 0.0, 1.0)
+
+        # Transition 2
+        t2 = []
+        for i in range(1, self.m):
+            start = int((i - 1) * self.k / (self.m - 1))
+            end = int(i * self.k / (self.m - 1))
+            t2.append(np.clip(transform_reduction_weighted_sum(t1[start:end, :]), 0.0, 1.0))
+        t2.append(np.clip(transform_reduction_weighted_sum(t1[self.k:, :]), 0.0, 1.0))
+        t2 = np.vstack(t2)
+
+        # Find x
+        new_x = compute_x(t2, True)
+
+        # Shape functions
+        h = shape_concave(new_x)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n):
+        f = get_hyperplane_points(self.m, n)
+        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+    
+
+class WFG5(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.clip(transform_shift_deceptive(y, 0.35, 0.001, 0.05), 0.0, 1.0)
+
+        # Transition 2
+        t2 = []
+        for i in range(1, self.m):
+            start = int((i - 1) * self.k / (self.m - 1))
+            end = int(i * self.k / (self.m - 1))
+            t2.append(np.clip(transform_reduction_weighted_sum(t1[start:end, :]), 0.0, 1.0))
+        t2.append(np.clip(transform_reduction_weighted_sum(t1[self.k:, :]), 0.0, 1.0))
+        t2 = np.vstack(t2)
+
+        # Find x
+        new_x = compute_x(t2, True)
+
+        # Shape functions
+        h = shape_concave(new_x)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n):
+        f = get_hyperplane_points(self.m, n)
+        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+
+
+class WFG6(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1 - checked
+        t1 = np.copy(y)
+        t1[self.k:] = transform_shift_linear(y[self.k:], 0.35)
+
+        # Transition 2
+        gap = self.k // (self.m - 1)
+        t2 = [transform_reduction_non_separable(t1[(m - 1) * gap: (m * gap), :], gap) for m in range(1, self.m)]
+        t2.append(transform_reduction_non_separable(t1[self.k:, :], self.n - self.k))
+        t2 = np.vstack(t2)
+
+        # Find x
+        new_x = compute_x(t2, True)
+
+        # Shape functions
+        h = shape_concave(new_x)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n):
+        f = get_hyperplane_points(self.m, n)
+        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+    
+
+class WFG7(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.copy(y)
+        for i in range(1, self.k + 1):
+            t1[i - 1] = np.clip(transform_bias_parameter_dependent(y[i - 1], transform_reduction_weighted_sum(y[i:, :]), 0.98/49.98, 0.02, 50), 0.0, 1.0)
+
+        # Transition 2
+        t2 = np.copy(t1)
+        t2[self.k:] = np.clip(transform_shift_linear(t1[self.k:], 0.35), 0.0, 1.0)
+
+        # Transition 3
+        t3 = []
+        for i in range(1, self.m):
+            start = int((i - 1) * self.k / (self.m - 1))
+            end = int(i * self.k / (self.m - 1))
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
+        t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k:, :]), 0.0, 1.0))
+        t3 = np.vstack(t3)
+
+        # Find x
+        new_x = compute_x(t3, True)
+
+        # Shape functions
+        h = shape_concave(new_x)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n):
+        f = get_hyperplane_points(self.m, n)
+        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+    
+
+class WFG8(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.copy(y)
+        for i in range(self.k + 1, self.n + 1):
+            t1[i - 1] = np.clip(transform_bias_parameter_dependent(y[i - 1][None, :], transform_reduction_weighted_sum(y[:i - 1]), 0.98/49.98, 0.02, 50), 0.0, 1.0)
+
+        # Transition 2
+        t2 = np.copy(t1)
+        t2[self.k:] = np.clip(transform_shift_linear(t2[self.k:], 0.35), 0.0, 1.0)
+
+        # Transition 3
+        t3 = []
+        for i in range(1, self.m):
+            start = int((i - 1) * self.k / (self.m - 1))
+            end = int(i * self.k / (self.m - 1))
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
+        t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k:, :]), 0.0, 1.0))
+        t3 = np.vstack(t3)
+
+        # Find x
+        new_x = compute_x(t3, True)
+
+        # Shape functions
+        h = shape_concave(new_x)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n):
+        f = get_hyperplane_points(self.m, n)
+        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+    
+
+class WFG9(WFGx):
+    def _call(self, x):
+        # Normalize the input
+        b = np.array([2*(i + 1) for i in range(self.n)])
+        y = x / b[:, None]
+
+        # Transition 1
+        t1 = np.copy(y)
+        for i in range(1, self.n):
+            t1[i - 1] = np.clip(transform_bias_parameter_dependent(y[i - 1][None, :], transform_reduction_weighted_sum(y[i:]), 0.98/49.98, 0.02, 50), 0.0, 1.0)
+
+        # Transition 2
+        t2 = np.empty_like(t1)
+        t2[:self.k] = np.clip(transform_shift_deceptive(t1[:self.k], 0.35, 0.001, 0.05), 0.0, 1.0)
+        t2[self.k:] = np.clip(transform_shift_multimodal(t1[self.k:], 30, 95, 0.35), 0.0, 1.0)
+
+        # Transition 3
+        gap = self.k // (self.m - 1)
+        t3 = [transform_reduction_non_separable(t2[(m - 1) * gap: (m * gap), :], gap) for m in range(1, self.m)]
+        t3.append(transform_reduction_non_separable(t2[self.k:, :], self.n - self.k))
+        t3 = np.vstack(t3)
+
+        # Find x
+        new_x = compute_x(t3, True)
+
+        # Shape functions
+        h = shape_concave(new_x)
+
+        # Compute the objective
+        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+
+        # Return it
+        return obj
+
+    def get_pareto_front(self, n):
+        f = get_hyperplane_points(self.m, n)
+        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
