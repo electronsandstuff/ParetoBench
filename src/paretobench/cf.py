@@ -35,7 +35,14 @@ def get_pf_cf9_cf10(n, N):
     return np.vstack((np.concatenate(f1s), np.concatenate(f2s), np.concatenate(f3s)))
 
 
-class CF1(Problem, ProblemWithFixedPF):
+class CFx(Problem):
+    def get_reference(self):
+        return "Zhang, Q., Zhou, A., Zhao, S., Suganthan, P. N., Liu, W., & Tiwari, S. (2009). "\
+               "Multiobjective optimization Test Instances for the CEC 2009 Special Session "\
+               "and Competition. 31."
+
+
+class CF1(CFx, ProblemWithFixedPF):
     def __init__(self, n=10, N=10, a=1.0):
         # Checked - 9/1/2020
         self.n = int(n)
@@ -76,7 +83,7 @@ class CF1(Problem, ProblemWithFixedPF):
         return np.vstack((f1, f2))
     
 
-class CF2(Problem, ProblemWithPF):
+class CF2(CFx, ProblemWithPF):
     def __init__(self, n=10, N=2, a=1.0):
         self.n = int(n)
         self.N = int(N)
@@ -122,7 +129,7 @@ class CF2(Problem, ProblemWithPF):
         return np.vstack((f1, f2))
     
     
-class CF3(Problem, ProblemWithPF):
+class CF3(CFx, ProblemWithPF):
     def __init__(self, n=10, N=2, a=1.0):
         self.n = int(n)
         self.N = int(N)
@@ -174,7 +181,7 @@ class CF3(Problem, ProblemWithPF):
         return np.vstack((f1, f2))
 
 
-class CF4(Problem, ProblemWithPF):
+class CF4(CFx, ProblemWithPF):
     def __init__(self, n=10):
         self.n = int(n)
 
@@ -227,7 +234,7 @@ class CF4(Problem, ProblemWithPF):
         return np.vstack((f1, f2))
     
 
-class CF5(Problem, ProblemWithPF):
+class CF5(CFx, ProblemWithPF):
     def __init__(self, n=10):
         self.n = int(n)
 
@@ -280,7 +287,7 @@ class CF5(Problem, ProblemWithPF):
         return np.vstack((f1, f2))
     
 
-class CF6(Problem, ProblemWithPF):
+class CF6(CFx, ProblemWithPF):
     def __init__(self, n=10):
         self.n = int(n)
 
@@ -333,7 +340,7 @@ class CF6(Problem, ProblemWithPF):
         return np.vstack((f1, f2))
     
 
-class CF7(Problem, ProblemWithPF):
+class CF7(CFx, ProblemWithPF):
     def __init__(self, n=10):
         self.n = int(n)
 
@@ -389,7 +396,7 @@ class CF7(Problem, ProblemWithPF):
             return np.vstack((f1, f2))
 
 
-class CF8(Problem, ProblemWithPF):
+class CF8(CFx, ProblemWithPF):
     def __init__(self, n=10, a=4, N=2):
         self.n = int(n)
         self.a = int(a)
@@ -441,7 +448,7 @@ class CF8(Problem, ProblemWithPF):
         return np.vstack((f1, f2, f3))
 
 
-class CF9(Problem, ProblemWithPF):
+class CF9(CFx, ProblemWithPF):
     def __init__(self, n=10, a=3, N=2):
         self.n = int(n)
         self.a = int(a)
@@ -489,7 +496,7 @@ class CF9(Problem, ProblemWithPF):
         return get_pf_cf9_cf10(n, self.N)
     
 
-class CF10(Problem, ProblemWithPF):
+class CF10(CFx, ProblemWithPF):
     def __init__(self, n=10, a=1, N=2):
         self.n = int(n)
         self.a = int(a)

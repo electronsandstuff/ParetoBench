@@ -71,7 +71,13 @@ class TestProblemsBase(unittest.TestCase):
                 self.assertEqual(p.n_objectives, f.shape[0])
                 self.assertNoNaNs(f)
 
-                
+    def test_refs(self):
+        for name in pb.get_problem_names():
+            with self.subTest(name=name):
+                p = pb.create_problem(name)
+                self.assertEqual(type(p.get_reference()), str)
+
+
 # TODO problem family specific test varying parameters (ie changing n and k for WFGx)
 
 if __name__ == "__main__":

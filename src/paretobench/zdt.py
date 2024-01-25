@@ -13,7 +13,7 @@ def weighted_chunk_sizes(n, weights):
     return ns
 
 
-class ZDTAbstract(Problem, ProblemWithPF):
+class ZDTx(Problem, ProblemWithPF):
     def __init__(self, n=30):
         self.n = int(n)
     
@@ -25,8 +25,12 @@ class ZDTAbstract(Problem, ProblemWithPF):
     def n_objectives(self):
         return 2
     
+    def get_reference(self):
+        return "Zitzler, E., Deb, K., & Thiele, L. (2000). Comparison of Multiobjective Evolutionary Algorithms: Empirical Results. "\
+               "Evolutionary Computation, 8(2), 173–195. https://doi.org/10.1162/106365600568202"
 
-class ZDT1(ZDTAbstract):
+
+class ZDT1(ZDTx):
     def _call(self, x):
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
         return np.array([
@@ -43,7 +47,7 @@ class ZDT1(ZDTAbstract):
         return np.array([x, 1 - np.sqrt(x)])
 
 
-class ZDT2(ZDTAbstract):
+class ZDT2(ZDTx):
     def _call(self, x):
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
         return np.array([
@@ -60,7 +64,7 @@ class ZDT2(ZDTAbstract):
         return np.array([x, 1 - x**2])
     
 
-class ZDT3(ZDTAbstract):
+class ZDT3(ZDTx):
     def _call(self, x):
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
         return np.array([
@@ -90,7 +94,7 @@ class ZDT3(ZDTAbstract):
         return np.concatenate(f, axis=1)
 
 
-class ZDT4(ZDTAbstract):
+class ZDT4(ZDTx):
     def __init__(self, n=10):
         super().__init__(n)
 
@@ -113,7 +117,7 @@ class ZDT4(ZDTAbstract):
         return np.array([x, 1 - np.sqrt(x)])
 
 
-class ZDT6(ZDTAbstract):
+class ZDT6(ZDTx):
     def __init__(self, n=10):
         super().__init__(n)
 

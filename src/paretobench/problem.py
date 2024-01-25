@@ -51,6 +51,12 @@ class Problem:
         where first row is lower bound of each variable and second row are the upper bounds)
         """
         raise NotImplementedError()
+    
+    def get_reference(self):
+        """
+        Returns an APA formatted reference to where the problem was defined.
+        """
+        raise NotImplementedError()
 
 
 class ProblemWithPF:

@@ -43,6 +43,11 @@ class DTLZx(Problem, ProblemWithPF):
         bmax = np.ones(self.n)
         return np.vstack((bmin, bmax))
 
+    def get_reference(self):
+        return "Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2002). Scalable multi-objective optimization test problems. "\
+               "Proceedings of the 2002 Congress on Evolutionary Computation. CEC’02 (Cat. No.02TH8600), 1, 825–830 vol.1. "\
+               "https://doi.org/10.1109/CEC.2002.1007032"
+    
     def _call(self, x):
         raise NotImplementedError()
 

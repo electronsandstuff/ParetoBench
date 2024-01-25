@@ -133,6 +133,10 @@ class WFGx(Problem, ProblemWithPF):
     def n_objectives(self):
         return self.m
     
+    def get_reference(self):
+        return "Huband, S., Hingston, P., Barone, L., & While, L. (2006). A review of multiobjective test problems and a scalable test "\
+               "problem toolkit. IEEE Transactions on Evolutionary Computation, 10(5), 477–506. https://doi.org/10.1109/TEVC.2005.861417"
+
 
 class WFG1(WFGx):
     def _call(self, x, set_pos_zero=False):

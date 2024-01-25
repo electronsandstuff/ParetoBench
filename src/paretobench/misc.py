@@ -5,9 +5,6 @@ from .problem import Problem
 
 class SCH(Problem):
     """
-    Reference: Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic
-    algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197.
-
     Description: Convex
 
     Other name: Schaffer function N. 1
@@ -32,12 +29,13 @@ class SCH(Problem):
             [-1e3, ], [1e3, ],
         ])
 
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
+
 
 class FON(Problem):
     """
-    Reference: Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic
-    algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197.
-
     Description: non-convex
 
     Other name: Fonseca-Fleming Function
@@ -62,13 +60,14 @@ class FON(Problem):
             [-4.0, -4.0, -4.0],
             [4.0, 4.0, 4.0],
         ])
+    
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
 
 class POL(Problem):
     """
-    Reference: Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic
-    algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197.
-
     Description: non-convex, disconnected
 
     Other name: Poloni’s two objective function
@@ -98,12 +97,13 @@ class POL(Problem):
             [np.pi, np.pi],
         ])
 
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
+               
 
 class KUR(Problem):
     """
-    Reference: Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic
-    algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197.
-
     Description: non-convex
 
     Other name: Kursawe’s Function
@@ -128,6 +128,10 @@ class KUR(Problem):
     @property
     def decision_var_bounds(self):
         return (np.ones((self.n, 2)) * np.array([-5, 5])).T
+
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
 
 class CONSTR(Problem):
@@ -160,6 +164,10 @@ class CONSTR(Problem):
             [0.1, 0.0],
             [1.0, 5.0]
         ])
+        
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
 
 class SRN(Problem):
@@ -193,7 +201,11 @@ class SRN(Problem):
             [20.0, 20.0]
         ])
 
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
+     
 class TNK(Problem):
     @property
     def n_decision_vars(self):
@@ -224,6 +236,10 @@ class TNK(Problem):
             [0.0, 0.0],
             [np.pi, np.pi]
         ])
+
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
 
 class WATER(Problem):
@@ -264,3 +280,7 @@ class WATER(Problem):
             [0.01, 0.01, 0.01],
             [0.45, 0.10, 0.10]
         ])
+
+    def get_reference(self):
+        return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
+               "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."

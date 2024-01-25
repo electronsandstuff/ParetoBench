@@ -18,7 +18,13 @@ def rastrigin(x):
     return 1 + a*x.shape[0] + np.sum(x**2 - a*np.cos(2*np.pi*x), axis=0)
 
 
-class CTP1(Problem):
+class CTPx(Problem):
+    def get_reference(self):
+        return "Zitzler, E. (Ed.). (2001). Evolutionary multi-criterion optimization: First international conference, "\
+               "EMO 2001, Zurich, Switzerland, March 2001: proceedings. Springer."
+
+
+class CTP1(CTPx):
     def __init__(self, n=5, J=2):
         self.n = int(n)
         self.J = int(J)
@@ -69,7 +75,7 @@ class CTP1(Problem):
         return b
 
 
-class CTP2_7(Problem):
+class CTP2_7(CTPx):
     """
     This class is a parent for the problems CTP2 - CTP7 which are just slight variations of one another
     """
