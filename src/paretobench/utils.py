@@ -77,3 +77,14 @@ def get_nondominated(O):
     """
     dom = np.bitwise_and((O[:, :, None] <= O[:, None, :]).all(axis=0), (O[:, :, None] < O[:, None, :]).any(axis=0))
     return np.where(np.sum(dom, axis=0) == 0)[0].tolist()
+
+
+def triangle_grid_count(n):
+    return n*(n+1)//2
+
+
+def triangle_grid(n):
+    # skewed points to help compensate for 
+    x = np.concatenate([np.linspace(0, 1 - np.sqrt(i/(n-1)), n-i) for i in range(n)])
+    y = np.concatenate([np.ones(n-i)*np.sqrt(i/(n-1)) for i in range(n)])
+    return np.vstack((x, y))
