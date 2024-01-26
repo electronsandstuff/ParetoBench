@@ -1,16 +1,7 @@
 import numpy as np
 
 from .problem import Problem, ProblemWithPF
-
-
-def weighted_chunk_sizes(n, weights):
-    ns = [int(np.floor(n*w/sum(weights))) for w in weights]
-    for i in range(32):
-        if sum(ns) < n:
-            ns[i%len(ns)] += 1
-        else:
-            break
-    return ns
+from .utils import weighted_chunk_sizes
 
 
 class ZDTx(Problem, ProblemWithPF):

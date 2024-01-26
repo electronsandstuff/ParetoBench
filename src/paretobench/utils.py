@@ -103,3 +103,24 @@ def rastrigin(x):
     """
     a = 10
     return 1 + a*x.shape[0] + np.sum(x**2 - a*np.cos(2*np.pi*x), axis=0)
+
+
+def weighted_chunk_sizes(n, weights):
+    """
+    Break the number n into a list of numbers that sum to n, with the given
+    approximate weights
+
+    Args:
+        n (int): The number to break apart
+        weights (list): list of the weights of each chunk (should sum to one)
+
+    Returns:
+        list: The size of each chunk summing to n
+    """
+    ns = [int(np.floor(n*w/sum(weights))) for w in weights]
+    for i in range(32):
+        if sum(ns) < n:
+            ns[i%len(ns)] += 1
+        else:
+            break
+    return ns
