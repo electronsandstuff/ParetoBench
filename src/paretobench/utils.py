@@ -88,3 +88,18 @@ def triangle_grid(n):
     x = np.concatenate([np.linspace(0, 1 - np.sqrt(i/(n-1)), n-i) for i in range(n)])
     y = np.concatenate([np.ones(n-i)*np.sqrt(i/(n-1)) for i in range(n)])
     return np.vstack((x, y))
+
+
+def rastrigin(x):
+    """
+    Compute the Rastragin function for optimization.  The bounds for optimization are [-5.12, 5.12] in all variables
+
+    Reference: Huband, S., Hingston, P., Barone, L., & While, L. (2006). A review of multiobjective test problems and a
+    scalable test problem toolkit. IEEE Transactions on Evolutionary Computation, 10(5), 477–506.
+    https://doi.org/10.1109/TEVC.2005.861417
+
+    :param x: (m,n) input for m dimensions and n separate instances
+    :return: g(x), the Rastrigin function
+    """
+    a = 10
+    return 1 + a*x.shape[0] + np.sum(x**2 - a*np.cos(2*np.pi*x), axis=0)
