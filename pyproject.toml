@@ -16,4 +16,5 @@ classifiers = [
 dependencies = [
   "numpy",
   "matplotlib",
+  "pydantic",
 ]
