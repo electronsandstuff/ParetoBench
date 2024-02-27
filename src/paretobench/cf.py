@@ -33,11 +33,9 @@ class CFx(Problem):
 
 
 class CF1(CFx, ProblemWithFixedPF):
-    def __init__(self, n=10, N=10, a=1.0):
-        # Checked - 9/1/2020
-        self.n = int(n)
-        self.N = int(N)
-        self.a = int(a)
+    n: int = 10
+    N: int = 10
+    a: int = 1.0
 
     @property
     def n_decision_vars(self):
@@ -74,10 +72,9 @@ class CF1(CFx, ProblemWithFixedPF):
     
 
 class CF2(CFx, ProblemWithPF):
-    def __init__(self, n=10, N=2, a=1.0):
-        self.n = int(n)
-        self.N = int(N)
-        self.a = int(a)
+    n: int = 10
+    N: int = 2
+    a: int = 1
 
     @property
     def n_decision_vars(self):
@@ -120,10 +117,9 @@ class CF2(CFx, ProblemWithPF):
     
     
 class CF3(CFx, ProblemWithPF):
-    def __init__(self, n=10, N=2, a=1.0):
-        self.n = int(n)
-        self.N = int(N)
-        self.a = int(a)
+    n: int = 10
+    N: int = 2
+    a: int = 1
 
     @property
     def n_decision_vars(self):
@@ -172,8 +168,7 @@ class CF3(CFx, ProblemWithPF):
 
 
 class CF4(CFx, ProblemWithPF):
-    def __init__(self, n=10):
-        self.n = int(n)
+    n: int = 10
 
     @property
     def n_decision_vars(self):
@@ -225,8 +220,7 @@ class CF4(CFx, ProblemWithPF):
     
 
 class CF5(CFx, ProblemWithPF):
-    def __init__(self, n=10):
-        self.n = int(n)
+    n: int = 10
 
     @property
     def n_decision_vars(self):
@@ -278,8 +272,7 @@ class CF5(CFx, ProblemWithPF):
     
 
 class CF6(CFx, ProblemWithPF):
-    def __init__(self, n=10):
-        self.n = int(n)
+    n: int = 10
 
     @property
     def n_decision_vars(self):
@@ -331,8 +324,7 @@ class CF6(CFx, ProblemWithPF):
     
 
 class CF7(CFx, ProblemWithPF):
-    def __init__(self, n=10):
-        self.n = int(n)
+    n: int = 10
 
     @property
     def n_decision_vars(self):
@@ -387,10 +379,9 @@ class CF7(CFx, ProblemWithPF):
 
 
 class CF8(CFx, ProblemWithPF):
-    def __init__(self, n=10, a=4, N=2):
-        self.n = int(n)
-        self.a = int(a)
-        self.N = int(N)
+    n: int = 10
+    N: int = 2
+    a: int = 4
 
     @property
     def n_decision_vars(self):
@@ -439,10 +430,9 @@ class CF8(CFx, ProblemWithPF):
 
 
 class CF9(CFx, ProblemWithPF):
-    def __init__(self, n=10, a=3, N=2):
-        self.n = int(n)
-        self.a = int(a)
-        self.N = int(N)
+    n: int = 10
+    N: int = 2
+    a: float = 3
 
     @property
     def n_decision_vars(self):
@@ -487,10 +477,9 @@ class CF9(CFx, ProblemWithPF):
     
 
 class CF10(CFx, ProblemWithPF):
-    def __init__(self, n=10, a=1, N=2):
-        self.n = int(n)
-        self.a = int(a)
-        self.N = int(N)
+    n: int = 10
+    N: int = 2
+    a: int = 1
 
     @property
     def n_decision_vars(self):
