@@ -1,6 +1,7 @@
 import numpy as np
+from pydantic import BaseModel
 
-class Problem:
+class Problem(BaseModel):
     """
     The overarching class all problems inherit from
     """    
