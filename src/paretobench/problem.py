@@ -71,7 +71,7 @@ class Problem(BaseModel):
         str
             The serialized problem object.
         """
-        return f"{ type(self).__name__ } ({dumps(self.dict())})"
+        return f"{ type(self).__name__ } ({dumps(self.model_dump())})"
 
 
 class ProblemWithPF:

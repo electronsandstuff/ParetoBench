@@ -1,5 +1,5 @@
 from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
-from .factory import register_problem, get_problem_names, create_problem
+from .factory import register_problem, get_problem_names, create_problem, from_line
 
 from .dtlz import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9
 for p in [DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9]:

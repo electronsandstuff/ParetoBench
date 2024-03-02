@@ -202,6 +202,20 @@ class TestSerializer(unittest.TestCase):
             d_true['my_key'] = bad_val
             with self.assertRaises(ValueError):
                 dumps(d_true)
+    
+    def test_serialize_problem(self):
+        """For each problem, try to serialize it, deserialize it, and compare with original
+        """
+        for name in pb.get_problem_names():
+            with self.subTest(name=name):
+                # Create test problem and send through the line format
+                p_true = pb.create_problem(name)
+                line_fmt = p_true.to_line()
+                p_test = pb.from_line(line_fmt)
+                
+                # Compare each other
+                self.assertEqual(p_true.model_dump(), p_test.model_dump())
+                
 
 # TODO problem family specific test varying parameters (ie changing n and k for WFGx)
 
