@@ -48,7 +48,7 @@ def split_unquoted(s: str, split_char=','):
     s : str
         The string to split up
     split_char : str, optional
-        The characeter to split on, by default ','
+        The character to split on, by default ','
     """
     # Go through char by char while keeping track of "depth" into quotes. Store chunks of str as we go
     last_escape_char = -2
