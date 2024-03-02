@@ -165,6 +165,16 @@ class TestSerializer(unittest.TestCase):
             d_true = generate_random_dict(key_prefix=bad_char)
             with self.assertRaises(ValueError):
                 dumps(d_true)
+    
+    def test_serialize_deserialize_bad_datatype(self):
+        """Test that serialization gives us the right error when there are bad characters in the key
+        """
+        # Try to serialize dict with bad characters in key
+        for bad_val in [[1, 2, 3], (1, 2, 3), {'a': 1}]:
+            d_true = generate_random_dict()
+            d_true['my_key'] = bad_val
+            with self.assertRaises(ValueError):
+                dumps(d_true)
 
 # TODO problem family specific test varying parameters (ie changing n and k for WFGx)
 
