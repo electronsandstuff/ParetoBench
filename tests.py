@@ -176,7 +176,7 @@ class TestSerializer(unittest.TestCase):
         """Test that serialization works with "problem" characters in string value
         """
         # Get a random dict with extra "problem characters", pass through serializer, then compare
-        for bad_char in '=",\\':
+        for bad_char in '.=",\\':
             for _ in range(32):
                 d_true = generate_random_dict()
                 d_true['my_val'] = randlenstr() + bad_char + randlenstr()
