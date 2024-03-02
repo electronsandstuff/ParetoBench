@@ -187,7 +187,7 @@ class TestSerializer(unittest.TestCase):
         """Test that serialization gives us the right error when there are bad characters in the key
         """
         # Try to serialize dict with bad characters in key
-        for bad_char in '=,':
+        for bad_char in '=,"':
             d_true = generate_random_dict()
             d_true[randlenstr() + bad_char + randlenstr()] = 0
             with self.assertRaises(ValueError):

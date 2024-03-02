@@ -20,9 +20,8 @@ def dumps(data: dict):
     # Confirm object is appropriate for the function
     for k, v in data.items():
         # Check for illegal characters in the keys
-        for c in [',', '=']:
-            if c in k:
-                raise ValueError(f'Keys cannot have "{c}" character. Found key named "{k}"')
+        if not k.replace("_", "").isalnum():
+            raise ValueError(f'Keys must only contain alphanumeric characters. Found key named "{k}"')
         
         # Check for illegal datatypes
         if type(v) not in [int, float, bool, str]:
