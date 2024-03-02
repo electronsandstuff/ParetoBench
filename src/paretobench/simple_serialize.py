@@ -17,10 +17,14 @@ def dumps(data: dict):
     ValueError
         Object could not be converted
     """
-    # Confirm all data is appropriate for the function
+    # Confirm object is appropriate for the function
     for k, v in data.items():
-        if ',' in k:
-            raise ValueError(f'Keys cannot have "," character. Found key named "{k}"')
+        # Check for illegal characters in the keys
+        for c in [',', '=']:
+            if c in k:
+                raise ValueError(f'Keys cannot have "{c}" character. Found key named "{k}"')
+        
+        # Check for illegal datatypes
         if type(v) not in [int, float, bool, str]:
             raise ValueError(f'Cannot serialize object of type {type(v)} at key "{k}"')
     
