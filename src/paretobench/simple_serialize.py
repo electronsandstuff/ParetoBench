@@ -93,7 +93,9 @@ def loads(s: str):
         
         # Handle strings
         if v[0] == '"':
-            v.replace('\\', '')
+            # Replace escaped characters and get rid of surrounding quotes
+            v = v.replace('\\\\', '\\')
+            v = v.replace('\\"', '"')
             v = v[1:-1]
         
         # Floats

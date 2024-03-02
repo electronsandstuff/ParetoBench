@@ -82,8 +82,9 @@ class TestProblemsBase(unittest.TestCase):
                 self.assertEqual(type(p.get_reference()), str)
 
 
-def generate_random_dict(n_vals=32):
-    """Generates a randomized dict of strings, ints, floats, and bools for testing serialization functions.
+def generate_random_dict(n_vals=32, key_prefix="", str_val_prefix=""):
+    """Generates a randomized dict of strings, ints, floats, and bools for testing serialization functions. If n_vals is greater
+    than 4 you are gauranteed to get at least one of each data-type.
 
     Parameters
     ----------
@@ -91,19 +92,18 @@ def generate_random_dict(n_vals=32):
         Number of elements in the dict, by default 32
     """
     d = {}
-    for _ in range(n_vals):  
+    for idx in range(n_vals):  
         # Random key name
-        k = ''.join(random.choice(string.ascii_letters) for i in range(10))
+        k = key_prefix + ''.join(random.choice(string.ascii_letters) for _ in range(10))
         
         # Random value
-        idx = random.randrange(0, 4)  # The datatype
-        if idx == 0:  # String
-            v = ''.join(random.choice(string.ascii_letters) for i in range(10))
-        elif idx == 1:  # Float
+        if idx%4 == 0:  # String
+            v = str_val_prefix + ''.join(random.choice(string.ascii_letters) for _ in range(10))
+        elif idx%4 == 1:  # Float
             v = random.random()
-        elif idx == 2:  # Int
+        elif idx%4 == 2:  # Int
             v = random.randint(0, 999999)
-        elif idx == 3:  # Bool
+        elif idx%4 == 3:  # Bool
             v = bool(random.randint(0, 1))
             
         # Set the key
@@ -142,17 +142,29 @@ class TestSerializer(unittest.TestCase):
             split_unquoted('a="fdas", b=\\fwqef')
     
     def test_serialize_deserialize(self):
-        # Run the test multiple times
+        # Get a random dict, pass through serializer, then compare
         for _ in range(32):
-            # Get a random dict
             d_true = generate_random_dict()
-            
-            # Serialize then deserialize the object
             d_test = loads(dumps(d_true))
-            
-            # Confirm objects are the same
+            self.assertEqual(d_true, d_test)
+    
+    def test_serialize_deserialize_bad_val_chars(self):
+        """Test that serialization works with "problem" characters in string value
+        """
+        # Get a random dict with extra "problem characters" in keys, pass through serializer, then compare
+        for _ in range(32):
+            d_true = generate_random_dict(str_val_prefix='\\ad"""\\sdfa')
+            d_test = loads(dumps(d_true))
             self.assertEqual(d_true, d_test)
             
+    def test_serialize_deserialize_bad_key_chars(self):
+        """Test that serialization gives us the right error when there are bad characters in the key
+        """
+        # Try to serialize dict with bad characters in key
+        for bad_char in '=,':
+            d_true = generate_random_dict(key_prefix=bad_char)
+            with self.assertRaises(ValueError):
+                dumps(d_true)
 
 # TODO problem family specific test varying parameters (ie changing n and k for WFGx)
 
