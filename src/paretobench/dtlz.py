@@ -6,9 +6,8 @@ from .dtlz_utils import g_1_3, g_2_4_5, theta_5_6, f_2_to_6
 
 
 class DTLZx(Problem, ProblemWithPF):
-    def __init__(self, n=10, m=3):
-        self.m = int(m)
-        self.n = int(n)
+    m: int = 3
+    n: int = 10
 
     @property
     def n_decision_vars(self):
@@ -63,10 +62,8 @@ class DTLZ3(DTLZx):
     
     
 class DTLZ4(DTLZx):
-    def __init__(self, *args, alpha=100, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.alpha = alpha
-
+    alpha: int = 100
+    
     def _call(self, x):
         return (1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m, alpha=self.alpha)
    

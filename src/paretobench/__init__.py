@@ -1,9 +1,9 @@
 from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
 from .factory import register_problem, get_problem_names, create_problem
 
-# from .dtlz import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9
-# for p in [DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9]:
-#     register_problem(p)
+from .dtlz import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9
+for p in [DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9]:
+    register_problem(p)
 
 # from .zdt import ZDT1, ZDT2, ZDT3, ZDT4, ZDT6
 # for p in [ZDT1, ZDT2, ZDT3, ZDT4, ZDT6]:
