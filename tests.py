@@ -167,7 +167,7 @@ class TestSerializer(unittest.TestCase):
                 dumps(d_true)
     
     def test_serialize_deserialize_bad_datatype(self):
-        """Test that serialization gives us the right error when there are bad characters in the key
+        """Test that serialization gives us the right error when there are values with an unserializable datatype in them
         """
         # Try to serialize dict with bad characters in key
         for bad_val in [[1, 2, 3], (1, 2, 3), {'a': 1}]:
