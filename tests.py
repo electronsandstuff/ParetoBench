@@ -1,6 +1,8 @@
-import paretobench as pb
 import unittest
 import numpy as np
+
+import paretobench as pb
+from paretobench.simple_serialize import split_unquoted
 
 
 class TestProblemsBase(unittest.TestCase):
@@ -77,6 +79,37 @@ class TestProblemsBase(unittest.TestCase):
                 p = pb.create_problem(name)
                 self.assertEqual(type(p.get_reference()), str)
 
+
+class TestSerializer(unittest.TestCase):
+    def test_split_unquoted(self):
+        # Basic test
+        test_val = split_unquoted(r'a="fdas", b=fwqej, c="jlsfd"')
+        true_val = ['a="fdas"',' b=fwqej',' c="jlsfd"']
+        self.assertEqual(true_val, test_val)
+        
+        # Test ending with comma
+        test_val = split_unquoted(r'a="fdas", b=fwqej,')
+        true_val = ['a="fdas"',' b=fwqej']
+        self.assertEqual(true_val, test_val)
+        
+        # Comma in string object
+        test_val = split_unquoted(r'a="fd,a,s", b=fwqej, c="jlsf,d"')
+        true_val = ['a="fd,a,s"',' b=fwqej',' c="jlsf,d"']
+        self.assertEqual(true_val, test_val)
+        
+        # Test escaped quote
+        test_val = split_unquoted('a="fdas", b=fwqej, c="jlsf\\",d"')
+        true_val = ['a="fdas"',' b=fwqej',' c="jlsf\\",d"']
+        self.assertEqual(true_val, test_val)
+        
+        # Check unterminated string
+        with self.assertRaises(ValueError):
+            split_unquoted('a="fdas", b=fwqej, c="jlsf\\",d')
+        
+        # Check escaped char outside of string
+        with self.assertRaises(ValueError):
+            split_unquoted('a="fdas", b=\\fwqef')
+        
 
 # TODO problem family specific test varying parameters (ie changing n and k for WFGx)
 
