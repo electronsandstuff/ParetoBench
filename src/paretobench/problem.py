@@ -1,6 +1,9 @@
 import numpy as np
 from pydantic import BaseModel
 
+from .simple_serialize import dumps
+
+
 class Problem(BaseModel):
     """
     The overarching class all problems inherit from
@@ -58,6 +61,17 @@ class Problem(BaseModel):
         Returns an APA formatted reference to where the problem was defined.
         """
         raise NotImplementedError()
+
+    def to_line(self):
+        """Serializes the problem object and returns a single line human readable string with the problem name and all of the
+        data required to recreate it.
+
+        Returns
+        -------
+        str
+            The serialized problem object.
+        """
+        return f"{ type(self).__name__ } ({dumps(self.dict())})"
 
 
 class ProblemWithPF:
