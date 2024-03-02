@@ -82,7 +82,7 @@ class TestProblemsBase(unittest.TestCase):
                 self.assertEqual(type(p.get_reference()), str)
 
 
-def generate_random_dict(n_vals=32, key_prefix="", str_val_prefix=""):
+def generate_random_dict(n_vals=32, str_val_prefix=""):
     """Generates a randomized dict of strings, ints, floats, and bools for testing serialization functions. If n_vals is greater
     than 4 you are gauranteed to get at least one of each data-type.
 
@@ -94,7 +94,7 @@ def generate_random_dict(n_vals=32, key_prefix="", str_val_prefix=""):
     d = {}
     for idx in range(n_vals):  
         # Random key name
-        k = key_prefix + ''.join(random.choice(string.ascii_letters) for _ in range(10))
+        k = ''.join(random.choice(string.ascii_letters) for _ in range(10))
         
         # Random value
         if idx%4 == 0:  # String
@@ -162,7 +162,8 @@ class TestSerializer(unittest.TestCase):
         """
         # Try to serialize dict with bad characters in key
         for bad_char in '=,':
-            d_true = generate_random_dict(key_prefix=bad_char)
+            d_true = generate_random_dict()
+            d_true['asf' + bad_char + "jlx"] = 0
             with self.assertRaises(ValueError):
                 dumps(d_true)
     
