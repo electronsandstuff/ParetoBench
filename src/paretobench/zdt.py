@@ -5,8 +5,7 @@ from .utils import weighted_chunk_sizes
 
 
 class ZDTx(Problem, ProblemWithPF):
-    def __init__(self, n=30):
-        self.n = int(n)
+    n: int = 30
     
     @property
     def n_decision_vars(self):
@@ -86,8 +85,7 @@ class ZDT3(ZDTx):
 
 
 class ZDT4(ZDTx):
-    def __init__(self, n=10):
-        super().__init__(n)
+    n: int = 10
 
     def _call(self, x):
         g = 1 + 10 * (self.n - 1) + np.sum(x[1:] ** 2 - 10 * np.cos(4 * np.pi * x[1:]), axis=0)
@@ -109,8 +107,7 @@ class ZDT4(ZDTx):
 
 
 class ZDT6(ZDTx):
-    def __init__(self, n=10):
-        super().__init__(n)
+    n: int = 10
 
     def _call(self, x):
         f1 = 1 - np.exp(-4*x[0])*(np.sin(6*np.pi*x[0]))**6
