@@ -82,7 +82,31 @@ class TestProblemsBase(unittest.TestCase):
                 self.assertEqual(type(p.get_reference()), str)
 
 
-def generate_random_dict(n_vals=32, str_val_prefix=""):
+def randstr(n):
+    """Generates a random string of length n
+
+    Parameters
+    ----------
+    n : int
+        length of the random string
+    """
+    return ''.join(random.choice(string.ascii_letters) for _ in range(n))
+
+
+def randlenstr(a=1, b=16):
+    """Generates a random string of random length between a and b
+
+    Parameters
+    ----------
+    a : int
+        lower limit of string length
+    b : int
+        upper limit of string length
+    """
+    return randstr(random.randint(a, b))
+
+
+def generate_random_dict(n_vals=32):
     """Generates a randomized dict of strings, ints, floats, and bools for testing serialization functions. If n_vals is greater
     than 4 you are gauranteed to get at least one of each data-type.
 
@@ -94,11 +118,11 @@ def generate_random_dict(n_vals=32, str_val_prefix=""):
     d = {}
     for idx in range(n_vals):  
         # Random key name
-        k = ''.join(random.choice(string.ascii_letters) for _ in range(10))
+        k = randlenstr()
         
         # Random value
         if idx%4 == 0:  # String
-            v = str_val_prefix + ''.join(random.choice(string.ascii_letters) for _ in range(10))
+            v = randlenstr()
         elif idx%4 == 1:  # Float
             v = random.random()
         elif idx%4 == 2:  # Int
@@ -151,11 +175,13 @@ class TestSerializer(unittest.TestCase):
     def test_serialize_deserialize_bad_val_chars(self):
         """Test that serialization works with "problem" characters in string value
         """
-        # Get a random dict with extra "problem characters" in keys, pass through serializer, then compare
-        for _ in range(32):
-            d_true = generate_random_dict(str_val_prefix='\\ad"""\\sdfa')
-            d_test = loads(dumps(d_true))
-            self.assertEqual(d_true, d_test)
+        # Get a random dict with extra "problem characters", pass through serializer, then compare
+        for bad_char in '=",\\':
+            for _ in range(32):
+                d_true = generate_random_dict()
+                d_true['my_val'] = randlenstr() + bad_char + randlenstr()
+                d_test = loads(dumps(d_true))
+                self.assertEqual(d_true, d_test)
             
     def test_serialize_deserialize_bad_key_chars(self):
         """Test that serialization gives us the right error when there are bad characters in the key
@@ -163,7 +189,7 @@ class TestSerializer(unittest.TestCase):
         # Try to serialize dict with bad characters in key
         for bad_char in '=,':
             d_true = generate_random_dict()
-            d_true['asf' + bad_char + "jlx"] = 0
+            d_true[randlenstr() + bad_char + randlenstr()] = 0
             with self.assertRaises(ValueError):
                 dumps(d_true)
     
