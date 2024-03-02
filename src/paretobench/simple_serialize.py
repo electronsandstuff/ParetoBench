@@ -35,9 +35,9 @@ def dumps(data: dict):
             # Escape problem characters before writing
             v_safe = v.replace('\\', '\\\\')
             v_safe = v_safe.replace('"', r'\"')
-            items.append('{k}="{v_safe}"')
+            items.append(f'{k}="{v_safe}"')
         else:
-            items.append('{k}={v}')
+            items.append(f'{k}={v}')
     return ", ".join(items)
 
 
@@ -76,3 +76,38 @@ def split_unquoted(s: str, split_char=','):
         raise ValueError("Unterminated quotations marks. Possible corrupted data.")
     
     return chunks
+
+
+def loads(s: str):
+    # Break string into sections
+    ret = {}
+    for chunk in split_unquoted(s):
+        # Make sure we can break out the key and value
+        if '=' not in chunk:
+            raise ValueError(f'Bad key value pair: "{chunk}"')
+        
+        # Break into key and value
+        idx = chunk.index('=')
+        k = chunk[:idx].strip()
+        v = chunk[idx+1:].strip()
+        
+        # Handle strings
+        if v[0] == '"':
+            v.replace('\\', '')
+            v = v[1:-1]
+        
+        # Floats
+        elif '.' in v:
+            v = float(v)
+            
+        # Ints
+        elif v[0] in '1234567890':
+            v = int(v)
+        
+        # Bools
+        else:
+            v = {'True': True, 'False': False}[v]
+        
+        # Finally set the dict entry
+        ret[k] = v
+    return ret

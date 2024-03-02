@@ -1,8 +1,10 @@
 import unittest
 import numpy as np
+import random
+import string
 
 import paretobench as pb
-from paretobench.simple_serialize import split_unquoted
+from paretobench.simple_serialize import split_unquoted, dumps, loads
 
 
 class TestProblemsBase(unittest.TestCase):
@@ -109,7 +111,36 @@ class TestSerializer(unittest.TestCase):
         # Check escaped char outside of string
         with self.assertRaises(ValueError):
             split_unquoted('a="fdas", b=\\fwqef')
-        
+    
+    def test_serialize_deserialize(self):
+        # Run the test multiple times
+        for _ in range(32):
+            # Generate a random dict object
+            d = {}
+            for _ in range(32):  
+                # Random key name
+                k = ''.join(random.choice(string.ascii_letters) for i in range(10))
+                
+                # Random value
+                idx = random.randrange(0, 4)  # The datatype
+                if idx == 0:  # String
+                    v = ''.join(random.choice(string.ascii_letters) for i in range(10))
+                elif idx == 1:  # Float
+                    v = random.random()
+                elif idx == 2:  # Int
+                    v = random.randint(0, 999999)
+                elif idx == 3:  # Bool
+                    v = bool(random.randint(0, 1))
+                    
+                # Set the key
+                d[k] = v
+            
+            # Serialize then deserialize the object
+            d_test = loads(dumps(d))
+            
+            # Confirm objects are the same
+            self.assertEqual(d, d_test)
+            
 
 # TODO problem family specific test varying parameters (ie changing n and k for WFGx)
 
