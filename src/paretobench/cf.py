@@ -35,7 +35,7 @@ class CFx(Problem):
 class CF1(CFx, ProblemWithFixedPF):
     n: int = 10
     N: int = 10
-    a: int = 1.0
+    a: float = 1.0
 
     @property
     def n_decision_vars(self):
@@ -74,7 +74,7 @@ class CF1(CFx, ProblemWithFixedPF):
 class CF2(CFx, ProblemWithPF):
     n: int = 10
     N: int = 2
-    a: int = 1
+    a: float = 1.0
 
     @property
     def n_decision_vars(self):
@@ -119,7 +119,7 @@ class CF2(CFx, ProblemWithPF):
 class CF3(CFx, ProblemWithPF):
     n: int = 10
     N: int = 2
-    a: int = 1
+    a: float = 1.0
 
     @property
     def n_decision_vars(self):
@@ -381,7 +381,7 @@ class CF7(CFx, ProblemWithPF):
 class CF8(CFx, ProblemWithPF):
     n: int = 10
     N: int = 2
-    a: int = 4
+    a: float = 4.0
 
     @property
     def n_decision_vars(self):
@@ -432,7 +432,7 @@ class CF8(CFx, ProblemWithPF):
 class CF9(CFx, ProblemWithPF):
     n: int = 10
     N: int = 2
-    a: float = 3
+    a: float = 3.0
 
     @property
     def n_decision_vars(self):
@@ -479,7 +479,7 @@ class CF9(CFx, ProblemWithPF):
 class CF10(CFx, ProblemWithPF):
     n: int = 10
     N: int = 2
-    a: int = 1
+    a: float = 1.0
 
     @property
     def n_decision_vars(self):
