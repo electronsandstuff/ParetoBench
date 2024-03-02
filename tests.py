@@ -82,6 +82,35 @@ class TestProblemsBase(unittest.TestCase):
                 self.assertEqual(type(p.get_reference()), str)
 
 
+def generate_random_dict(n_vals=32):
+    """Generates a randomized dict of strings, ints, floats, and bools for testing serialization functions.
+
+    Parameters
+    ----------
+    n_vals : int, optional
+        Number of elements in the dict, by default 32
+    """
+    d = {}
+    for _ in range(n_vals):  
+        # Random key name
+        k = ''.join(random.choice(string.ascii_letters) for i in range(10))
+        
+        # Random value
+        idx = random.randrange(0, 4)  # The datatype
+        if idx == 0:  # String
+            v = ''.join(random.choice(string.ascii_letters) for i in range(10))
+        elif idx == 1:  # Float
+            v = random.random()
+        elif idx == 2:  # Int
+            v = random.randint(0, 999999)
+        elif idx == 3:  # Bool
+            v = bool(random.randint(0, 1))
+            
+        # Set the key
+        d[k] = v
+    return d
+
+
 class TestSerializer(unittest.TestCase):
     def test_split_unquoted(self):
         # Basic test
@@ -115,31 +144,14 @@ class TestSerializer(unittest.TestCase):
     def test_serialize_deserialize(self):
         # Run the test multiple times
         for _ in range(32):
-            # Generate a random dict object
-            d = {}
-            for _ in range(32):  
-                # Random key name
-                k = ''.join(random.choice(string.ascii_letters) for i in range(10))
-                
-                # Random value
-                idx = random.randrange(0, 4)  # The datatype
-                if idx == 0:  # String
-                    v = ''.join(random.choice(string.ascii_letters) for i in range(10))
-                elif idx == 1:  # Float
-                    v = random.random()
-                elif idx == 2:  # Int
-                    v = random.randint(0, 999999)
-                elif idx == 3:  # Bool
-                    v = bool(random.randint(0, 1))
-                    
-                # Set the key
-                d[k] = v
+            # Get a random dict
+            d_true = generate_random_dict()
             
             # Serialize then deserialize the object
-            d_test = loads(dumps(d))
+            d_test = loads(dumps(d_true))
             
             # Confirm objects are the same
-            self.assertEqual(d, d_test)
+            self.assertEqual(d_true, d_test)
             
 
 # TODO problem family specific test varying parameters (ie changing n and k for WFGx)
