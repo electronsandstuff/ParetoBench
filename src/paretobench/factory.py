@@ -1,5 +1,4 @@
-import re
-
+from .exceptions import DeserializationError
 from .simple_serialize import loads
 
 
@@ -55,7 +54,7 @@ def from_line_fmt(s: str):
         name = s[:serialization_beg].strip()
         kwargs = loads(s[serialization_beg+1:serialization_end])
     else:
-        raise ValueError('could not interpret line "s"')
+        raise DeserializationError('could not interpret line "s"')
     
     # Create the problem and return
     return registered_probs[name](**kwargs)
