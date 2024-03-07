@@ -9,7 +9,6 @@ Remaining parameters should be named as close as possible to the name given in t
 
 Sometimes these requirements will give a different name for parameters than what is used in the paper defining them. In these cases, the changes should always be documneted in the class with what parameter corresponds to what name in the literature.
 
-
 # "Single Line" Serialization and Deserialization of Problems
 Sometimes it is useful to be able to specify problems with all of their parameters in a short single line string. Examples of applications include defining problems for testing optimizers in a config file, referring to problems in log files, and saving problems along with all parameters in file formats. To support this need, ParetoBench includes a simple serialization/deserialization format for problem parameters as well as a standard format for writing the problem's name and list of parameters into a single line string.
 
