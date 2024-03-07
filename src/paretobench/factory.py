@@ -47,9 +47,15 @@ def from_line(s: str):
     serialization_beg = s.find('(')
     serialization_end = s.find(')')
     
-    # Get the object name and deserialized args
-    name = s[:serialization_beg].strip()
-    kwargs = loads(s[serialization_beg+1:serialization_end])
+    # No parameters were passed
+    if (serialization_beg == -1) and (serialization_end == -1):
+        name = s.strip()
+        kwargs = {}
+    elif (serialization_beg != -1) and (serialization_end != -1):
+        name = s[:serialization_beg].strip()
+        kwargs = loads(s[serialization_beg+1:serialization_end])
+    else:
+        raise ValueError('could not interpret line "s"')
     
     # Create the problem and return
     return registered_probs[name](**kwargs)
