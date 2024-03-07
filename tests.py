@@ -106,14 +106,18 @@ def randlenstr(a=1, b=16):
     return randstr(random.randint(a, b))
 
 
-def generate_random_dict(n_vals=32):
+def generate_random_dict(n_vals=32, int_lb=0, int_ub=999999):
     """Generates a randomized dict of strings, ints, floats, and bools for testing serialization functions. If n_vals is greater
-    than 4 you are gauranteed to get at least one of each data-type.
+    than 4 you are guaranteed to get at least one of each data-type.
 
     Parameters
     ----------
     n_vals : int, optional
         Number of elements in the dict, by default 32
+    int_lb : int, optional
+        Lower bound of the random ints
+    int_ub : int, optional
+        Upper bound of the random ints
     """
     d = {}
     for idx in range(n_vals):  
@@ -126,7 +130,7 @@ def generate_random_dict(n_vals=32):
         elif idx%4 == 1:  # Float
             v = random.random()
         elif idx%4 == 2:  # Int
-            v = random.randint(0, 999999)
+            v = random.randint(int_lb, int_ub)
         elif idx%4 == 3:  # Bool
             v = bool(random.randint(0, 1))
             
