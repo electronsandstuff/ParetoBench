@@ -250,12 +250,28 @@ class TestSerializer(unittest.TestCase):
         """
         for name in pb.get_problem_names():
             with self.subTest(name=name):
-                # Create test problem and send through the line format
+                # Create test problem and try to randomize a parameter
                 p_true = pb.create_problem(name)
+                if p_true.model_dump():  # Some problems don't have parameters to randomize
+                    rand_key = list(p_true.model_dump().keys())[0]  # Get a key
+                    param_type = type(p_true.model_dump()[rand_key])  # Randomize based on the parameter type
+                    if param_type == int:
+                        kwargs = {rand_key: random.randint(0, 10)}
+                    elif param_type == float:
+                        kwargs = {rand_key: random.random()}
+                    elif param_type == str:
+                        kwargs = {rand_key: randlenstr()}
+                    elif param_type == bool:
+                        kwargs = {rand_key: bool(random.randint(0, 1))}
+                    else:
+                        raise ValueError(f'Couldn\'t randomize object of type "{param_type}"')
+                    
+                    # Generate the new object with the randomized parameter
+                    p_true = pb.create_problem(name, **kwargs)
+
+                # Convert to line format, generate the object, and then make sure it loads correctly
                 line_fmt = p_true.to_line()
                 p_test = pb.from_line(line_fmt)
-                
-                # Compare with each other
                 self.assertEqual(p_true.model_dump(), p_test.model_dump())
               
     def test_serialize_problem_fixed(self):
