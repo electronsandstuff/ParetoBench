@@ -62,9 +62,9 @@ class Problem(BaseModel):
         """
         raise NotImplementedError()
 
-    def to_line(self):
-        """Serializes the problem object and returns a single line human readable string with the problem name and all of the
-        data required to recreate it.
+    def to_line_fmt(self):
+        """Serializes the problem object and returns it in a single line human readable format with the problem name and all of
+        the data required to recreate it.
 
         Returns
         -------

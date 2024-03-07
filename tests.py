@@ -270,8 +270,8 @@ class TestSerializer(unittest.TestCase):
                     p_true = pb.create_problem(name, **kwargs)
 
                 # Convert to line format, generate the object, and then make sure it loads correctly
-                line_fmt = p_true.to_line()
-                p_test = pb.from_line(line_fmt)
+                line_fmt = p_true.to_line_fmt()
+                p_test = pb.from_line_fmt(line_fmt)
                 self.assertEqual(p_true.model_dump(), p_test.model_dump())
               
     def test_serialize_problem_fixed(self):
@@ -289,15 +289,15 @@ class TestSerializer(unittest.TestCase):
         for line, prob in lines_and_probs.items():
             with self.subTest(name=line):
                 # Create from line and compare against expected value
-                p_test = pb.from_line(line)
+                p_test = pb.from_line_fmt(line)
                 self.assertEqual(prob.model_dump(), p_test.model_dump())  
 
     def test_parenthesis_no_params(self):
         """Makes sure objects without parameters get printed without an extra set of parenthesis.
         """
-        self.assertNotIn("(", pb.SRN().to_line())
-        self.assertNotIn(")", pb.SRN().to_line())
-        self.assertNotIn(" ", pb.SRN().to_line())
+        self.assertNotIn("(", pb.SRN().to_line_fmt())
+        self.assertNotIn(")", pb.SRN().to_line_fmt())
+        self.assertNotIn(" ", pb.SRN().to_line_fmt())
 
     def test_problem_names_are_safe(self):
         """Checks all registered problem names and parameters for bad characters

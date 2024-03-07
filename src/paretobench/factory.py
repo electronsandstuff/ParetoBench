@@ -30,7 +30,7 @@ def create_problem(name: str, **kwargs):
     return registered_probs[name](**kwargs)
 
 
-def from_line(s: str):
+def from_line_fmt(s: str):
     """Create a problem object from the "single line" format.
 
     Parameters
