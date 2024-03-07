@@ -176,7 +176,19 @@ class TestSerializer(unittest.TestCase):
             d_test = loads(dumps(d_true))
             self.assertEqual(d_true, d_test)
     
-    def test_serialize_deserialize_whitespace(self):
+    def test_deserialize_empty(self):
+        # Dict mapping lines to the expected dicts
+        lines_and_true_vals = {
+            '': {},
+            '   ': {},
+        }
+        
+        for line, true_val in lines_and_true_vals.items():
+            with self.subTest(name=line):
+                # Create from line and compare against expected value
+                self.assertEqual(true_val, loads(line))  
+        
+    def test_deserialize_whitespace(self):
         """Confirm whitespace is ignored around the objects
         """
         # Dict mapping lines to the expected dicts
@@ -263,6 +275,13 @@ class TestSerializer(unittest.TestCase):
                 # Create from line and compare against expected value
                 p_test = pb.from_line(line)
                 self.assertEqual(prob.model_dump(), p_test.model_dump())  
+
+    def test_parenthesis_no_params(self):
+        """Makes sure objects without parameters get printed without an extra set of parenthesis.
+        """
+        self.assertNotIn("(", pb.SRN().to_line())
+        self.assertNotIn(")", pb.SRN().to_line())
+        self.assertNotIn(" ", pb.SRN().to_line())
 
 
 if __name__ == "__main__":
