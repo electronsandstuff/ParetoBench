@@ -176,6 +176,32 @@ class TestSerializer(unittest.TestCase):
             d_test = loads(dumps(d_true))
             self.assertEqual(d_true, d_test)
     
+    def test_serialize_deserialize_whitespace(self):
+        """Confirm whitespace is ignored around the objects
+        """
+        # Dict mapping lines to the expected dicts
+        lines_and_true_vals = {
+            'asdf=1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
+            '   asdf=1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
+            'asdf   =1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
+            'asdf=   1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
+            'asdf=1   ,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
+            'asdf=1,   jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
+            'asdf=1,jkpl   =1.0': {"asdf": 1, "jkpl": 1.0},
+            'asdf=1,jkpl=   1.0': {"asdf": 1, "jkpl": 1.0},
+            'asdf=1,jkpl=1.0   ': {"asdf": 1, "jkpl": 1.0},
+            '   asdf   =   1   ,   jkpl   =   1.0   ': {"asdf": 1, "jkpl": 1.0},
+            'asdf=1,jkpl="hello"': {"asdf": 1, "jkpl": "hello"},
+            'asdf=1,jkpl=   "hello"': {"asdf": 1, "jkpl": "hello"},
+            'asdf=1,jkpl="hello"   ': {"asdf": 1, "jkpl": "hello"},
+            'asdf=1,jkpl=   "hello"   ': {"asdf": 1, "jkpl": "hello"},
+        }
+        
+        for line, true_val in lines_and_true_vals.items():
+            with self.subTest(name=line):
+                # Create from line and compare against expected value
+                self.assertEqual(true_val, loads(line))  
+    
     def test_serialize_deserialize_bad_val_chars(self):
         """Test that serialization works with "problem" characters in string value
         """
