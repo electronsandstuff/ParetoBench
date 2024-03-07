@@ -284,7 +284,7 @@ class TestSerializer(unittest.TestCase):
             "ZDT1 ()": pb.ZDT1(),
             "ZDT1 (   )": pb.ZDT1(),
             "ZDT1()": pb.ZDT1(),
-            "ZDT1 (  n = 4 )": pb.ZDT1(n=4),
+            "   ZDT1 (  n = 4 )   ": pb.ZDT1(n=4),
         }
         
         for line, prob in lines_and_probs.items():
