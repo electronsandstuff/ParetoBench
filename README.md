@@ -5,7 +5,7 @@ Some names are reserved for specific purposes. These are the following.
  - `n`: The dimension of the input vector to the problem, ie the number of decision variables.
  - `m`: The number of objectives.
 
-All parameters should follow the PEP 8 naming scheme for variables. Whenever this leads to a parameter being named something different than what was called in the problem's defining paper, tihs change must be documented in the class.
+All parameters should follow the PEP 8 naming scheme for variables. Whenever this leads to a parameter being named something different than what it was called in the problem's defining paper, tihs change must be documented in the class.
 
 # "Single Line" Serialization and Deserialization of Problems
 Sometimes it is useful to be able to specify problems with all of their parameters in a short single line string. Examples of applications include defining problems for testing optimizers in a config file, referring to problems in log files, and saving problems along with all parameters in file formats. To support this need, ParetoBench includes a simple serialization/deserialization format for problem parameters as well as a standard format for writing the problem's name and list of parameters into a single line string.
