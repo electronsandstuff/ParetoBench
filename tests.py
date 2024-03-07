@@ -249,9 +249,15 @@ class TestSerializer(unittest.TestCase):
     def test_serialize_problem_fixed(self):
         """Manually specify some cases of problems to test
         """
+        
+        # Dict mapping lines and the expected problem
         lines_and_probs = {
-            "ZDT1": pb.ZDT1(),  # Reading problems w/o parameters
+            "ZDT1": pb.ZDT1(),
+            "ZDT1 ()": pb.ZDT1(),
+            "ZDT1 (   )": pb.ZDT1(),
+            "ZDT1()": pb.ZDT1(),
         }
+        
         for line, prob in lines_and_probs.items():
             with self.subTest(name=line):
                 # Create from line and compare against expected value
