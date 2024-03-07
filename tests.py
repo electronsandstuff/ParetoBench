@@ -217,11 +217,21 @@ class TestSerializer(unittest.TestCase):
                 line_fmt = p_true.to_line()
                 p_test = pb.from_line(line_fmt)
                 
-                # Compare each other
+                # Compare with each other
                 self.assertEqual(p_true.model_dump(), p_test.model_dump())
-                
+              
+    def test_serialize_problem_fixed(self):
+        """Manually specify some cases of problems to test
+        """
+        lines_and_probs = {
+            "ZDT1": pb.ZDT1(),  # Reading problems w/o parameters
+        }
+        for line, prob in lines_and_probs.items():
+            with self.subTest(name=line):
+                # Create from line and compare against expected value
+                p_test = pb.from_line(line)
+                self.assertEqual(prob.model_dump(), p_test.model_dump())  
 
-# TODO problem family specific test varying parameters (ie changing n and k for WFGx)
 
 if __name__ == "__main__":
     unittest.main()
