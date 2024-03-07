@@ -533,4 +533,4 @@ class CF10(CFx, ProblemWithPF):
         return b
 
     def get_pareto_front(self, n):
-        return get_pf_cf9_cf10(n, self.n)
+        return get_pf_cf9_cf10(n, self.b)
