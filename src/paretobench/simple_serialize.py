@@ -78,6 +78,9 @@ def split_unquoted(s: str, split_char=','):
 
 
 def loads(s: str):
+    # Clean all whitespace around the string
+    s = s.strip()
+    
     # Break string into sections
     ret = {}
     for chunk in split_unquoted(s):
