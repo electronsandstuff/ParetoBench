@@ -11,18 +11,20 @@ class CTPx(Problem):
 
 
 class CTP1(CTPx):
+    """The parameter J has been changed to j to correspond to python naming conventoins"""
+    
     n: int = 5
-    J: int = 2
+    j: int = 2
     
     def __init__(self, **data):
         super().__init__(**data)
 
         # Calculate the parameters
-        self._a = np.ones(self.J+1)
-        self._b = np.ones(self.J+1)
-        delta = 1/(self.J + 1)
+        self._a = np.ones(self.j+1)
+        self._b = np.ones(self.j+1)
+        delta = 1/(self.j + 1)
         x = delta
-        for i in range(self.J):
+        for i in range(self.j):
             y = self._a[i]*np.exp(-self._b[i]*x)
             self._a[i+1] = (self._a[i] + y)/2
             self._b[i+1] = -1/x*np.log(y/self._a[i+1])
@@ -40,7 +42,7 @@ class CTP1(CTPx):
     
     @property
     def n_constraints(self):
-        return self.J
+        return self.j
     
     def _call(self, x):
         rast = rastrigin(x[1:])
@@ -50,7 +52,7 @@ class CTP1(CTPx):
         ))
 
         g = []
-        for i in range(self.J):
+        for i in range(self.j):
             g.append(f[1] - self._a[i]*np.exp(-self._b[i]*f[0]))
         return f, np.vstack(g)
 

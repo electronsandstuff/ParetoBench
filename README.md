@@ -1,3 +1,14 @@
+# Parameter Naming Conventions.
+To help standardize the code in this package, the following naming convention is used for parameters.
+
+Some names are reservered for specific purposes. These are the following.
+ - `n`: The dimension of the input vector to the problem, ie the number of decision variables.
+ - `m`: The number of objectives.
+
+Remaining parameters should be named as close as possible to the name given in the paper defining them. The parameters should follow the PEP 8 naming scheme.
+
+Sometimes these requirements will give a different name for parameters than what is used in the paper defining them. In these cases, the changes should always be documneted in the class with what parameter corresponds to what name in the literature.
+
 
 # "Single Line" Serialization and Deserialization of Problems
 Sometimes it is useful to be able to specify problems with all of their parameters in a short single line string. Examples of applications include defining problems for testing optimizers in a config file, referring to problems in log files, and saving problems along with all parameters in file formats. To support this need, ParetoBench includes a simple serialization/deserialization format for problem parameters as well as a standard format for writing the problem's name and list of parameters into a single line string.
@@ -12,4 +23,4 @@ Problems along with their parameters are serialized in the format `NAME (<SERIAL
 
 Not all parameters need to be defined in the serialized parameters. Default values in the classes will be used for any parameters not specified. Problems can also be specified by name only (ie `NAME`) and this corresponds to the problem with all default parameters. The standard also allows for the format `NAME ()` for objects without parameters or all default parameters.
 
-It should be noted that many names may be used to specify the same problem object. This means that the line format should never be used to compare problems or be used as the key to a dictionary for instance as you will end up with duplicates problems.
+It should be noted that many names may be used to specify the same problem object. This means that the line format should never be used to compare problems or be used as the key to a dictionary for instance as you will end up with duplicates problems. Additionally, the default values of parameters are not guaranteed to remain constant and cannot be relied on to define a problem. For the purposes of saving problems, all parameters should be saved.
