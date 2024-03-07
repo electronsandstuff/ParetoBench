@@ -5,8 +5,8 @@ from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
 from .utils import triangle_grid, triangle_grid_count
 
 
-def get_pf_cf9_cf10(n, nn):
-    sub_n = int((np.sqrt(1+4*n*nn)-1)/2/nn)+1
+def get_pf_cf9_cf10(n, b):
+    sub_n = int((np.sqrt(1+4*n*b)-1)/2/b)+1
 
     # Add "line"
     f2s = [np.linspace(0, 1, sub_n)]
@@ -15,10 +15,10 @@ def get_pf_cf9_cf10(n, nn):
 
     # Add surfaces
     n_triangle = next(n for n in count() if triangle_grid_count(n) > sub_n**2)
-    for i in range(1, nn+1):
+    for i in range(1, b+1):
         f1, f3 = triangle_grid(n_triangle)
-        start = np.sqrt((2*i-1)/2/nn*(1-f3**2))
-        end = np.sqrt(2*i/2/nn*(1-f3**2))
+        start = np.sqrt((2*i-1)/2/b*(1-f3**2))
+        end = np.sqrt(2*i/2/b*(1-f3**2))
         f1 = f1/np.maximum(1e-9, 1-f3)*np.maximum(1e-9, end-start) + start
         f2 = np.sqrt(np.maximum(0, 1 - f1**2 - f3**2))
         f1s, f2s, f3s = f1s + [f1], f2s + [f2], f3s + [f3]
@@ -33,11 +33,11 @@ class CFx(Problem):
 
 
 class CF1(CFx, ProblemWithFixedPF):
-    """The parameter N has be renamed to nn to fit into python naming convention"""
+    """The parameter N has be renamed to b to fit into python naming convention"""
     
     n: int = 10
-    nn: int = 10
     a: float = 1.0
+    b: int = 10
 
     @property
     def n_decision_vars(self):
@@ -59,7 +59,7 @@ class CF1(CFx, ProblemWithFixedPF):
             1 - x[0] + 2 / j[::2].size * np.sum(summand[::2], axis=0)
         ))
         g = np.vstack((
-            f[0] + f[1] - self.a * np.abs(np.sin(self.nn * np.pi * (f[0] - f[1] + 1))) - 1,
+            f[0] + f[1] - self.a * np.abs(np.sin(self.b * np.pi * (f[0] - f[1] + 1))) - 1,
         ))
         return f, g
 
@@ -68,17 +68,17 @@ class CF1(CFx, ProblemWithFixedPF):
         return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self):
-        f1 = np.linspace(0, 1, 2*self.nn+1)
+        f1 = np.linspace(0, 1, 2*self.b+1)
         f2 = 1 - f1
         return np.vstack((f1, f2))
     
 
 class CF2(CFx, ProblemWithPF):
-    """The parameter N has be renamed to nn to fit into python naming convention"""
+    """The parameter N has be renamed to b to fit into python naming convention"""
     
     n: int = 10
-    nn: int = 2
     a: float = 1.0
+    b: int = 2
 
     @property
     def n_decision_vars(self):
@@ -100,7 +100,7 @@ class CF2(CFx, ProblemWithPF):
             x[0] + 2 / j[1::2].size * np.sum(summand[1::2], axis=0),
             1 - np.sqrt(x[0]) + 2 / j[::2].size * np.sum(summand[::2], axis=0)
         ))
-        t = f[1] + np.sqrt(f[0]) - self.a * np.sin(self.nn * np.pi * (np.sqrt(f[0]) - f[1] + 1)) - 1
+        t = f[1] + np.sqrt(f[0]) - self.a * np.sin(self.b * np.pi * (np.sqrt(f[0]) - f[1] + 1)) - 1
         g = np.vstack((
             t / (1 + np.exp(4 * np.abs(t))),
         ))
@@ -113,7 +113,7 @@ class CF2(CFx, ProblemWithPF):
         return b
 
     def get_pareto_front(self, n):
-        ranges = [(((2*i-1)/2/self.nn)**2, (i/self.nn)**2) for i in range(1, self.nn+1)]
+        ranges = [(((2*i-1)/2/self.b)**2, (i/self.b)**2) for i in range(1, self.b+1)]
         total_range = sum(stop - start for start, stop in ranges)
         f1 = np.concatenate([np.linspace(start, stop, int(n*(stop - start)/total_range + 0.5)) for start, stop in ranges])
         f2 = 1 - np.sqrt(f1)
@@ -121,11 +121,11 @@ class CF2(CFx, ProblemWithPF):
     
     
 class CF3(CFx, ProblemWithPF):
-    """The parameter N has be renamed to nn to fit into python naming convention"""
+    """The parameter N has be renamed to b to fit into python naming convention"""
 
     n: int = 10
-    nn: int = 2
     a: float = 1.0
+    b: int = 2
 
     @property
     def n_decision_vars(self):
@@ -154,7 +154,7 @@ class CF3(CFx, ProblemWithPF):
                         4 * np.sum(summand[::2], axis=0) - 2 * np.prod(prod[::2], axis=0) + 2)
         ))
         g =  np.vstack((
-            f[1] + f[0] ** 2 - self.a * np.sin(self.nn * np.pi * (f[0] ** 2 - f[1] + 1)) - 1,
+            f[1] + f[0] ** 2 - self.a * np.sin(self.b * np.pi * (f[0] ** 2 - f[1] + 1)) - 1,
         ))
         return f, g
 
@@ -166,7 +166,7 @@ class CF3(CFx, ProblemWithPF):
         return b
 
     def get_pareto_front(self, n):
-        ranges = [(np.sqrt((2*i-1)/2/self.nn), np.sqrt(i/self.nn)) for i in range(1, self.nn+1)]
+        ranges = [(np.sqrt((2*i-1)/2/self.b), np.sqrt(i/self.b)) for i in range(1, self.b+1)]
         total_range = sum(stop - start for start, stop in ranges)
         f1 = np.concatenate([np.linspace(start, stop, int(n*(stop - start)/total_range + 0.5)) for start, stop in ranges])
         f2 = 1 - f1**2
@@ -385,11 +385,11 @@ class CF7(CFx, ProblemWithPF):
 
 
 class CF8(CFx, ProblemWithPF):
-    """The parameter N has be renamed to nn to fit into python naming convention"""
+    """The parameter N has be renamed to b to fit into python naming convention"""
     
     n: int = 10
-    nn: int = 2
     a: float = 4.0
+    b: int = 2
 
     @property
     def n_decision_vars(self):
@@ -417,7 +417,7 @@ class CF8(CFx, ProblemWithPF):
 
         g = np.vstack((
             (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2) - self.a * np.abs(
-                np.sin(self.nn * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1))) - 1,
+                np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1))) - 1,
         ))
         
         return f, g
@@ -430,19 +430,19 @@ class CF8(CFx, ProblemWithPF):
         return b
 
     def get_pareto_front(self, n):
-        sub_n = n // (2*self.nn + 1)
-        f3 = np.repeat(np.linspace(0, 1, sub_n), 2*self.nn + 1)
-        f1 = np.concatenate([np.sqrt(i/2/self.nn*(1-f3[:sub_n]**2)) for i in range(2*self.nn+1)])
+        sub_n = n // (2*self.b + 1)
+        f3 = np.repeat(np.linspace(0, 1, sub_n), 2*self.b + 1)
+        f1 = np.concatenate([np.sqrt(i/2/self.b*(1-f3[:sub_n]**2)) for i in range(2*self.b+1)])
         f2 = np.sqrt(np.maximum(0, 1 - f1**2 - f3**2))
         return np.vstack((f1, f2, f3))
 
 
 class CF9(CFx, ProblemWithPF):
-    """The parameter N has be renamed to nn to fit into python naming convention"""
+    """The parameter N has be renamed to b to fit into python naming convention"""
 
     n: int = 10
-    nn: int = 2
     a: float = 3.0
+    b: int = 2
 
     @property
     def n_decision_vars(self):
@@ -470,7 +470,7 @@ class CF9(CFx, ProblemWithPF):
 
         g = np.vstack((
             (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2) - self.a * np.sin(
-                self.nn * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
+                self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
         ))
         
         return f, g
@@ -483,15 +483,15 @@ class CF9(CFx, ProblemWithPF):
         return b
 
     def get_pareto_front(self, n):
-        return get_pf_cf9_cf10(n, self.nn)
+        return get_pf_cf9_cf10(n, self.b)
     
 
 class CF10(CFx, ProblemWithPF):
-    """The parameter N has be renamed to nn to fit into python naming convention"""
+    """The parameter N has be renamed to b to fit into python naming convention"""
 
     n: int = 10
-    nn: int = 2
     a: float = 1.0
+    b: int = 2
 
     @property
     def n_decision_vars(self):
@@ -520,7 +520,7 @@ class CF10(CFx, ProblemWithPF):
 
         g = np.vstack((
             (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2) - self.a * np.sin(
-                self.nn * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
+                self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
         ))
         
         return f, g
