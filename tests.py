@@ -283,6 +283,20 @@ class TestSerializer(unittest.TestCase):
         self.assertNotIn(")", pb.SRN().to_line())
         self.assertNotIn(" ", pb.SRN().to_line())
 
+    def test_problem_names_are_safe(self):
+        """Checks all registered problem names and parameters for bad characters
+        """
+        for name in pb.get_problem_names():
+            with self.subTest(name=name):
+                # Check name for bad chars
+                self.assertTrue(name.replace("_", "").isalnum())
+                
+                # Check the parameters for bad characters or types
+                prob = pb.create_problem(name)
+                for param, val in prob.model_dump().items():
+                    self.assertTrue(param.replace("_", "").isalnum())
+                    self.assertTrue(type(val) in [int, float, bool, str])
+
 
 if __name__ == "__main__":
     unittest.main()
