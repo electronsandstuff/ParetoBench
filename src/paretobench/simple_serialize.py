@@ -50,28 +50,34 @@ def split_unquoted(s: str, split_char=','):
     split_char : str, optional
         The character to split on, by default ','
     """
+    # Note: tried to replace with csv.reader, but it only supports quotes around the entire field separated by commas
     # Go through char by char while keeping track of "depth" into quotes. Store chunks of str as we go
-    last_escape_char = -2
-    depth = 0
-    chunk_start = 0
-    chunks = []
+    last_escape_char = -2  # The index to the last escape character seen
+    in_quotes = False  # Are we currently in quotes?
+    chunk_start = 0  # The start of the current chunk
+    chunks = []  # The list of chunks we have seen
     for idx, c in enumerate(s):
-        if c == '"' and last_escape_char != idx - 1:
-            depth = 1 - depth
-        elif c == split_char and depth == 0:
+        # We saw a non-escaped quote marks
+        if c == '"' and (last_escape_char != idx - 1):
+            in_quotes = not in_quotes
+        
+        # We saw the splitter character outside of quotes
+        elif not in_quotes and c == split_char:
             chunks.append(s[chunk_start:idx])
             chunk_start = idx+1
-        elif c == '\\' and depth == 1:
+            
+        # We saw the escape character
+        elif c == '\\':
             last_escape_char = idx
-        elif c == '\\' and depth == 0:
-            raise ValueError('Detected escaped character outside of a string. Possible corrupted data.')
+            if not in_quotes:
+                raise ValueError('Detected escaped character outside of a string. Possible corrupted data.')
         
     # If we didn't end on a split_char, add remaining values
     if chunk_start < len(s):
         chunks.append(s[chunk_start:])
 
     # Check that we ended with a quote
-    if depth != 0:
+    if in_quotes:
         raise ValueError("Unterminated quotations marks. Possible corrupted data.")
     
     return chunks
