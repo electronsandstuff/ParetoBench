@@ -162,11 +162,11 @@ class TestSerializer(unittest.TestCase):
         self.assertEqual(true_val, test_val)
         
         # Check unterminated string
-        with self.assertRaises(ValueError):
+        with self.assertRaises(pb.DeserializationError):
             split_unquoted('a="fdas", b=fwqej, c="jlsf\\",d')
         
         # Check escaped char outside of string
-        with self.assertRaises(ValueError):
+        with self.assertRaises(pb.DeserializationError):
             split_unquoted('a="fdas", b=\\fwqef')
     
     def test_serialize_deserialize(self):
@@ -232,7 +232,7 @@ class TestSerializer(unittest.TestCase):
         for bad_char in '=,"':
             d_true = generate_random_dict()
             d_true[randlenstr() + bad_char + randlenstr()] = 0
-            with self.assertRaises(ValueError):
+            with self.assertRaises(pb.SerializationError):
                 dumps(d_true)
     
     def test_serialize_deserialize_bad_datatype(self):
@@ -242,7 +242,7 @@ class TestSerializer(unittest.TestCase):
         for bad_val in [[1, 2, 3], (1, 2, 3), {'a': 1}]:
             d_true = generate_random_dict()
             d_true['my_key'] = bad_val
-            with self.assertRaises(ValueError):
+            with self.assertRaises(pb.SerializationError):
                 dumps(d_true)
     
     def test_serialize_problem(self):

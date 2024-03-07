@@ -1,3 +1,15 @@
+class SerializationError(Exception):
+    """Exception raised when something goes wrong during serialization.
+    """
+    pass
+
+
+class DeserializationError(Exception):
+    """Exception raised when something goes wrong during deserialization.
+    """
+    pass
+
+
 def dumps(data: dict):
     """Converts a dict of basic python types (float, int, string, bool) to a single line string. This method is used to help
     instantiate problem objects with parameters from single line strings (such as those in config files).
@@ -14,18 +26,18 @@ def dumps(data: dict):
 
     Raises
     ------
-    ValueError
+    SerializationError
         Object could not be converted
     """
     # Confirm object is appropriate for the function
     for k, v in data.items():
         # Check for illegal characters in the keys
         if not k.replace("_", "").isalnum():
-            raise ValueError(f'Keys must only contain alphanumeric characters. Found key named "{k}"')
+            raise SerializationError(f'Keys must only contain alphanumeric characters. Found key named "{k}"')
         
         # Check for illegal datatypes
         if type(v) not in [int, float, bool, str]:
-            raise ValueError(f'Cannot serialize object of type {type(v)} at key "{k}"')
+            raise SerializationError(f'Cannot serialize object of type {type(v)} at key "{k}"')
     
     # Perform the conversion
     items = []
@@ -70,7 +82,7 @@ def split_unquoted(s: str, split_char=','):
         elif c == '\\':
             last_escape_char = idx
             if not in_quotes:
-                raise ValueError('Detected escaped character outside of a string. Possible corrupted data.')
+                raise DeserializationError('Detected escaped character outside of a string. Possible corrupted data.')
         
     # If we didn't end on a split_char, add remaining values
     if chunk_start < len(s):
@@ -78,7 +90,7 @@ def split_unquoted(s: str, split_char=','):
 
     # Check that we ended with a quote
     if in_quotes:
-        raise ValueError("Unterminated quotations marks. Possible corrupted data.")
+        raise DeserializationError("Unterminated quotations marks. Possible corrupted data.")
     
     return chunks
 
@@ -92,7 +104,7 @@ def loads(s: str):
     for chunk in split_unquoted(s):
         # Make sure we can break out the key and value
         if '=' not in chunk:
-            raise ValueError(f'Bad key value pair: "{chunk}"')
+            raise DeserializationError(f'Bad key value pair: "{chunk}"')
         
         # Break into key and value
         idx = chunk.index('=')
