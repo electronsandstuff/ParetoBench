@@ -9,12 +9,17 @@ from .wfg_utils import shape_linear, shape_convex, shape_concave, shape_mixed, s
 
 
 class WFGx(Problem, ProblemWithPF):
-    def __init__(self, n=24, k=4, m=2):
-        self.n = int(n)
-        self.k = int(k)
-        self.m = int(m)
-        self.d = 1.0
-        self.s = np.array([2*(i + 1) for i in range(self.m)])
+    n: int = 24
+    k: int = 4
+    m: int = 2
+    
+    def __init__(self, **data):
+        # Handle pydantic data
+        super().__init__(**data)
+        
+        # Set internal attributes for later
+        self._d = 1.0
+        self._s = np.array([2*(i + 1) for i in range(self.m)])
 
     @property
     def decision_var_bounds(self):
@@ -72,7 +77,7 @@ class WFG1(WFGx):
         h[-1] = shape_mixed(new_x, 5, 1)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj
@@ -148,7 +153,7 @@ class WFG2(WFGx):
         h[-1] = shape_disconnected(new_x, 5, 1.0, 1.0)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
  
         # Return it
         return obj
@@ -223,7 +228,7 @@ class WFG3(WFGx):
         h = shape_linear(new_x)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj
@@ -259,7 +264,7 @@ class WFG4(WFGx):
         h = shape_concave(new_x)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj
@@ -294,7 +299,7 @@ class WFG5(WFGx):
         h = shape_concave(new_x)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj
@@ -327,7 +332,7 @@ class WFG6(WFGx):
         h = shape_concave(new_x)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj
@@ -368,7 +373,7 @@ class WFG7(WFGx):
         h = shape_concave(new_x)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj
@@ -409,7 +414,7 @@ class WFG8(WFGx):
         h = shape_concave(new_x)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj
@@ -448,7 +453,7 @@ class WFG9(WFGx):
         h = shape_concave(new_x)
 
         # Compute the objective
-        obj = (self.d * new_x[-1])[None, :] + self.s[:, None] * h
+        obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
         return obj

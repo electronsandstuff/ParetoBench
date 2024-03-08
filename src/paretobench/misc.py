@@ -108,8 +108,7 @@ class KUR(Problem):
 
     Other name: Kursawe’s Function
     """
-    def __init__(self, n=3):
-        self.n = int(n)
+    n: int = 3
         
     @property
     def n_decision_vars(self):
