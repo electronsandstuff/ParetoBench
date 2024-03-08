@@ -43,8 +43,9 @@ def dumps(data: dict):
     return ", ".join(items)
 
 
-def split_unquoted(s: str, split_char=','):
-    """Breaks string into pieces by the character `split_char` as long as it isn't in a quoted section.
+def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
+    """Breaks string into pieces by the character `split_char` as long as it isn't in a quoted section. Quotes may be escaped
+    using a user provided escape character.
 
     Parameters
     ----------
@@ -52,6 +53,10 @@ def split_unquoted(s: str, split_char=','):
         The string to split up
     split_char : str, optional
         The character to split on, by default ','
+    quote_char : str, optional
+        The character recognized as a quote, by default '"'
+    escape_char : str, optional
+        The character recognized as an escape character, by default '\\'
     """
     # Note: tried to replace with csv.reader, but it only supports quotes around the entire field separated by commas
     # Go through char by char while keeping track of "depth" into quotes. Store chunks of str as we go
@@ -61,7 +66,7 @@ def split_unquoted(s: str, split_char=','):
     chunks = []  # The list of chunks we have seen
     for idx, c in enumerate(s):
         # We saw a non-escaped quote marks
-        if c == '"' and (last_escape_char != idx - 1):
+        if c == quote_char and (last_escape_char != idx - 1):
             in_quotes = not in_quotes
         
         # We saw the splitter character outside of quotes
@@ -70,7 +75,7 @@ def split_unquoted(s: str, split_char=','):
             chunk_start = idx+1
             
         # We saw the escape character
-        elif c == '\\':
+        elif c == escape_char:
             last_escape_char = idx
             if not in_quotes:
                 raise DeserializationError('Detected escaped character outside of a string. Possible corrupted data.')
