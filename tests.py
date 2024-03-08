@@ -278,7 +278,7 @@ class TestSerializer(unittest.TestCase):
 
                 # Convert to line format, generate the object, and then make sure it loads correctly
                 line_fmt = p_true.to_line_fmt()
-                p_test = pb.from_line_fmt(line_fmt)
+                p_test = pb.Problem.from_line_fmt(line_fmt)
                 self.assertEqual(p_true.model_dump(), p_test.model_dump())
               
     def test_deserialize_problems_manual(self):
@@ -297,7 +297,7 @@ class TestSerializer(unittest.TestCase):
         for line, prob in lines_and_probs.items():
             with self.subTest(name=line):
                 # Create from line and compare against expected value
-                p_test = pb.from_line_fmt(line)
+                p_test = pb.Problem.from_line_fmt(line)
                 self.assertEqual(prob.model_dump(), p_test.model_dump())  
 
     def test_deserialize_problem_errors(self):
@@ -314,7 +314,7 @@ class TestSerializer(unittest.TestCase):
         for line in lines:
             with self.subTest(name=line):
                 with self.assertRaises(pb.DeserializationError):
-                    pb.from_line_fmt(line)
+                    pb.Problem.from_line_fmt(line)
                 
     def test_parenthesis_no_params(self):
         """Makes sure objects without parameters get printed without an extra set of parenthesis.

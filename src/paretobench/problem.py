@@ -1,6 +1,9 @@
 import numpy as np
 from pydantic import BaseModel
 
+from .exceptions import DeserializationError
+from .factory import create_problem
+from .simple_serialize import loads
 from .simple_serialize import dumps
 
 
@@ -79,6 +82,37 @@ class Problem(BaseModel):
         if params:
             return f"{   name } ({ dumps(params) })"
         return name
+
+    @classmethod
+    def from_line_fmt(cls, s: str):
+        """Create a problem object from the "single line" format.
+
+        Parameters
+        ----------
+        s : str
+            The single line describing the problem object
+
+        Returns
+        -------
+        Problem
+            The instantiated problem
+        """
+        # Find the section of the string corresponding to serialized parameters
+        serialization_beg = s.find('(')
+        serialization_end = s.find(')')
+        
+        # No parameters were passed
+        if (serialization_beg == -1) and (serialization_end == -1):
+            name = s.strip()
+            kwargs = {}
+        elif (serialization_beg != -1) and (serialization_end != -1):
+            name = s[:serialization_beg].strip()
+            kwargs = loads(s[serialization_beg+1:serialization_end])
+        else:
+            raise DeserializationError('could not interpret line "s"')
+        
+        # Create the problem and return
+        return create_problem(name, **kwargs)
 
 
 class ProblemWithPF:

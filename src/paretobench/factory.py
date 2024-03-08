@@ -1,7 +1,3 @@
-from .exceptions import DeserializationError
-from .simple_serialize import loads
-
-
 registered_probs = {}
 
 
@@ -26,35 +22,4 @@ def create_problem(name: str, **kwargs):
     Problem
         The instantiated problem object
     """
-    return registered_probs[name](**kwargs)
-
-
-def from_line_fmt(s: str):
-    """Create a problem object from the "single line" format.
-
-    Parameters
-    ----------
-    s : str
-        The single line describing the problem object
-
-    Returns
-    -------
-    Problem
-        The instantiated problem
-    """
-    # Find the section of the string corresponding to serialized parameters
-    serialization_beg = s.find('(')
-    serialization_end = s.find(')')
-    
-    # No parameters were passed
-    if (serialization_beg == -1) and (serialization_end == -1):
-        name = s.strip()
-        kwargs = {}
-    elif (serialization_beg != -1) and (serialization_end != -1):
-        name = s[:serialization_beg].strip()
-        kwargs = loads(s[serialization_beg+1:serialization_end])
-    else:
-        raise DeserializationError('could not interpret line "s"')
-    
-    # Create the problem and return
     return registered_probs[name](**kwargs)
