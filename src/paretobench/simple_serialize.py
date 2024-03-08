@@ -57,6 +57,11 @@ def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
         The character recognized as a quote, by default '"'
     escape_char : str, optional
         The character recognized as an escape character, by default '\\'
+
+    Raises
+    ------
+    DeserializationError
+        Detected a badly formed string. For instance unclosed quotes or escape character in a weird spot.
     """
     # Note: tried to replace with csv.reader, but it only supports quotes around the entire field separated by commas
     # Go through char by char while keeping track of "depth" into quotes. Store chunks of str as we go
@@ -92,6 +97,23 @@ def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
 
 
 def loads(s: str):
+    """Converts a string in the "single line" serializtion format back to a dict of basic python objects.
+
+    Parameters
+    ----------
+    s : str
+        The string containing data in "single line" format
+
+    Returns
+    -------
+    dict
+        The dict containing data loaded from the string
+
+    Raises
+    ------
+    DeserializationError
+        Deserializing the data failed
+    """
     # Clean all whitespace around the string
     s = s.strip()
     
