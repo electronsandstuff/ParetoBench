@@ -1,3 +1,6 @@
+# Testing
+Tests are written with the pytest framework. They can be run by calling `pytest` from the base of this repo with the package installed.
+
 # Parameter Naming Conventions
 To help standardize the code in this package, the following naming convention is used for parameters.
 
