@@ -3,8 +3,7 @@ from pydantic import BaseModel
 
 from .exceptions import DeserializationError
 from .factory import create_problem
-from .simple_serialize import loads
-from .simple_serialize import dumps
+from .simple_serialize import dumps, loads
 
 
 class Problem(BaseModel):
@@ -98,6 +97,11 @@ class Problem(BaseModel):
         -------
         Problem
             The instantiated problem
+            
+        Raises
+        ------
+        DeserializationError
+            The string couldn't be parsed into the format NAME (PARAMETERS)
         """
         # Run from the abstract class
         if cls == Problem:
