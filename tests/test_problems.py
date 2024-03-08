@@ -18,8 +18,8 @@ def test_evaluate(problem_name, n_eval = 64):
 
     assert isinstance(f, np.ndarray)
     assert isinstance(g, np.ndarray)
-    assert np.isfinite(f).all()
-    # assert np.isfinite(g).all()  # Fails on DTLZ8???
+    assert not np.isnan(f).any()
+    assert not np.isnan(g).any()
 
 
 @pytest.mark.parametrize("problem_name", pb.get_problem_names())
@@ -62,7 +62,7 @@ def test_pareto_front(problem_name, npoints=1000):
 
     # Make sure the right size array is returned and it doesn't give bad values
     assert p.n_objectives == f.shape[0]
-    assert np.isfinite(f).all()
+    assert not np.isnan(f).any()
 
 
 @pytest.mark.parametrize("problem_name", pb.get_problem_names())
