@@ -97,7 +97,7 @@ def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
 
 
 def loads(s: str):
-    """Converts a string in the "single line" serializtion format back to a dict of basic python objects.
+    """Converts a string in the "single line" serialization format back to a dict of basic python objects.
 
     Parameters
     ----------
@@ -125,29 +125,29 @@ def loads(s: str):
             raise DeserializationError(f'Bad key value pair: "{chunk}"')
         
         # Break into key and value
-        idx = chunk.index('=')
+        idx = chunk.index('=')  # Must use first instance in case '=' in a string object
         k = chunk[:idx].strip()
-        v = chunk[idx+1:].strip()
+        v_raw = chunk[idx+1:].strip()
         
         # Handle strings
-        if v[0] == '"':
+        if v_raw[0] == '"':
             # Replace escaped characters and get rid of surrounding quotes
-            v = v.replace('\\\\', '\\')
-            v = v.replace('\\"', '"')
-            v = v[1:-1]
+            v_raw = v_raw.replace('\\\\', '\\')
+            v_raw = v_raw.replace('\\"', '"')
+            v_parsed = v_raw[1:-1]
         
         # Floats
-        elif '.' in v:
-            v = float(v)
+        elif '.' in v_raw:
+            v_parsed = float(v_raw)
             
         # Ints
-        elif v[0] in '1234567890':
-            v = int(v)
+        elif v_raw[0] in '1234567890':
+            v_parsed = int(v_raw)
         
         # Bools
         else:
-            v = {'True': True, 'False': False}[v]
+            v_parsed = {'True': True, 'False': False}[v_raw]
         
         # Finally set the dict entry
-        ret[k] = v
+        ret[k] = v_parsed
     return ret
