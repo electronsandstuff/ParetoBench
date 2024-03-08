@@ -85,7 +85,9 @@ class Problem(BaseModel):
 
     @classmethod
     def from_line_fmt(cls, s: str):
-        """Create a problem object from the "single line" format.
+        """Create a problem object from the "single line" format. When run from the abstract class `Problem` this expects a
+        string of the format `NAME (PARAMETERS)` or `NAME` and will create a problem object of the right class name with the
+        specified parameters. If called from a child class, it expects to receive the parameters only
 
         Parameters
         ----------
@@ -97,23 +99,29 @@ class Problem(BaseModel):
         Problem
             The instantiated problem
         """
-        # Find the section of the string corresponding to serialized parameters
-        serialization_beg = s.find('(')
-        serialization_end = s.find(')')
+        # Run from the abstract class
+        if cls == Problem:
+            # Find the section of the string corresponding to serialized parameters
+            serialization_beg = s.find('(')
+            serialization_end = s.find(')')
+            
+            # No parameters were passed
+            if (serialization_beg == -1) and (serialization_end == -1):
+                name = s.strip()
+                kwargs = {}
+            elif (serialization_beg != -1) and (serialization_end != -1):
+                name = s[:serialization_beg].strip()
+                kwargs = loads(s[serialization_beg+1:serialization_end])
+            else:
+                raise DeserializationError('could not interpret line "s"')
+            
+            # Create the problem and return
+            return create_problem(name, **kwargs)
         
-        # No parameters were passed
-        if (serialization_beg == -1) and (serialization_end == -1):
-            name = s.strip()
-            kwargs = {}
-        elif (serialization_beg != -1) and (serialization_end != -1):
-            name = s[:serialization_beg].strip()
-            kwargs = loads(s[serialization_beg+1:serialization_end])
+        # We are called from a child class; load parameters and create
         else:
-            raise DeserializationError('could not interpret line "s"')
-        
-        # Create the problem and return
-        return create_problem(name, **kwargs)
-
+            return cls(**loads(s))
+            
 
 class ProblemWithPF:
     """

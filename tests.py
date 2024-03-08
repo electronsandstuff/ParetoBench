@@ -337,6 +337,20 @@ class TestSerializer(unittest.TestCase):
                     self.assertTrue(param.replace("_", "").isalnum())
                     self.assertTrue(type(val) in [int, float, bool, str])
 
+    def test_from_line_fmt_child_class(self):
+        """Tests running the method `from_line_fmt` in a child class.
+        """
+        tests = [
+            (pb.ZDT1, 'n=3', pb.ZDT1(n=3)),
+            (pb.WFG1, 'n=10, k=5', pb.WFG1(n=10, k=5)),
+        ]
+        
+        for cls, line, actual in tests:
+            with self.subTest(name=line):
+                # Create from line and compare against expected value
+                p_test = cls.from_line_fmt(line)
+                self.assertEqual(actual.model_dump(), p_test.model_dump())  
+
 
 if __name__ == "__main__":
     unittest.main()
