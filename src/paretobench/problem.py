@@ -86,7 +86,8 @@ class Problem(BaseModel):
     def from_line_fmt(cls, s: str):
         """Create a problem object from the "single line" format. When run from the abstract class `Problem` this expects a
         string of the format `NAME (PARAMETERS)` or `NAME` and will create a problem object of the right class name with the
-        specified parameters. If called from a child class, it expects to receive the parameters only
+        specified parameters. If called from a child class, it expects the argument to only contain the paraemeters and creates
+        the class based on that.
 
         Parameters
         ----------
