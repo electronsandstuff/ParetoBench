@@ -1,6 +1,12 @@
 import numpy as np
+from pydantic import BaseModel
 
-class Problem:
+from .exceptions import DeserializationError
+from .factory import create_problem
+from .simple_serialize import dumps, loads
+
+
+class Problem(BaseModel):
     """
     The overarching class all problems inherit from
     """    
@@ -58,6 +64,69 @@ class Problem:
         """
         raise NotImplementedError()
 
+    def to_line_fmt(self):
+        """Serializes the problem object and returns it in a single line human readable format with the problem name and all of
+        the data required to recreate it.
+
+        Returns
+        -------
+        str
+            The serialized problem object.
+        """
+        # Grab problem name and parameters
+        name = type(self).__name__
+        params = self.model_dump()
+        
+        # Save with parameters or just give name if no parameters
+        if params:
+            return f"{   name } ({ dumps(params) })"
+        return name
+
+    @classmethod
+    def from_line_fmt(cls, s: str):
+        """Create a problem object from the "single line" format. When run from the abstract class `Problem` this expects a
+        string of the format `NAME (PARAMETERS)` or `NAME` and will create a problem object of the right class name with the
+        specified parameters. If called from a child class, it expects the argument to only contain the paraemeters and creates
+        the class based on that.
+
+        Parameters
+        ----------
+        s : str
+            The single line describing the problem object
+
+        Returns
+        -------
+        Problem
+            The instantiated problem
+            
+        Raises
+        ------
+        DeserializationError
+            The string couldn't be parsed into the format NAME (PARAMETERS)
+        """
+        # Run from the abstract class
+        if cls == Problem:
+            # Find the section of the string corresponding to serialized parameters
+            serialization_beg = s.find('(')
+            serialization_end = s.find(')')
+            
+            # No parameters were passed
+            if (serialization_beg == -1) and (serialization_end == -1):
+                name = s.strip()
+                kwargs = {}
+            elif (serialization_beg != -1) and (serialization_end != -1):
+                name = s[:serialization_beg].strip()
+                kwargs = loads(s[serialization_beg+1:serialization_end])
+            else:
+                raise DeserializationError('could not interpret line "s"')
+            
+            # Create the problem and return
+            return create_problem(name, **kwargs)
+        
+        # We are called from a child class; load parameters and create
+        else:
+            return cls(**loads(s))
+            
 
 class ProblemWithPF:
     """
