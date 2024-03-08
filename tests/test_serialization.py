@@ -63,7 +63,7 @@ def generate_random_dict(n_vals=32, int_lb=0, int_ub=999999):
     return d
 
 
-def test_split_unquoted(self):
+def test_split_unquoted():
     """Tests for the function `split_unquoted`
     """
     # Basic test
@@ -94,7 +94,8 @@ def test_split_unquoted(self):
     with pytest.raises(pb.DeserializationError):
         split_unquoted('a="fdas", b=\\fwqef')
 
-def test_serialize_deserialize(self):
+
+def test_serialize_deserialize():
     """Tries to serialize and then deserialize a series of random dicts
     """
     # Get a random dict, pass through serializer, then compare
@@ -103,173 +104,157 @@ def test_serialize_deserialize(self):
         d_test = loads(dumps(d_true))
         assert d_true == d_test
 
-def test_deserialize_empty(self):
+
+@pytest.mark.parametrize("line", ['', '   '])
+def test_deserialize_empty(line):
     """Make sure deserializing empty strings gives an empty dict
     """
-    # Dict mapping lines to the expected dicts
-    lines_and_true_vals = {
-        '': {},
-        '   ': {},
-    }
-    
-    for line, true_val in lines_and_true_vals.items():
-        with self.subTest(name=line):
-            # Create from line and compare against expected value
-            true_val ==loads(line)
-    
-def test_deserialize_whitespace(self):
+    # Create from line and compare against expected value
+    assert loads(line) == {}
+
+
+@pytest.mark.parametrize("line,true_val",
+    [
+        ('asdf=1,jkpl=1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('   asdf=1,jkpl=1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf   =1,jkpl=1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf=   1,jkpl=1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf=1   ,jkpl=1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf=1,   jkpl=1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf=1,jkpl   =1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf=1,jkpl=   1.0', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf=1,jkpl=1.0   ', {"asdf": 1, "jkpl": 1.0}),
+        ('   asdf   =   1   ,   jkpl   =   1.0   ', {"asdf": 1, "jkpl": 1.0}),
+        ('asdf=1,jkpl="hello"', {"asdf": 1, "jkpl": "hello"}),
+        ('asdf=1,jkpl=   "hello"', {"asdf": 1, "jkpl": "hello"}),
+        ('asdf=1,jkpl="hello"   ', {"asdf": 1, "jkpl": "hello"}),
+        ('asdf=1,jkpl=   "hello"   ', {"asdf": 1, "jkpl": "hello"}),
+    ])
+def test_deserialize_whitespace(line, true_val):
     """Confirm whitespace is ignored around the objects
     """
-    # Dict mapping lines to the expected dicts
-    lines_and_true_vals = {
-        'asdf=1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
-        '   asdf=1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
-        'asdf   =1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
-        'asdf=   1,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
-        'asdf=1   ,jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
-        'asdf=1,   jkpl=1.0': {"asdf": 1, "jkpl": 1.0},
-        'asdf=1,jkpl   =1.0': {"asdf": 1, "jkpl": 1.0},
-        'asdf=1,jkpl=   1.0': {"asdf": 1, "jkpl": 1.0},
-        'asdf=1,jkpl=1.0   ': {"asdf": 1, "jkpl": 1.0},
-        '   asdf   =   1   ,   jkpl   =   1.0   ': {"asdf": 1, "jkpl": 1.0},
-        'asdf=1,jkpl="hello"': {"asdf": 1, "jkpl": "hello"},
-        'asdf=1,jkpl=   "hello"': {"asdf": 1, "jkpl": "hello"},
-        'asdf=1,jkpl="hello"   ': {"asdf": 1, "jkpl": "hello"},
-        'asdf=1,jkpl=   "hello"   ': {"asdf": 1, "jkpl": "hello"},
-    }
-    
-    for line, true_val in lines_and_true_vals.items():
-        with self.subTest(name=line):
-            # Create from line and compare against expected value
-            assert true_val == loads(line)
+    # Create from line and compare against expected value
+    assert true_val == loads(line)
 
-def test_serialize_deserialize_bad_val_chars(self):
+
+@pytest.mark.parametrize("bad_char", '.=",\\')
+def test_serialize_deserialize_bad_val_chars(bad_char):
     """Test that serialization works with "problem" characters in string value
     """
     # Get a random dict with extra "problem characters", pass through serializer, then compare
-    for bad_char in '.=",\\':
-        for _ in range(32):
-            d_true = generate_random_dict()
-            d_true['my_val'] = randlenstr() + bad_char + randlenstr()
-            d_test = loads(dumps(d_true))
-            assert d_true == d_test
-        
-def test_serialize_deserialize_bad_key_chars(self):
+    for _ in range(32):
+        d_true = generate_random_dict()
+        d_true['my_val'] = randlenstr() + bad_char + randlenstr()
+        d_test = loads(dumps(d_true))
+        assert d_true == d_test
+
+
+@pytest.mark.parametrize("bad_char",  '=,"')
+def test_serialize_deserialize_bad_key_chars(bad_char):
     """Test that serialization gives us the right error when there are bad characters in the key
     """
     # Try to serialize dict with bad characters in key
-    for bad_char in '=,"':
-        d_true = generate_random_dict()
-        d_true[randlenstr() + bad_char + randlenstr()] = 0
-        with pytest.raises(pb.SerializationError):
-            dumps(d_true)
+    d_true = generate_random_dict()
+    d_true[randlenstr() + bad_char + randlenstr()] = 0
+    with pytest.raises(pb.SerializationError):
+        dumps(d_true)
 
-def test_serialize_deserialize_bad_datatype(self):
+
+@pytest.mark.parametrize("bad_val", [[1, 2, 3], (1, 2, 3), {'a': 1}])
+def test_serialize_deserialize_bad_datatype(bad_val):
     """Test that serialization gives us the right error when there are values with an unserializable datatype in them
     """
-    # Try to serialize dict with bad characters in key
-    for bad_val in [[1, 2, 3], (1, 2, 3), {'a': 1}]:
-        d_true = generate_random_dict()
-        d_true['my_key'] = bad_val
-        with pytest.raises(pb.SerializationError):
-            dumps(d_true)
+    # Try to serialize dict with bad value
+    d_true = generate_random_dict()
+    d_true['my_key'] = bad_val
+    with pytest.raises(pb.SerializationError):
+        dumps(d_true)
 
-def test_serialize_problem(self):
+
+@pytest.mark.parametrize("name", pb.get_problem_names())
+def test_serialize_problem(name):
     """For each problem, try to serialize it, deserialize it, and compare with original. Randomize the objects a little to
     make it more difficult.
     """
-    for name in pb.get_problem_names():
-        with self.subTest(name=name):
-            # Create test problem and try to randomize a parameter
-            p_true = pb.create_problem(name)
-            if p_true.model_dump():  # Some problems don't have parameters to randomize
-                rand_key = list(p_true.model_dump().keys())[0]  # Get a key
-                param_type = type(p_true.model_dump()[rand_key])  # Randomize based on the parameter type
-                if param_type == int:
-                    kwargs = {rand_key: random.randint(0, 10)}
-                elif param_type == float:
-                    kwargs = {rand_key: random.random()}
-                elif param_type == str:
-                    kwargs = {rand_key: randlenstr()}
-                elif param_type == bool:
-                    kwargs = {rand_key: bool(random.randint(0, 1))}
-                else:
-                    raise ValueError(f'Couldn\'t randomize object of type "{param_type}"')
-                
-                # Generate the new object with the randomized parameter
-                p_true = pb.create_problem(name, **kwargs)
+    # Create test problem and try to randomize a parameter
+    p_true = pb.create_problem(name)
+    if p_true.model_dump():  # Some problems don't have parameters to randomize
+        rand_key = list(p_true.model_dump().keys())[0]  # Get a key
+        param_type = type(p_true.model_dump()[rand_key])  # Randomize based on the parameter type
+        if param_type == int:
+            kwargs = {rand_key: random.randint(0, 10)}
+        elif param_type == float:
+            kwargs = {rand_key: random.random()}
+        elif param_type == str:
+            kwargs = {rand_key: randlenstr()}
+        elif param_type == bool:
+            kwargs = {rand_key: bool(random.randint(0, 1))}
+        else:
+            raise ValueError(f'Couldn\'t randomize object of type "{param_type}"')
+        
+        # Generate the new object with the randomized parameter
+        p_true = pb.create_problem(name, **kwargs)
 
-            # Convert to line format, generate the object, and then make sure it loads correctly
-            line_fmt = p_true.to_line_fmt()
-            p_test = pb.Problem.from_line_fmt(line_fmt)
-            assert p_true.model_dump() == p_test.model_dump()
-            
-def test_deserialize_problems_manual(self):
+    # Convert to line format, generate the object, and then make sure it loads correctly
+    line_fmt = p_true.to_line_fmt()
+    p_test = pb.Problem.from_line_fmt(line_fmt)
+    assert p_true.model_dump() == p_test.model_dump()
+
+
+@pytest.mark.parametrize("line,prob",
+    [
+        ("ZDT1", pb.ZDT1()),
+        ("ZDT1 ()", pb.ZDT1()),
+        ("ZDT1 (   )", pb.ZDT1()),
+        ("ZDT1()", pb.ZDT1()),
+        ("   ZDT1 (  n = 4 )   ", pb.ZDT1(n=4)),
+    ])
+def test_deserialize_problems_manual(line, prob):
     """Manually specify some cases of problems to test
     """
-    
-    # Dict mapping lines and the expected problem
-    lines_and_probs = {
-        "ZDT1": pb.ZDT1(),
-        "ZDT1 ()": pb.ZDT1(),
-        "ZDT1 (   )": pb.ZDT1(),
-        "ZDT1()": pb.ZDT1(),
-        "   ZDT1 (  n = 4 )   ": pb.ZDT1(n=4),
-    }
-    
-    for line, prob in lines_and_probs.items():
-        with self.subTest(name=line):
-            # Create from line and compare against expected value
-            p_test = pb.Problem.from_line_fmt(line)
-            assert prob.model_dump() == p_test.model_dump()
+    # Create from line and compare against expected value
+    p_test = pb.Problem.from_line_fmt(line)
+    assert prob.model_dump() == p_test.model_dump()
 
-def test_deserialize_problem_errors(self):
+
+@pytest.mark.parametrize("line", ["ZDT1 (", "ZDT1 )"])
+def test_deserialize_problem_errors(line):
     """Test expected issues in problem deserialization
     """
-    
-    # Dict mapping lines and the expected problem
-    lines = [
-        "ZDT1 (",
-        "ZDT1 )",
-    ]
-    
-    # Confirm each of them causes an error
-    for line in lines:
-        with self.subTest(name=line):
-            with pytest.raises(pb.DeserializationError):
-                pb.Problem.from_line_fmt(line)
-            
-def test_parenthesis_no_params(self):
+    with pytest.raises(pb.DeserializationError):
+        pb.Problem.from_line_fmt(line)
+
+      
+def test_parenthesis_no_params():
     """Makes sure objects without parameters get printed without an extra set of parenthesis.
     """
     assert "(" not in pb.SRN().to_line_fmt()
     assert ")" not in  pb.SRN().to_line_fmt()
     assert " " not in  pb.SRN().to_line_fmt()
 
-def test_problem_names_are_safe(self):
+
+@pytest.mark.parametrize("name", pb.get_problem_names())
+def test_problem_names_are_safe(name):
     """Checks all registered problem names and parameters for bad characters
     """
-    for name in pb.get_problem_names():
-        with self.subTest(name=name):
-            # Check name for bad chars
-            assert name.replace("_", "").isalnum()
-            
-            # Check the parameters for bad characters or types
-            prob = pb.create_problem(name)
-            for param, val in prob.model_dump().items():
-                assert param.replace("_", "").isalnum()
-                assert type(val) in [int, float, bool, str]
+    # Check name for bad chars
+    assert name.replace("_", "").isalnum()
+    
+    # Check the parameters for bad characters or types
+    prob = pb.create_problem(name)
+    for param, val in prob.model_dump().items():
+        assert param.replace("_", "").isalnum()
+        assert type(val) in [int, float, bool, str]
 
-def test_from_line_fmt_child_class(self):
-    """Tests running the method `from_line_fmt` in a child class.
-    """
-    tests = [
+
+@pytest.mark.parametrize("cls,line,actual",
+    [
         (pb.ZDT1, 'n=3', pb.ZDT1(n=3)),
         (pb.WFG1, 'n=10, k=5', pb.WFG1(n=10, k=5)),
-    ]
-    
-    for cls, line, actual in tests:
-        with self.subTest(name=line):
-            # Create from line and compare against expected value
-            p_test = cls.from_line_fmt(line)
-            assert actual.model_dump() == p_test.model_dump()
+    ])
+def test_from_line_fmt_child_class(cls, line, actual):
+    """Tests running the method `from_line_fmt` in a child class.
+    """
+    # Create from line and compare against expected value
+    p_test = cls.from_line_fmt(line)
+    assert actual.model_dump() == p_test.model_dump()
