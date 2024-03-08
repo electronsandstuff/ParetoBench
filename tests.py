@@ -141,6 +141,8 @@ def generate_random_dict(n_vals=32, int_lb=0, int_ub=999999):
 
 class TestSerializer(unittest.TestCase):
     def test_split_unquoted(self):
+        """Tests for the function `split_unquoted`
+        """
         # Basic test
         test_val = split_unquoted(r'a="fdas", b=fwqej, c="jlsfd"')
         true_val = ['a="fdas"',' b=fwqej',' c="jlsfd"']
@@ -170,6 +172,8 @@ class TestSerializer(unittest.TestCase):
             split_unquoted('a="fdas", b=\\fwqef')
     
     def test_serialize_deserialize(self):
+        """Tries to serialize and then deserialize a series of random dicts
+        """
         # Get a random dict, pass through serializer, then compare
         for _ in range(32):
             d_true = generate_random_dict()
@@ -177,6 +181,8 @@ class TestSerializer(unittest.TestCase):
             self.assertEqual(d_true, d_test)
     
     def test_deserialize_empty(self):
+        """Make sure deserializing empty strings gives an empty dict
+        """
         # Dict mapping lines to the expected dicts
         lines_and_true_vals = {
             '': {},
@@ -246,7 +252,8 @@ class TestSerializer(unittest.TestCase):
                 dumps(d_true)
     
     def test_serialize_problem(self):
-        """For each problem, try to serialize it, deserialize it, and compare with original
+        """For each problem, try to serialize it, deserialize it, and compare with original. Randomize the objects a little to
+        make it more difficult.
         """
         for name in pb.get_problem_names():
             with self.subTest(name=name):
@@ -274,7 +281,7 @@ class TestSerializer(unittest.TestCase):
                 p_test = pb.from_line_fmt(line_fmt)
                 self.assertEqual(p_true.model_dump(), p_test.model_dump())
               
-    def test_dserialize_problem_fixed(self):
+    def test_deserialize_problems_manual(self):
         """Manually specify some cases of problems to test
         """
         
