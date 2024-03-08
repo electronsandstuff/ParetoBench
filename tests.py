@@ -274,7 +274,7 @@ class TestSerializer(unittest.TestCase):
                 p_test = pb.from_line_fmt(line_fmt)
                 self.assertEqual(p_true.model_dump(), p_test.model_dump())
               
-    def test_serialize_problem_fixed(self):
+    def test_dserialize_problem_fixed(self):
         """Manually specify some cases of problems to test
         """
         
@@ -293,6 +293,22 @@ class TestSerializer(unittest.TestCase):
                 p_test = pb.from_line_fmt(line)
                 self.assertEqual(prob.model_dump(), p_test.model_dump())  
 
+    def test_deserialize_problem_errors(self):
+        """Test expected issues in problem deserialization
+        """
+        
+        # Dict mapping lines and the expected problem
+        lines = [
+            "ZDT1 (",
+            "ZDT1 )",
+        ]
+        
+        # Confirm each of them causes an error
+        for line in lines:
+            with self.subTest(name=line):
+                with self.assertRaises(pb.DeserializationError):
+                    pb.from_line_fmt(line)
+                
     def test_parenthesis_no_params(self):
         """Makes sure objects without parameters get printed without an extra set of parenthesis.
         """
