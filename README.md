@@ -1,3 +1,22 @@
+# Installation
+To install the package for general use, navigate to the base of this repo in a terminal and run the following.
+```
+pip install .
+```
+
+## Installation for Developers
+1) Install the development conda environment.
+```
+conda create env -f environment.yml
+```
+2) Install the package in editing mode
+```
+pip install -e .
+```
+
+# Testing
+Tests are written with the pytest framework. They can be run by calling `pytest` from the base of this repo with the package installed.
+
 # Parameter Naming Conventions
 To help standardize the code in this package, the following naming convention is used for parameters.
 
