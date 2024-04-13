@@ -1,3 +1,6 @@
+from .exceptions import UnknownProblemError
+
+
 registered_probs = {}
 
 
@@ -22,4 +25,6 @@ def create_problem(name: str, **kwargs):
     Problem
         The instantiated problem object
     """
-    return registered_probs[name](**kwargs)
+    if name not in registered_probs:
+        raise UnknownProblemError(f'Could not find problem with name "{name}"')
+    return registered_probs[name](**kwargs)        
