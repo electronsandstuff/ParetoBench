@@ -220,7 +220,7 @@ def loads(s: str):
         elif can_parse_as_bool(v_raw):
             v_parsed = {'True': True, 'False': False}[v_raw]
         else:
-            raise ValueError(f'Failed to parse value of unknown type: "{v_raw}"')
+            raise DeserializationError(f'Failed to parse value of unknown type: "{v_raw}"')
         
         # Finally set the dict entry
         ret[k] = v_parsed
