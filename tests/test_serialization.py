@@ -258,3 +258,11 @@ def test_from_line_fmt_child_class(cls, line, actual):
     # Create from line and compare against expected value
     p_test = cls.from_line_fmt(line)
     assert actual.model_dump() == p_test.model_dump()
+
+
+@pytest.mark.parametrize("val", ['1E+04', '1e+04', '1E-04', '1e-04'])
+def test_buggy_values(val):
+    """
+    Confirm loading of certain values that have raised exceptions in the past and should not.
+    """
+    loads(f'x={val}')

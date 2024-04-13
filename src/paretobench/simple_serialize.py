@@ -96,6 +96,83 @@ def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
     return chunks
 
 
+def can_convert_to_int(x):
+    """
+    Whether or not the "raw value" string used in the deserialization function `loads(...)` can be converted to an int.
+
+    Parameters
+    ----------
+    x : str
+        The string under test
+
+    Returns
+    -------
+    bool
+        Whether or not the string can be converted
+    """
+    try:
+        int(x)
+        return True
+    except ValueError:
+        return False
+
+
+def can_convert_to_float(x):
+    """
+    Whether or not the "raw value" string used in the deserialization function `loads(...)` can be converted to a float.
+
+    Parameters
+    ----------
+    x : str
+        The string under test
+
+    Returns
+    -------
+    bool
+        Whether or not the string can be converted
+    """
+    try:
+        float(x)
+        return True
+    except ValueError:
+        return False
+
+
+def can_convert_to_bool(x):
+    """
+    Whether or not the "raw value" string used in the deserialization function `loads(...)` can be converted to a bool.
+
+    Parameters
+    ----------
+    x : str
+        The string under test
+
+    Returns
+    -------
+    bool
+        Whether or not the string can be converted
+    """
+    return x in ['True', 'False']
+
+
+def is_quoted_str(x):
+    """
+    Is the string x surrounded by quotes. Used to determine whether or not the string represents a string-type value in the
+    serialization format.
+    
+    Parameters
+    ----------
+    x : str
+        The string to be parsed
+
+    Returns
+    -------
+    bool
+        Whether or not x should be treated as a string
+    """
+    return x[0] == '"'
+
+
 def loads(s: str):
     """Converts a string in the "single line" serialization format back to a dict of basic python objects.
 
@@ -130,23 +207,19 @@ def loads(s: str):
         v_raw = chunk[idx+1:].strip()
         
         # Handle strings
-        if v_raw[0] == '"':
+        if is_quoted_str(v_raw):
             # Replace escaped characters and get rid of surrounding quotes
             v_raw = v_raw.replace('\\\\', '\\')
             v_raw = v_raw.replace('\\"', '"')
             v_parsed = v_raw[1:-1]
-        
-        # Floats
-        elif '.' in v_raw:
-            v_parsed = float(v_raw)
-            
-        # Ints
-        elif v_raw[0] in '1234567890':
-            v_parsed = int(v_raw)
-        
-        # Bools
-        else:
+        elif can_convert_to_bool(v_raw):
             v_parsed = {'True': True, 'False': False}[v_raw]
+        elif can_convert_to_int(v_raw):
+            v_parsed = int(v_raw)
+        elif can_convert_to_float(v_raw):
+            v_parsed = float(v_raw)
+        else:
+            raise DeserializationError(f'Could not determine data type for the value associated with key "{k}": "{v_raw}"')
         
         # Finally set the dict entry
         ret[k] = v_parsed
