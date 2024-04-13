@@ -96,19 +96,19 @@ def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
     return chunks
 
 
-def can_parse_as_int(x):
+def can_convert_to_int(x):
     """
-    Whether or not the string can be parsed into an int.
+    Whether or not the "raw value" string used in the deserialization function `loads(...)` can be converted to an int.
 
     Parameters
     ----------
     x : str
-        The string to be parsed
+        The string under test
 
     Returns
     -------
     bool
-        Whether or not the string can be parsed as this type
+        Whether or not the string can be converted
     """
     try:
         int(x)
@@ -117,19 +117,19 @@ def can_parse_as_int(x):
         return False
 
 
-def can_parse_as_float(x):
+def can_convert_to_float(x):
     """
-    Whether or not the string can be parsed into a float.
+    Whether or not the "raw value" string used in the deserialization function `loads(...)` can be converted to a float.
 
     Parameters
     ----------
     x : str
-        The string to be parsed
+        The string under test
 
     Returns
     -------
     bool
-        Whether or not the string can be parsed as this type
+        Whether or not the string can be converted
     """
     try:
         float(x)
@@ -138,26 +138,27 @@ def can_parse_as_float(x):
         return False
 
 
-def can_parse_as_bool(x):
+def can_convert_to_bool(x):
     """
-    Whether or not the string can be parsed into a bool.
+    Whether or not the "raw value" string used in the deserialization function `loads(...)` can be converted to a bool.
 
     Parameters
     ----------
     x : str
-        The string to be parsed
+        The string under test
 
     Returns
     -------
     bool
-        Whether or not the string can be parsed as this type
+        Whether or not the string can be converted
     """
     return x in ['True', 'False']
 
 
-def can_parse_as_str(x):
+def is_quoted_str(x):
     """
-    Whether or not the string represents a string in the serialization format.
+    Is the string x surrounded by quotes. Used to determine whether or not the string represents a string-type value in the
+    serialization format.
     
     Parameters
     ----------
@@ -206,17 +207,17 @@ def loads(s: str):
         v_raw = chunk[idx+1:].strip()
         
         # Handle strings
-        if can_parse_as_str(v_raw):
+        if is_quoted_str(v_raw):
             # Replace escaped characters and get rid of surrounding quotes
             v_raw = v_raw.replace('\\\\', '\\')
             v_raw = v_raw.replace('\\"', '"')
             v_parsed = v_raw[1:-1]
-        elif can_parse_as_int(v_raw):
-            v_parsed = int(v_raw)
-        elif can_parse_as_float(v_raw):
-            v_parsed = float(v_raw)
-        elif can_parse_as_bool(v_raw):
+        elif can_convert_to_bool(v_raw):
             v_parsed = {'True': True, 'False': False}[v_raw]
+        elif can_convert_to_int(v_raw):
+            v_parsed = int(v_raw)
+        elif can_convert_to_float(v_raw):
+            v_parsed = float(v_raw)
         else:
             raise DeserializationError(f'Failed to parse value of unknown type: "{v_raw}"')
         
