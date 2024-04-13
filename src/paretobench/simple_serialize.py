@@ -219,7 +219,7 @@ def loads(s: str):
         elif can_convert_to_float(v_raw):
             v_parsed = float(v_raw)
         else:
-            raise DeserializationError(f'Failed to parse value of unknown type: "{v_raw}"')
+            raise DeserializationError(f'Could not determine data type for the value associated with key "{k}": "{v_raw}"')
         
         # Finally set the dict entry
         ret[k] = v_parsed
