@@ -14,6 +14,6 @@ class DeserializationError(Exception):
 
 class UnknownProblemError(Exception):
     """
-    Used when a problem name passed by the user is not registered to the package.
+    Exception raised when a problem name passed by the user is not registered to the package.
     """
     pass
