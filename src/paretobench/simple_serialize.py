@@ -1,3 +1,5 @@
+import re
+
 from .exceptions import SerializationError, DeserializationError
 
 
@@ -96,6 +98,82 @@ def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
     return chunks
 
 
+def can_parse_as_int(x):
+    """
+    Whether or not the string can be parsed into an int.
+
+    Parameters
+    ----------
+    x : str
+        The string to be parsed
+
+    Returns
+    -------
+    bool
+        Whether or not the string can be parsed as this type
+    """
+    try:
+        int(x)
+        return True
+    except ValueError:
+        return False
+
+
+def can_parse_as_float(x):
+    """
+    Whether or not the string can be parsed into a float.
+
+    Parameters
+    ----------
+    x : str
+        The string to be parsed
+
+    Returns
+    -------
+    bool
+        Whether or not the string can be parsed as this type
+    """
+    try:
+        float(x)
+        return True
+    except ValueError:
+        return False
+
+
+def can_parse_as_bool(x):
+    """
+    Whether or not the string can be parsed into a bool.
+
+    Parameters
+    ----------
+    x : str
+        The string to be parsed
+
+    Returns
+    -------
+    bool
+        Whether or not the string can be parsed as this type
+    """
+    return x in ['True', 'False']
+
+
+def can_parse_as_str(x):
+    """
+    Whether or not the string represents a string in the serialization format.
+    
+    Parameters
+    ----------
+    x : str
+        The string to be parsed
+
+    Returns
+    -------
+    bool
+        Whether or not x should be treated as a string
+    """
+    return x[0] == '"'
+
+
 def loads(s: str):
     """Converts a string in the "single line" serialization format back to a dict of basic python objects.
 
@@ -130,23 +208,19 @@ def loads(s: str):
         v_raw = chunk[idx+1:].strip()
         
         # Handle strings
-        if v_raw[0] == '"':
+        if can_parse_as_str(v_raw):
             # Replace escaped characters and get rid of surrounding quotes
             v_raw = v_raw.replace('\\\\', '\\')
             v_raw = v_raw.replace('\\"', '"')
             v_parsed = v_raw[1:-1]
-        
-        # Floats
-        elif '.' in v_raw:
-            v_parsed = float(v_raw)
-            
-        # Ints
-        elif v_raw[0] in '1234567890':
+        elif can_parse_as_int(v_raw):
             v_parsed = int(v_raw)
-        
-        # Bools
-        else:
+        elif can_parse_as_float(v_raw):
+            v_parsed = float(v_raw)
+        elif can_parse_as_bool(v_raw):
             v_parsed = {'True': True, 'False': False}[v_raw]
+        else:
+            raise ValueError(f'Failed to parse value of unknown type: "{v_raw}"')
         
         # Finally set the dict entry
         ret[k] = v_parsed
