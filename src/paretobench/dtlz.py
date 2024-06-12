@@ -10,15 +10,15 @@ class DTLZx(Problem, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return self.m
     
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         bmin = np.zeros(self.n)
         bmax = np.ones(self.n)
         return np.vstack((bmin, bmax))

@@ -10,11 +10,11 @@ class SCH(Problem):
     Other name: Schaffer function N. 1
     """
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return 1
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     def _call(self, x):
@@ -24,7 +24,7 @@ class SCH(Problem):
         ))
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [-1e3, ], [1e3, ],
         ])
@@ -41,11 +41,11 @@ class FON(Problem):
     Other name: Fonseca-Fleming Function
     """
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return 3
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     def _call(self, x):
@@ -55,7 +55,7 @@ class FON(Problem):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [-4.0, -4.0, -4.0],
             [4.0, 4.0, 4.0],
@@ -73,11 +73,11 @@ class POL(Problem):
     Other name: Poloni’s two objective function
     """
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     def _call(self, x):
@@ -91,7 +91,7 @@ class POL(Problem):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [-np.pi, -np.pi],
             [np.pi, np.pi],
@@ -111,11 +111,11 @@ class KUR(Problem):
     n: int = 3
         
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
 
     def _call(self, x):
@@ -125,7 +125,7 @@ class KUR(Problem):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return (np.ones((self.n, 2)) * np.array([-5, 5])).T
 
     def get_reference(self):
@@ -135,11 +135,11 @@ class KUR(Problem):
 
 class CONSTR(Problem):
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -158,7 +158,7 @@ class CONSTR(Problem):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [0.1, 0.0],
             [1.0, 5.0]
@@ -171,11 +171,11 @@ class CONSTR(Problem):
 
 class SRN(Problem):
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -194,7 +194,7 @@ class SRN(Problem):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [-20.0, -20.0],
             [20.0, 20.0]
@@ -207,11 +207,11 @@ class SRN(Problem):
      
 class TNK(Problem):
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -230,7 +230,7 @@ class TNK(Problem):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [0.0, 0.0],
             [np.pi, np.pi]
@@ -243,11 +243,11 @@ class TNK(Problem):
 
 class WATER(Problem):
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return 3
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 5
     
     @property
@@ -274,7 +274,7 @@ class WATER(Problem):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [0.01, 0.01, 0.01],
             [0.45, 0.10, 0.10]

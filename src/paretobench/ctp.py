@@ -33,11 +33,11 @@ class CTP1(CTPx):
         self._b = self._b[1:]
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -57,7 +57,7 @@ class CTP1(CTPx):
         return f, np.vstack(g)
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-5.12, 5.12])).T
         b[0, 0] = 0.0
         b[1, 0] = 1.0
@@ -89,11 +89,11 @@ class CTP2_7(CTPx):
         self._e = e
         
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -116,7 +116,7 @@ class CTP2_7(CTPx):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-5.12, 5.12])).T
         b[0, 0] = 0.0
         b[1, 0] = 1.0
