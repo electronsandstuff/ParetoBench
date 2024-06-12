@@ -8,7 +8,7 @@ class ZDTx(Problem, ProblemWithPF):
     n: int = 30
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     def get_reference(self):

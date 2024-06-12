@@ -32,16 +32,16 @@ class Problem(BaseModel):
     @property
     def n_vars(self):
         """
-        Returns the number of decision variables expected by this problem. Passed through to property `n`
+        Returns the number of decision variables expected by this problem. Passed through to property `n`.
         """
         return self.n
 
     @property
     def n_objs(self):
         """
-        Returns the number of objective functions used in this problem
+        Returns the number of objective functions used in this problem. Passed through to property `m`.
         """
-        raise NotImplementedError()
+        return self.m
     
     @property
     def n_constraints(self):

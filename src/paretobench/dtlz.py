@@ -8,10 +8,6 @@ from .dtlz_utils import g_1_3, g_2_4_5, theta_5_6, f_2_to_6
 class DTLZx(Problem, ProblemWithPF):
     m: int = 3
     n: int = 10
-
-    @property
-    def n_objs(self):
-        return self.m
     
     @property
     def var_bounds(self):

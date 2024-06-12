@@ -34,6 +34,7 @@ def test_get_params(problem_name):
     assert isinstance(p.n_vars, int)
     assert isinstance(p.n, int)
     assert isinstance(p.n_objs, int)
+    assert isinstance(p.m, int)
     assert isinstance(p.n_constraints, int)
     assert isinstance(p.var_bounds, np.ndarray)
     
@@ -45,6 +46,7 @@ def test_get_params(problem_name):
     assert p.n_objs == f.shape[0]
     assert p.n_constraints == g.shape[0]
     assert p.n_vars == p.n
+    assert p.n_objs == p.m
 
 
 @pytest.mark.parametrize("problem_name", pb.get_problem_names())

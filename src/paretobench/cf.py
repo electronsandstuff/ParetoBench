@@ -40,7 +40,7 @@ class CF1(CFx, ProblemWithFixedPF):
     b: int = 10
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -77,7 +77,7 @@ class CF2(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -120,7 +120,7 @@ class CF3(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -165,7 +165,7 @@ class CF4(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -213,7 +213,7 @@ class CF5(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -261,7 +261,7 @@ class CF6(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -309,7 +309,7 @@ class CF7(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -364,7 +364,7 @@ class CF8(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 3
     
     @property
@@ -413,7 +413,7 @@ class CF9(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 3
     
     @property
@@ -458,7 +458,7 @@ class CF10(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 3
     
     @property
