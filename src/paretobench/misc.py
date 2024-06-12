@@ -14,7 +14,7 @@ class SCH(Problem):
         return 1
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     def _call(self, x):
@@ -45,7 +45,7 @@ class FON(Problem):
         return 3
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     def _call(self, x):
@@ -77,7 +77,7 @@ class POL(Problem):
         return 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     def _call(self, x):
@@ -111,7 +111,7 @@ class KUR(Problem):
     n: int = 3
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
 
     def _call(self, x):
@@ -135,7 +135,7 @@ class CONSTR(Problem):
         return 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -171,7 +171,7 @@ class SRN(Problem):
         return 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -207,7 +207,7 @@ class TNK(Problem):
         return 2
 
     @property
-    def n_objs(self):
+    def m(self):
         return 2
     
     @property
@@ -243,7 +243,7 @@ class WATER(Problem):
         return 3
 
     @property
-    def n_objs(self):
+    def m(self):
         return 5
     
     @property

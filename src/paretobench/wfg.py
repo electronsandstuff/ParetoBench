@@ -27,10 +27,6 @@ class WFGx(Problem, ProblemWithPF):
         bmax = np.array([2*(i + 1) for i in range(self.n)])
         return np.vstack((bmin, bmax))
     
-    @property
-    def n_objs(self):
-        return self.m
-    
     def get_reference(self):
         return "Huband, S., Hingston, P., Barone, L., & While, L. (2006). A review of multiobjective test problems and a scalable test "\
                "problem toolkit. IEEE Transactions on Evolutionary Computation, 10(5), 477–506. https://doi.org/10.1109/TEVC.2005.861417"
