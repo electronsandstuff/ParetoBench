@@ -33,10 +33,6 @@ class CTP1(CTPx):
         self._b = self._b[1:]
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return 2
     
@@ -87,10 +83,6 @@ class CTP2_7(CTPx):
         self._c = c
         self._d = d
         self._e = e
-        
-    @property
-    def n_vars(self):
-        return self.n
 
     @property
     def n_objs(self):

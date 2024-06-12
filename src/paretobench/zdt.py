@@ -6,10 +6,6 @@ from .utils import weighted_chunk_sizes
 
 class ZDTx(Problem, ProblemWithPF):
     n: int = 30
-    
-    @property
-    def n_vars(self):
-        return self.n
 
     @property
     def n_objs(self):

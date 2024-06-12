@@ -40,10 +40,6 @@ class CF1(CFx, ProblemWithFixedPF):
     b: int = 10
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return 2
     
@@ -79,10 +75,6 @@ class CF2(CFx, ProblemWithPF):
     n: int = 10
     a: float = 1.0
     b: int = 2
-
-    @property
-    def n_vars(self):
-        return self.n
 
     @property
     def n_objs(self):
@@ -128,10 +120,6 @@ class CF3(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return 2
     
@@ -175,10 +163,6 @@ class CF3(CFx, ProblemWithPF):
 
 class CF4(CFx, ProblemWithPF):
     n: int = 10
-
-    @property
-    def n_vars(self):
-        return self.n
 
     @property
     def n_objs(self):
@@ -229,10 +213,6 @@ class CF5(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return 2
     
@@ -281,10 +261,6 @@ class CF6(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return 2
     
@@ -331,10 +307,6 @@ class CF6(CFx, ProblemWithPF):
 
 class CF7(CFx, ProblemWithPF):
     n: int = 10
-
-    @property
-    def n_vars(self):
-        return self.n
 
     @property
     def n_objs(self):
@@ -392,10 +364,6 @@ class CF8(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return 3
     
@@ -445,10 +413,6 @@ class CF9(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return 3
     
@@ -492,10 +456,6 @@ class CF10(CFx, ProblemWithPF):
     n: int = 10
     a: float = 1.0
     b: int = 2
-
-    @property
-    def n_vars(self):
-        return self.n
 
     @property
     def n_objs(self):
