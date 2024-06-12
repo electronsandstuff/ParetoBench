@@ -10,7 +10,7 @@ class SCH(Problem):
     Other name: Schaffer function N. 1
     """
     @property
-    def n_vars(self):
+    def n(self):
         return 1
 
     @property
@@ -41,7 +41,7 @@ class FON(Problem):
     Other name: Fonseca-Fleming Function
     """
     @property
-    def n_vars(self):
+    def n(self):
         return 3
 
     @property
@@ -73,7 +73,7 @@ class POL(Problem):
     Other name: Poloni’s two objective function
     """
     @property
-    def n_vars(self):
+    def n(self):
         return 2
 
     @property
@@ -109,10 +109,6 @@ class KUR(Problem):
     Other name: Kursawe’s Function
     """
     n: int = 3
-        
-    @property
-    def n_vars(self):
-        return self.n
 
     @property
     def n_objs(self):
@@ -135,7 +131,7 @@ class KUR(Problem):
 
 class CONSTR(Problem):
     @property
-    def n_vars(self):
+    def n(self):
         return 2
 
     @property
@@ -171,7 +167,7 @@ class CONSTR(Problem):
 
 class SRN(Problem):
     @property
-    def n_vars(self):
+    def n(self):
         return 2
 
     @property
@@ -207,7 +203,7 @@ class SRN(Problem):
      
 class TNK(Problem):
     @property
-    def n_vars(self):
+    def n(self):
         return 2
 
     @property
@@ -243,7 +239,7 @@ class TNK(Problem):
 
 class WATER(Problem):
     @property
-    def n_vars(self):
+    def n(self):
         return 3
 
     @property

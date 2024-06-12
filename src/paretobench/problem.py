@@ -32,9 +32,9 @@ class Problem(BaseModel):
     @property
     def n_vars(self):
         """
-        Returns the number of decision variables expected by this problem.
+        Returns the number of decision variables expected by this problem. Passed through to property `n`
         """
-        raise NotImplementedError()
+        return self.n
 
     @property
     def n_objs(self):

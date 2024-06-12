@@ -28,10 +28,6 @@ class WFGx(Problem, ProblemWithPF):
         return np.vstack((bmin, bmax))
     
     @property
-    def n_vars(self):
-        return self.n
-    
-    @property
     def n_objs(self):
         return self.m
     

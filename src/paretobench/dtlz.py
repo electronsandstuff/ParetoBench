@@ -10,10 +10,6 @@ class DTLZx(Problem, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_vars(self):
-        return self.n
-
-    @property
     def n_objs(self):
         return self.m
     
