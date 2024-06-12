@@ -40,11 +40,11 @@ class CF1(CFx, ProblemWithFixedPF):
     b: int = 10
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -64,7 +64,7 @@ class CF1(CFx, ProblemWithFixedPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self):
@@ -81,11 +81,11 @@ class CF2(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -107,7 +107,7 @@ class CF2(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-1, 1])).T
         b[0, 0] = 0
         return b
@@ -128,11 +128,11 @@ class CF3(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -159,7 +159,7 @@ class CF3(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
         b[0, 0] = 0
         b[1, 0] = 1
@@ -177,11 +177,11 @@ class CF4(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -210,7 +210,7 @@ class CF4(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
         b[0, 0] = 0
         b[1, 0] = 1
@@ -229,11 +229,11 @@ class CF5(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -262,7 +262,7 @@ class CF5(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
         b[0, 0] = 0
         b[1, 0] = 1
@@ -281,11 +281,11 @@ class CF6(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -314,7 +314,7 @@ class CF6(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
         b[0, 0] = 0
         b[1, 0] = 1
@@ -333,11 +333,11 @@ class CF7(CFx, ProblemWithPF):
     n: int = 10
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     @property
@@ -369,7 +369,7 @@ class CF7(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
         b[0, 0] = 0
         b[1, 0] = 1
@@ -392,11 +392,11 @@ class CF8(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 3
     
     @property
@@ -423,7 +423,7 @@ class CF8(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-4, 4])).T
         b[0, :2] = 0
         b[1, :2] = 1
@@ -445,11 +445,11 @@ class CF9(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 3
     
     @property
@@ -476,7 +476,7 @@ class CF9(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
         b[0, :2] = 0
         b[1, :2] = 1
@@ -494,11 +494,11 @@ class CF10(CFx, ProblemWithPF):
     b: int = 2
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 3
     
     @property
@@ -526,7 +526,7 @@ class CF10(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
         b[0, :2] = 0
         b[1, :2] = 1

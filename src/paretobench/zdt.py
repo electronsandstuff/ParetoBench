@@ -8,11 +8,11 @@ class ZDTx(Problem, ProblemWithPF):
     n: int = 30
     
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         return self.n
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         return 2
     
     def get_reference(self):
@@ -29,7 +29,7 @@ class ZDT1(ZDTx):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self, n):
@@ -46,7 +46,7 @@ class ZDT2(ZDTx):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self, n):
@@ -63,7 +63,7 @@ class ZDT3(ZDTx):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self, n):
@@ -95,7 +95,7 @@ class ZDT4(ZDTx):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         b = np.ones((self.n, 2)) * np.array([-5.0, 5.0])
         b[0, 0] = 0.0
         b[0, 1] = 1.0
@@ -118,7 +118,7 @@ class ZDT6(ZDTx):
         ])
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self, n):

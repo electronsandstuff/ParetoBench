@@ -30,14 +30,14 @@ class Problem(BaseModel):
         raise NotImplementedError()
 
     @property
-    def n_decision_vars(self):
+    def n_vars(self):
         """
         Returns the number of decision variables expected by this problem.
         """
         raise NotImplementedError()
 
     @property
-    def n_objectives(self):
+    def n_objs(self):
         """
         Returns the number of objective functions used in this problem
         """
@@ -51,7 +51,7 @@ class Problem(BaseModel):
         return 0
     
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         """
         Returns the rectangular boundaries of the decision variables (2d numpy array
         where first row is lower bound of each variable and second row are the upper bounds)
