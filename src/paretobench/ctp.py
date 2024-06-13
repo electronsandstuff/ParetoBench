@@ -9,6 +9,14 @@ class CTPx(Problem):
         return "Zitzler, E. (Ed.). (2001). Evolutionary multi-criterion optimization: First international conference, "\
                "EMO 2001, Zurich, Switzerland, March 2001: proceedings. Springer."
 
+    @property
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -5.12*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1], 5.12*np.ones(self.n-1)))
+
 
 class CTP1(CTPx):
     """The parameter J has been changed to j to correspond to python naming conventoins"""
@@ -51,13 +59,6 @@ class CTP1(CTPx):
         for i in range(self.j):
             g.append(f[1] - self._a[i]*np.exp(-self._b[i]*f[0]))
         return f, np.vstack(g)
-
-    @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-5.12, 5.12])).T
-        b[0, 0] = 0.0
-        b[1, 0] = 1.0
-        return b
 
 
 class CTP2_7(CTPx):
@@ -106,13 +107,6 @@ class CTP2_7(CTPx):
         g = np.vstack((c,))
         
         return f, g
-
-    @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-5.12, 5.12])).T
-        b[0, 0] = 0.0
-        b[1, 0] = 1.0
-        return b
 
 
 class CTP2(CTP2_7):

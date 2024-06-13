@@ -15,6 +15,13 @@ class ZDTx(Problem, ProblemWithPF):
         return "Zitzler, E., Deb, K., & Thiele, L. (2000). Comparison of Multiobjective Evolutionary Algorithms: Empirical Results. "\
                "Evolutionary Computation, 8(2), 173–195. https://doi.org/10.1162/106365600568202"
 
+    @property
+    def var_lower_bnd(self):
+        return np.zeros(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return np.ones(self.n)
 
 class ZDT1(ZDTx):
     def _call(self, x):
@@ -23,10 +30,6 @@ class ZDT1(ZDTx):
             x[0],
             g * (1 - np.sqrt(x[0] / g)),
         ])
-
-    @property
-    def var_bounds(self):
-        return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
@@ -41,10 +44,6 @@ class ZDT2(ZDTx):
             g * (1 - (x[0] / g) ** 2),
         ])
 
-    @property
-    def var_bounds(self):
-        return (np.ones((self.n, 2)) * np.array([0, 1])).T
-
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
         return np.array([x, 1 - x**2])
@@ -57,10 +56,6 @@ class ZDT3(ZDTx):
             x[0],
             g * (1 - np.sqrt(x[0] / g) - x[0] / g * np.sin(10 * np.pi * x[0])),
         ])
-
-    @property
-    def var_bounds(self):
-        return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self, n):
         # The non-dominated regions from dev_notebooks\zdt3_pareto_front.ipynb
@@ -91,12 +86,13 @@ class ZDT4(ZDTx):
         ])
 
     @property
-    def var_bounds(self):
-        b = np.ones((self.n, 2)) * np.array([-5.0, 5.0])
-        b[0, 0] = 0.0
-        b[0, 1] = 1.0
-        return b.T
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -5*np.ones(self.n-1)))
     
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1], 5*np.ones(self.n-1)))
+
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
         return np.array([x, 1 - np.sqrt(x)])
@@ -112,10 +108,6 @@ class ZDT6(ZDTx):
             f1,
             g * (1 - (f1 / g) ** 2),
         ])
-
-    @property
-    def var_bounds(self):
-        return (np.ones((self.n, 2)) * np.array([0, 1])).T
 
     def get_pareto_front(self, n):
         # From dev_notebooks\zdt6_pareto_front.ipynb

@@ -10,10 +10,12 @@ class DTLZx(Problem, ProblemWithPF):
     n: int = 10
     
     @property
-    def var_bounds(self):
-        bmin = np.zeros(self.n)
-        bmax = np.ones(self.n)
-        return np.vstack((bmin, bmax))
+    def var_lower_bnd(self):
+        return np.zeros(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return np.ones(self.n)
 
     def get_reference(self):
         return "Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2002). Scalable multi-objective optimization test problems. "\

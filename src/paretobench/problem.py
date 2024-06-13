@@ -63,12 +63,26 @@ class Problem(BaseModel):
         return 0
     
     @property
+    def var_lower_bnd(self):
+        """
+        Returns the rectangular lower boundaries of the decision variables.
+        """
+        raise NotImplementedError()
+    
+    @property
+    def var_upper_bnd(self):
+        """
+        Returns the rectangular upper boundaries of the decision variables 
+        """
+        raise NotImplementedError()
+    
+    @property
     def var_bounds(self):
         """
         Returns the rectangular boundaries of the decision variables (2d numpy array
         where first row is lower bound of each variable and second row are the upper bounds)
         """
-        raise NotImplementedError()
+        return np.vstack((self.var_lower_bnd, self.var_upper_bnd))
     
     def get_reference(self):
         """
