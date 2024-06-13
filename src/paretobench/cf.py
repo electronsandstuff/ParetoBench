@@ -60,8 +60,12 @@ class CF1(CFx, ProblemWithFixedPF):
         return f, g
 
     @property
-    def var_bounds(self):
-        return (np.ones((self.n, 2)) * np.array([0, 1])).T
+    def var_lower_bnd(self):
+        return np.zeros(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return np.ones(self.n)
 
     def get_pareto_front(self):
         f1 = np.linspace(0, 1, 2*self.b+1)
@@ -104,6 +108,14 @@ class CF2(CFx, ProblemWithPF):
         b[0, 0] = 0
         return b
 
+    @property
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -1*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.ones(self.n)
+
     def get_pareto_front(self, n):
         ranges = [(((2*i-1)/2/self.b)**2, (i/self.b)**2) for i in range(1, self.b+1)]
         total_range = sum(stop - start for start, stop in ranges)
@@ -145,13 +157,14 @@ class CF3(CFx, ProblemWithPF):
             f[1] + f[0] ** 2 - self.a * np.sin(self.b * np.pi * (f[0] ** 2 - f[1] + 1)) - 1,
         ))
         return f, g
-
+    
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
-        b[0, 0] = 0
-        b[1, 0] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -2*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
         ranges = [(np.sqrt((2*i-1)/2/self.b), np.sqrt(i/self.b)) for i in range(1, self.b+1)]
@@ -194,11 +207,12 @@ class CF4(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
-        b[0, 0] = 0
-        b[1, 0] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -2*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
         f1 = np.linspace(0, 1, n)
@@ -242,11 +256,12 @@ class CF5(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
-        b[0, 0] = 0
-        b[1, 0] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -2*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
         f1 = np.linspace(0, 1, n)
@@ -290,11 +305,12 @@ class CF6(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
-        b[0, 0] = 0
-        b[1, 0] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -2*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
         f1 = np.linspace(0, 1, n)
@@ -341,11 +357,12 @@ class CF7(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
-        b[0, 0] = 0
-        b[1, 0] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0], -2*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
             f1 = np.linspace(0, 1, n)
@@ -391,11 +408,12 @@ class CF8(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-4, 4])).T
-        b[0, :2] = 0
-        b[1, :2] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0, 0], -4*np.ones(self.n-2)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1, 1], 4*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
         sub_n = n // (2*self.b + 1)
@@ -438,13 +456,14 @@ class CF9(CFx, ProblemWithPF):
         ))
         
         return f, g
-
+    
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
-        b[0, :2] = 0
-        b[1, :2] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0, 0], -2*np.ones(self.n-2)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1, 1], 2*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
         return get_pf_cf9_cf10(n, self.b)
@@ -486,11 +505,12 @@ class CF10(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-2, 2])).T
-        b[0, :2] = 0
-        b[1, :2] = 1
-        return b
+    def var_lower_bnd(self):
+        return np.concatenate(([0, 0], -2*np.ones(self.n-2)))
+    
+    @property
+    def var_upper_bnd(self):
+        return np.concatenate(([1, 1], 2*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
         return get_pf_cf9_cf10(n, self.b)

@@ -22,12 +22,14 @@ class SCH(Problem):
             x[0] ** 2,
             (x[0] - 2) ** 2
         ))
-
+        
     @property
-    def var_bounds(self):
-        return np.array([
-            [-1e3, ], [1e3, ],
-        ])
+    def var_lower_bnd(self):
+        return -1e3*np.ones(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return 1e3*np.ones(self.n)
 
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
@@ -55,11 +57,12 @@ class FON(Problem):
         ])
 
     @property
-    def var_bounds(self):
-        return np.array([
-            [-4.0, -4.0, -4.0],
-            [4.0, 4.0, 4.0],
-        ])
+    def var_lower_bnd(self):
+        return -4*np.ones(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return 4*np.ones(self.n)
     
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
@@ -89,13 +92,14 @@ class POL(Problem):
             1 + (a1 - b1) ** 2 + (a2 - b2) ** 2,
             (x[0] + 3) ** 2 + (x[1] + 1) ** 2,
         ])
-
+        
     @property
-    def var_bounds(self):
-        return np.array([
-            [-np.pi, -np.pi],
-            [np.pi, np.pi],
-        ])
+    def var_lower_bnd(self):
+        return -np.pi*np.ones(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return np.pi*np.ones(self.n)
 
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
@@ -121,9 +125,13 @@ class KUR(Problem):
         ])
 
     @property
-    def var_bounds(self):
-        return (np.ones((self.n, 2)) * np.array([-5, 5])).T
-
+    def var_lower_bnd(self):
+        return -5*np.ones(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return 5*np.ones(self.n)
+    
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
@@ -154,11 +162,12 @@ class CONSTR(Problem):
         return f, g
 
     @property
-    def var_bounds(self):
-        return np.array([
-            [0.1, 0.0],
-            [1.0, 5.0]
-        ])
+    def var_lower_bnd(self):
+        return np.array([0.1, 0.0])
+    
+    @property
+    def var_upper_bnd(self):
+        return np.array([[1.0, 5.0]])
         
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
@@ -188,13 +197,14 @@ class SRN(Problem):
             -10 - (x[0] - 3 * x[1])
         ])
         return f, g
-
+    
     @property
-    def var_bounds(self):
-        return np.array([
-            [-20.0, -20.0],
-            [20.0, 20.0]
-        ])
+    def var_lower_bnd(self):
+        return -20*np.ones(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return 20*np.ones(self.n)
 
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
@@ -231,6 +241,15 @@ class TNK(Problem):
             [0.0, 0.0],
             [np.pi, np.pi]
         ])
+    
+    
+    @property
+    def var_lower_bnd(self):
+        return np.zeros(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return np.pi*np.ones(self.n)
 
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
@@ -270,11 +289,12 @@ class WATER(Problem):
         return f, g
 
     @property
-    def var_bounds(self):
-        return np.array([
-            [0.01, 0.01, 0.01],
-            [0.45, 0.10, 0.10]
-        ])
+    def var_lower_bnd(self):
+        return np.array([0.01, 0.01, 0.01])
+    
+    @property
+    def var_upper_bnd(self):
+        return np.array([0.45, 0.10, 0.10])
 
     def get_reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\

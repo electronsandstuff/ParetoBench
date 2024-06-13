@@ -20,12 +20,14 @@ class WFGx(Problem, ProblemWithPF):
         # Set internal attributes for later
         self._d = 1.0
         self._s = np.array([2*(i + 1) for i in range(self.m)])
-
+    
     @property
-    def var_bounds(self):
-        bmin = np.zeros(self.n)
-        bmax = np.array([2*(i + 1) for i in range(self.n)])
-        return np.vstack((bmin, bmax))
+    def var_lower_bnd(self):
+        return np.zeros(self.n)
+    
+    @property
+    def var_upper_bnd(self):
+        return np.array([2*(i + 1) for i in range(self.n)])
     
     def get_reference(self):
         return "Huband, S., Hingston, P., Barone, L., & While, L. (2006). A review of multiobjective test problems and a scalable test "\
