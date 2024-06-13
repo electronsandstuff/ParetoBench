@@ -1,14 +1,26 @@
 import numpy as np
 from pydantic import BaseModel
+from dataclasses import dataclass
 
 from .exceptions import DeserializationError
 from .factory import create_problem
 from .simple_serialize import dumps, loads
 
 
+@dataclass
+class Result:
+    pass
+
+
 class Problem(BaseModel):
     """
-    The overarching class all problems inherit from
+    The overarching class all problems inherit from. Children must implement the following methods and properties.
+     * `m`: property, the number of objectives
+     * `n`: property, the number of decision variables
+     * `n_constraints`: property, the number of constraints
+     * `var_upper_bounds`: property, the array of upper bounds for decision variables
+     * `var_lower_bounds`: property, the array of lower bounds for decision variables
+     * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Result` object
     """    
     def __call__(self, x: np.ndarray) -> any:
         """
