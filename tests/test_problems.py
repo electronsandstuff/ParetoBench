@@ -13,7 +13,7 @@ def test_evaluate(problem_name, n_eval = 64):
     """
     p = pb.create_problem(problem_name)
     bnd = p.var_bounds
-    x = np.random.random((bnd.shape[1], n_eval))*(bnd[1, :] - bnd[0, :])[:, None] + bnd[0, :][:, None]
+    x = np.random.random((n_eval, bnd.shape[1]))*(bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
     f, g = p(x)
 
     assert isinstance(f, np.ndarray)
@@ -40,11 +40,11 @@ def test_get_params(problem_name):
     
     # Check that if you actually call the values, you get the right sized objects (everything is consistent)
     bnd = p.var_bounds
-    x = np.random.random((bnd.shape[1], 1))*(bnd[1, :] - bnd[0, :])[:, None] + bnd[0, :][:, None]
+    x = np.random.random((1, bnd.shape[1]))*(bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
     f, g = p(x)
-    assert p.n_vars == x.shape[0]
-    assert p.n_objs == f.shape[0]
-    assert p.n_constraints == g.shape[0]
+    assert p.n_vars == x.shape[1]
+    assert p.n_objs == f.shape[1]
+    assert p.n_constraints == g.shape[1]
     assert p.n_vars == p.n
     assert p.n_objs == p.m
 
@@ -60,12 +60,12 @@ def test_pareto_front(problem_name, npoints=1000):
         return
     if isinstance(p, pb.ProblemWithPF):  # If we can choose number of points, check at lesat that many are returned
         f = p.get_pareto_front(npoints)
-        assert f.shape[1] >= npoints
+        assert f.shape[0] >= npoints
     else:  # If it's the fixed PF case
         f = p.get_pareto_front()
 
     # Make sure the right size array is returned and it doesn't give bad values
-    assert p.n_objs == f.shape[0]
+    assert p.n_objs == f.shape[1]
     assert not np.isnan(f).any()
 
 
