@@ -10,11 +10,11 @@ class DTLZx(Problem, ProblemWithPF):
     n: int = 10
     
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.zeros(self.n)
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.ones(self.n)
 
     def get_reference(self):

@@ -10,11 +10,11 @@ class CTPx(Problem):
                "EMO 2001, Zurich, Switzerland, March 2001: proceedings. Springer."
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0], -5.12*np.ones(self.n-1)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1], 5.12*np.ones(self.n-1)))
 
 

@@ -60,11 +60,11 @@ class CF1(CFx, ProblemWithFixedPF):
         return f, g
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.zeros(self.n)
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.ones(self.n)
 
     def get_pareto_front(self):
@@ -109,11 +109,11 @@ class CF2(CFx, ProblemWithPF):
         return b
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0], -1*np.ones(self.n-1)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.ones(self.n)
 
     def get_pareto_front(self, n):
@@ -159,11 +159,11 @@ class CF3(CFx, ProblemWithPF):
         return f, g
     
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0], -2*np.ones(self.n-1)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
@@ -207,11 +207,11 @@ class CF4(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0], -2*np.ones(self.n-1)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
@@ -256,11 +256,11 @@ class CF5(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0], -2*np.ones(self.n-1)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
@@ -305,11 +305,11 @@ class CF6(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0], -2*np.ones(self.n-1)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
@@ -357,11 +357,11 @@ class CF7(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0], -2*np.ones(self.n-1)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1], 2*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
@@ -408,11 +408,11 @@ class CF8(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0, 0], -4*np.ones(self.n-2)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1, 1], 4*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
@@ -458,11 +458,11 @@ class CF9(CFx, ProblemWithPF):
         return f, g
     
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0, 0], -2*np.ones(self.n-2)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1, 1], 2*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
@@ -505,11 +505,11 @@ class CF10(CFx, ProblemWithPF):
         return f, g
 
     @property
-    def var_lower_bnd(self):
+    def var_lower_bound(self):
         return np.concatenate(([0, 0], -2*np.ones(self.n-2)))
     
     @property
-    def var_upper_bnd(self):
+    def var_upper_bound(self):
         return np.concatenate(([1, 1], 2*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
