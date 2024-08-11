@@ -114,7 +114,7 @@ class WFG1(WFGx):
         # Evaluate the objective functions
         f = shape_convex(x)
         f[-1] = shape_mixed(x, 5, 1)
-        return f*2*np.arange(1, self.m+1)[:, None]
+        return (f*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG2(WFGx):
@@ -193,7 +193,7 @@ class WFG2(WFGx):
         f = shape_convex(x)
         f[-1] = shape_disconnected(x, 5, 1, 1)
         f = f[:, get_nondominated(f)]
-        return f*2*np.arange(1, self.m+1)[:, None]
+        return (f*2*np.arange(1, self.m+1)[:, None]).T
 
 
 class WFG3(WFGx):
@@ -239,7 +239,7 @@ class WFG3(WFGx):
     def get_pareto_front(self, n):
         f = np.vstack((np.linspace(0, 1, n), np.full((self.m-2, n), 1/2), np.zeros((1, n))))
         f = shape_linear(f)
-        return f*2*np.arange(1, self.m+1)[:, None]
+        return (f*2*np.arange(1, self.m+1)[:, None]).T
 
 
 class WFG4(WFGx):
@@ -277,7 +277,7 @@ class WFG4(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG5(WFGx):
@@ -315,7 +315,7 @@ class WFG5(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
 
 
 class WFG6(WFGx):
@@ -351,7 +351,7 @@ class WFG6(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG7(WFGx):
@@ -395,7 +395,7 @@ class WFG7(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG8(WFGx):
@@ -439,7 +439,7 @@ class WFG8(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG9(WFGx):
@@ -481,4 +481,4 @@ class WFG9(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
