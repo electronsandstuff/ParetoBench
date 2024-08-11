@@ -1,9 +1,7 @@
 import pytest
 import numpy as np
-import random
 
 import paretobench as pb
-from paretobench.simple_serialize import split_unquoted, dumps, loads
 
 
 @pytest.mark.parametrize("problem_name", pb.get_problem_names())
