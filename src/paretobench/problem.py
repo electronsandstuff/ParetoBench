@@ -9,7 +9,12 @@ from .simple_serialize import dumps, loads
 
 @dataclass
 class Result:
-    pass
+    """
+    This class represents the batched output from running one of the problems. The first index is the batched index and common
+    literature names are used for the objectives (f) and inequality constraints (g).
+    """
+    f: np.ndarray
+    g: np.ndarray
 
 
 class Problem(BaseModel):
