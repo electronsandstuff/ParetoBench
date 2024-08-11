@@ -73,7 +73,7 @@ class CF1(CFx, ProblemWithFixedPF):
     def get_pareto_front(self):
         f1 = np.linspace(0, 1, 2*self.b+1)
         f2 = 1 - f1
-        return np.vstack((f1, f2))
+        return np.vstack((f1, f2)).T
     
 
 class CF2(CFx, ProblemWithPF):
@@ -127,7 +127,7 @@ class CF2(CFx, ProblemWithPF):
         total_range = sum(stop - start for start, stop in ranges)
         f1 = np.concatenate([np.linspace(start, stop, int(n*(stop - start)/total_range + 0.5)) for start, stop in ranges])
         f2 = 1 - np.sqrt(f1)
-        return np.vstack((f1, f2))
+        return np.vstack((f1, f2)).T
     
     
 class CF3(CFx, ProblemWithPF):
@@ -180,7 +180,7 @@ class CF3(CFx, ProblemWithPF):
         total_range = sum(stop - start for start, stop in ranges)
         f1 = np.concatenate([np.linspace(start, stop, int(n*(stop - start)/total_range + 0.5)) for start, stop in ranges])
         f2 = 1 - f1**2
-        return np.vstack((f1, f2))
+        return np.vstack((f1, f2)).T
 
 
 class CF4(CFx, ProblemWithPF):
@@ -232,7 +232,7 @@ class CF4(CFx, ProblemWithPF):
         f2[f1 <= 0.5] = 1 - f1[f1 <= 0.5]
         f2[np.bitwise_and(f1 > 0.5, f1 <= 3/4)] = -f1[np.bitwise_and(f1 > 0.5, f1 <= 3/4)]/2 + 3/4
         f2[f1 > 3/4] = 1 - f1[f1 > 3/4] + 1/8
-        return np.vstack((f1, f2))
+        return np.vstack((f1, f2)).T
     
 
 class CF5(CFx, ProblemWithPF):
@@ -284,7 +284,7 @@ class CF5(CFx, ProblemWithPF):
         f2[f1 <= 0.5] = 1 - f1[f1 <= 0.5]
         f2[np.bitwise_and(f1 > 0.5, f1 <= 3/4)] = -f1[np.bitwise_and(f1 > 0.5, f1 <= 3/4)]/2 + 3/4
         f2[f1 > 3/4] = 1 - f1[f1 > 3/4] + 1/8
-        return np.vstack((f1, f2))
+        return np.vstack((f1, f2)).T
     
 
 class CF6(CFx, ProblemWithPF):
@@ -336,7 +336,7 @@ class CF6(CFx, ProblemWithPF):
         f2[f1 <= 0.5] = (1 - f1[f1 <= 0.5])**2
         f2[np.bitwise_and(f1 > 0.5, f1 <= 3/4)] = (1-f1[np.bitwise_and(f1 > 0.5, f1 <= 3/4)])/2
         f2[f1 > 3/4] = np.sqrt(1 - f1[f1 > 3/4])/4
-        return np.vstack((f1, f2))
+        return np.vstack((f1, f2)).T
     
 
 class CF7(CFx, ProblemWithPF):
@@ -391,7 +391,7 @@ class CF7(CFx, ProblemWithPF):
             f2[f1 <= 0.5] = (1 - f1[f1 <= 0.5])**2
             f2[np.bitwise_and(f1 > 0.5, f1 <= 3/4)] = (1-f1[np.bitwise_and(f1 > 0.5, f1 <= 3/4)])/2
             f2[f1 > 3/4] = np.sqrt(1 - f1[f1 > 3/4])/4
-            return np.vstack((f1, f2))
+            return np.vstack((f1, f2)).T
 
 
 class CF8(CFx, ProblemWithPF):
@@ -444,7 +444,7 @@ class CF8(CFx, ProblemWithPF):
         f3 = np.repeat(np.linspace(0, 1, sub_n), 2*self.b + 1)
         f1 = np.concatenate([np.sqrt(i/2/self.b*(1-f3[:sub_n]**2)) for i in range(2*self.b+1)])
         f2 = np.sqrt(np.maximum(0, 1 - f1**2 - f3**2))
-        return np.vstack((f1, f2, f3))
+        return np.vstack((f1, f2, f3)).T
 
 
 class CF9(CFx, ProblemWithPF):
@@ -493,7 +493,7 @@ class CF9(CFx, ProblemWithPF):
         return np.concatenate(([1, 1], 2*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
-        return get_pf_cf9_cf10(n, self.b)
+        return get_pf_cf9_cf10(n, self.b).T
     
 
 class CF10(CFx, ProblemWithPF):
@@ -543,4 +543,4 @@ class CF10(CFx, ProblemWithPF):
         return np.concatenate(([1, 1], 2*np.ones(self.n-2)))
 
     def get_pareto_front(self, n):
-        return get_pf_cf9_cf10(n, self.b)
+        return get_pf_cf9_cf10(n, self.b).T

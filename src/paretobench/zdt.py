@@ -36,7 +36,7 @@ class ZDT1(ZDTx):
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
-        return np.array([x, 1 - np.sqrt(x)])
+        return np.array([x, 1 - np.sqrt(x)]).T
 
 
 class ZDT2(ZDTx):
@@ -52,7 +52,7 @@ class ZDT2(ZDTx):
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
-        return np.array([x, 1 - x**2])
+        return np.array([x, 1 - x**2]).T
     
 
 class ZDT3(ZDTx):
@@ -81,7 +81,7 @@ class ZDT3(ZDTx):
         for r, my_n in zip(regs, weighted_chunk_sizes(n, [r[1] - r[0] for r in regs])):
             x = np.linspace(*r, my_n)
             f.append([x, 1 - np.sqrt(x) - x*np.sin(10*np.pi*x)])
-        return np.concatenate(f, axis=1)
+        return np.concatenate(f, axis=1).T
 
 
 class ZDT4(ZDTx):
@@ -107,7 +107,7 @@ class ZDT4(ZDTx):
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
-        return np.array([x, 1 - np.sqrt(x)])
+        return np.array([x, 1 - np.sqrt(x)]).T
 
 
 class ZDT6(ZDTx):
@@ -127,4 +127,4 @@ class ZDT6(ZDTx):
     def get_pareto_front(self, n):
         # From dev_notebooks\zdt6_pareto_front.ipynb
         x = np.linspace(0.28077531881538886, 1, n)
-        return np.array([x, 1 - np.power(x, 2)])
+        return np.array([x, 1 - np.power(x, 2)]).T

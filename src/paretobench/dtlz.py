@@ -37,7 +37,7 @@ class DTLZ1(DTLZx):
         return ((1 + g)*f1*f2/2).T
 
     def get_pareto_front(self, n):
-        return get_hyperplane_points(self.m, n)/2
+        return (get_hyperplane_points(self.m, n)/2).T
 
 
 class DTLZ2(DTLZx):
@@ -49,7 +49,7 @@ class DTLZ2(DTLZx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))
+        return (f / np.sqrt(np.sum(f**2, axis=0))).T
 
 
 class DTLZ3(DTLZx):
@@ -61,7 +61,7 @@ class DTLZ3(DTLZx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))
+        return (f / np.sqrt(np.sum(f**2, axis=0))).T
     
     
 class DTLZ4(DTLZx):
@@ -75,7 +75,7 @@ class DTLZ4(DTLZx):
    
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))
+        return (f / np.sqrt(np.sum(f**2, axis=0))).T
 
 
 class DTLZ5(DTLZx):
@@ -90,7 +90,7 @@ class DTLZ5(DTLZx):
         f = get_hyperplane_points(2, n)
         f = f / np.sqrt(np.sum(f**2, axis=0))[None, :]
         f = np.concatenate((np.repeat(f[:1], self.m-1, axis=0), f[1:]), axis=0)
-        return f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]
+        return (f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]).T
 
 
 class DTLZ6(DTLZx):
@@ -105,7 +105,7 @@ class DTLZ6(DTLZx):
         f = get_hyperplane_points(2, n)
         f = f / np.sqrt(np.sum(f**2, axis=0))[None, :]
         f = np.concatenate((np.repeat(f[:1], self.m-1, axis=0), f[1:]), axis=0)
-        return f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]
+        return (f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]).T
 
 
 class DTLZ7(DTLZx):
@@ -130,7 +130,7 @@ class DTLZ7(DTLZx):
         x[x>mid] = (x[x>mid] - mid)*(regs[1][1] - regs[1][0])/(1 - mid) + regs[1][0]
         
         # Compute final objective
-        return np.concatenate((x, 2 * (self.m - np.sum(x/2*(1 + np.sin(3*np.pi*x)), axis=0))[None, :]), axis=0)
+        return np.concatenate((x, 2 * (self.m - np.sum(x/2*(1 + np.sin(3*np.pi*x)), axis=0))[None, :]), axis=0).T
 
 
 class DTLZ8(DTLZx):
@@ -184,7 +184,7 @@ class DTLZ8(DTLZx):
         # Add the "pole"
         pole = np.linspace(1/3, 1.0, max(n-f.shape[1], npole))
         pole = np.vstack((np.repeat((1-pole[None, :])/4, self.m-1, axis=0), pole))
-        return np.concatenate((f, pole), axis=1)
+        return np.concatenate((f, pole), axis=1).T
 
 
 class DTLZ9(DTLZx):
@@ -202,5 +202,5 @@ class DTLZ9(DTLZx):
     
     def get_pareto_front(self, n):
         th = np.linspace(0, 1, n)
-        return np.concatenate((np.repeat(np.cos(np.pi/2*th[None, :]), self.m-1, axis=0), np.sin(np.pi/2*th[None, :])), axis=0)
+        return np.concatenate((np.repeat(np.cos(np.pi/2*th[None, :]), self.m-1, axis=0), np.sin(np.pi/2*th[None, :])), axis=0).T
         
