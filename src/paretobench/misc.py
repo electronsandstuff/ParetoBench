@@ -24,7 +24,7 @@ class SCH(Problem):
         return Result(f=np.vstack((
             x[0] ** 2,
             (x[0] - 2) ** 2
-        )).T, g=np.empty((x.shape[0], 0)))
+        )).T)
         
     @property
     def var_lower_bound(self):
@@ -60,7 +60,7 @@ class FON(Problem):
         return Result(f=np.array([
             1 - np.exp(-(x[0] - 1 / np.sqrt(3)) ** 2 - (x[1] - 1 / np.sqrt(3)) ** 2 - (x[2] - 1 / np.sqrt(3)) ** 2),
             1 - np.exp(-(x[0] + 1 / np.sqrt(3)) ** 2 - (x[1] + 1 / np.sqrt(3)) ** 2 - (x[2] + 1 / np.sqrt(3)) ** 2),
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
 
     @property
     def var_lower_bound(self):
@@ -100,7 +100,7 @@ class POL(Problem):
         return Result(f=np.array([
             1 + (a1 - b1) ** 2 + (a2 - b2) ** 2,
             (x[0] + 3) ** 2 + (x[1] + 1) ** 2,
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
         
     @property
     def var_lower_bound(self):
@@ -134,7 +134,7 @@ class KUR(Problem):
         return Result(f=np.array([
             np.sum(-10 * np.exp(-0.2 * np.sqrt(x[:-1] ** 2 + x[1:] ** 2)), axis=0),
             np.sum(np.abs(x) ** 0.8 + 5 * np.sin(x ** 3), axis=0),
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
 
     @property
     def var_lower_bound(self):

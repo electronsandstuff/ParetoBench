@@ -34,7 +34,7 @@ class DTLZ1(DTLZx):
         g = g_1_3(x[self.m - 1:, :], self.n - self.m + 1)        
         f1 = np.vstack([np.prod(x[:self.m - 1 - i, :], axis=0) for i in range(0, self.m)])
         f2 = np.vstack([np.ones(x.shape[1])] + [1 - x[self.m - 1 - i, :] for i in range(1, self.m)])
-        return Result(f=((1 + g)*f1*f2/2).T, g=np.empty((x.shape[0], 0)))
+        return Result(f=((1 + g)*f1*f2/2).T)
 
     def get_pareto_front(self, n):
         return (get_hyperplane_points(self.m, n)/2).T
@@ -45,7 +45,7 @@ class DTLZ2(DTLZx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return Result(f=((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m)).T, g=np.empty((x.shape[0], 0)))
+        return Result(f=((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m)).T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -57,10 +57,7 @@ class DTLZ3(DTLZx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return Result(
-            f=((1 + g_1_3(x[self.m - 1:, :], self.n - self.m + 1))*f_2_to_6(x[:self.m - 1, :], self.m)).T, 
-            g=np.empty((x.shape[0], 0))
-        )
+        return Result(f=((1 + g_1_3(x[self.m - 1:, :], self.n - self.m + 1))*f_2_to_6(x[:self.m - 1, :], self.m)).T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -74,10 +71,7 @@ class DTLZ4(DTLZx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return Result(
-            f=((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m, alpha=self.alpha)).T, 
-            g=np.empty((x.shape[0], 0))
-        )
+        return Result(f=((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m, alpha=self.alpha)).T)
    
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -90,7 +84,7 @@ class DTLZ5(DTLZx):
         x = x.T
         
         g = g_2_4_5(x[self.m - 1:, :])
-        return Result(f=((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T, g=np.empty((x.shape[0], 0)))
+        return Result(f=((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T)
     
     def get_pareto_front(self, n):
         f = get_hyperplane_points(2, n)
@@ -105,7 +99,7 @@ class DTLZ6(DTLZx):
         x = x.T
         
         g = np.sum(x[self.m - 1:, :]**0.1, axis=0)
-        return Result(f=((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T, g=np.empty((x.shape[0], 0)))
+        return Result(f=((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T)
     
     def get_pareto_front(self, n):
         f = get_hyperplane_points(2, n)
@@ -122,7 +116,7 @@ class DTLZ7(DTLZx):
         f1 = np.copy(x[:self.m-1, :])
         f2 = 2 + 9*np.sum(x[self.m-1:, :], axis=0)/(self.n - self.m + 1)
         f2 *= self.m - np.sum((1 + np.sin(3*np.pi*f1))*f1/(1 + f2[None, :]), axis=0)
-        return Result(f=np.vstack([f1, f2]).T, g=np.empty((x.shape[0], 0)))
+        return Result(f=np.vstack([f1, f2]).T)
     
     def get_pareto_front(self, n):
         # Break first m-1 dimensions into non-dominated chunks

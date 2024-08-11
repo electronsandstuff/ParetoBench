@@ -33,7 +33,7 @@ class ZDT1(ZDTx):
         return Result(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g)),
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
@@ -49,7 +49,7 @@ class ZDT2(ZDTx):
         return Result(f=np.array([
             x[0],
             g * (1 - (x[0] / g) ** 2),
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
@@ -65,7 +65,7 @@ class ZDT3(ZDTx):
         return Result(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g) - x[0] / g * np.sin(10 * np.pi * x[0])),
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
 
     def get_pareto_front(self, n):
         # The non-dominated regions from dev_notebooks\zdt3_pareto_front.ipynb
@@ -96,7 +96,7 @@ class ZDT4(ZDTx):
         return Result(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g)),
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
 
     @property
     def var_lower_bound(self):
@@ -123,7 +123,7 @@ class ZDT6(ZDTx):
         return Result(f=np.array([
             f1,
             g * (1 - (f1 / g) ** 2),
-        ]).T, g=np.empty((x.shape[0], 0)))
+        ]).T)
 
     def get_pareto_front(self, n):
         # From dev_notebooks\zdt6_pareto_front.ipynb
