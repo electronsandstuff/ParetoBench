@@ -49,6 +49,9 @@ class CTP1(CTPx):
         return self.j
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         rast = rastrigin(x[1:])
         f = np.vstack((
             x[0],
@@ -58,7 +61,7 @@ class CTP1(CTPx):
         g = []
         for i in range(self.j):
             g.append(f[1] - self._a[i]*np.exp(-self._b[i]*f[0]))
-        return f, np.vstack(g)
+        return f.T, np.vstack(g).T
 
 
 class CTP2_7(CTPx):
@@ -94,6 +97,9 @@ class CTP2_7(CTPx):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         rast = rastrigin(x[1:])
 
         f = np.vstack((
@@ -106,7 +112,7 @@ class CTP2_7(CTPx):
              + np.cos(self._theta)*f[0])**self._c))**self._d
         g = np.vstack((c,))
         
-        return f, g
+        return f.T, g.T
 
 
 class CTP2(CTP2_7):
