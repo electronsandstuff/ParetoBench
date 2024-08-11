@@ -1,6 +1,6 @@
 import numpy as np
 
-from .problem import Problem, ProblemWithPF
+from .problem import Problem, ProblemWithPF, Result
 from .utils import weighted_chunk_sizes
 
 
@@ -23,16 +23,17 @@ class ZDTx(Problem, ProblemWithPF):
     def var_upper_bound(self):
         return np.ones(self.n)
 
+
 class ZDT1(ZDTx):
     def _call(self, x):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
-        return np.array([
+        return Result(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g)),
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
@@ -45,10 +46,10 @@ class ZDT2(ZDTx):
         x = x.T
         
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
-        return np.array([
+        return Result(f=np.array([
             x[0],
             g * (1 - (x[0] / g) ** 2),
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
 
     def get_pareto_front(self, n):
         x = np.linspace(0, 1, n)
@@ -61,10 +62,10 @@ class ZDT3(ZDTx):
         x = x.T
         
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
-        return np.array([
+        return Result(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g) - x[0] / g * np.sin(10 * np.pi * x[0])),
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
 
     def get_pareto_front(self, n):
         # The non-dominated regions from dev_notebooks\zdt3_pareto_front.ipynb
@@ -92,10 +93,10 @@ class ZDT4(ZDTx):
         x = x.T
         
         g = 1 + 10 * (self.n - 1) + np.sum(x[1:] ** 2 - 10 * np.cos(4 * np.pi * x[1:]), axis=0)
-        return np.array([
+        return Result(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g)),
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
 
     @property
     def var_lower_bound(self):
@@ -119,10 +120,10 @@ class ZDT6(ZDTx):
         
         f1 = 1 - np.exp(-4*x[0])*(np.sin(6*np.pi*x[0]))**6
         g = 1 + 9 * (np.sum(x[1:], axis=0) / (self.n - 1))**0.25
-        return np.array([
+        return Result(f=np.array([
             f1,
             g * (1 - (f1 / g) ** 2),
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
 
     def get_pareto_front(self, n):
         # From dev_notebooks\zdt6_pareto_front.ipynb
