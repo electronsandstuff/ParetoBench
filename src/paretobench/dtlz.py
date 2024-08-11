@@ -45,7 +45,7 @@ class DTLZ2(DTLZx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return (1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m).T
+        return ((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m)).T
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -57,7 +57,7 @@ class DTLZ3(DTLZx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return (1 + g_1_3(x[self.m - 1:, :], self.n - self.m + 1))*f_2_to_6(x[:self.m - 1, :], self.m).T
+        return ((1 + g_1_3(x[self.m - 1:, :], self.n - self.m + 1))*f_2_to_6(x[:self.m - 1, :], self.m)).T
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -71,7 +71,7 @@ class DTLZ4(DTLZx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return (1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m, alpha=self.alpha).T
+        return ((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m, alpha=self.alpha)).T
    
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -84,7 +84,7 @@ class DTLZ5(DTLZx):
         x = x.T
         
         g = g_2_4_5(x[self.m - 1:, :])
-        return (1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m).T
+        return ((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T
     
     def get_pareto_front(self, n):
         f = get_hyperplane_points(2, n)
@@ -99,7 +99,7 @@ class DTLZ6(DTLZx):
         x = x.T
         
         g = np.sum(x[self.m - 1:, :]**0.1, axis=0)
-        return (1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m).T
+        return ((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T
     
     def get_pareto_front(self, n):
         f = get_hyperplane_points(2, n)
