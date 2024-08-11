@@ -1,6 +1,6 @@
 import numpy as np
 
-from .problem import Problem
+from .problem import Problem, Result
 
 
 class SCH(Problem):
@@ -21,10 +21,10 @@ class SCH(Problem):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return np.vstack((
+        return Result(f=np.vstack((
             x[0] ** 2,
             (x[0] - 2) ** 2
-        )).T
+        )).T, g=np.empty((x.shape[0], 0)))
         
     @property
     def var_lower_bound(self):
@@ -57,10 +57,10 @@ class FON(Problem):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return np.array([
+        return Result(f=np.array([
             1 - np.exp(-(x[0] - 1 / np.sqrt(3)) ** 2 - (x[1] - 1 / np.sqrt(3)) ** 2 - (x[2] - 1 / np.sqrt(3)) ** 2),
             1 - np.exp(-(x[0] + 1 / np.sqrt(3)) ** 2 - (x[1] + 1 / np.sqrt(3)) ** 2 - (x[2] + 1 / np.sqrt(3)) ** 2),
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
 
     @property
     def var_lower_bound(self):
@@ -97,10 +97,10 @@ class POL(Problem):
         a2 = 1.5 * np.sin(1) - np.cos(1) + 2 * np.sin(2) - 0.5 * np.cos(2)
         b1 = 0.5 * np.sin(x[0]) - 2 * np.cos(x[0]) + np.sin(x[1]) - 1.5 * np.cos(x[1])
         b2 = 1.5 * np.sin(x[0]) - np.cos(x[0]) + 2 * np.sin(x[1]) - 0.5 * np.cos(x[1])
-        return np.array([
+        return Result(f=np.array([
             1 + (a1 - b1) ** 2 + (a2 - b2) ** 2,
             (x[0] + 3) ** 2 + (x[1] + 1) ** 2,
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
         
     @property
     def var_lower_bound(self):
@@ -131,10 +131,10 @@ class KUR(Problem):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
         
-        return np.array([
+        return Result(f=np.array([
             np.sum(-10 * np.exp(-0.2 * np.sqrt(x[:-1] ** 2 + x[1:] ** 2)), axis=0),
             np.sum(np.abs(x) ** 0.8 + 5 * np.sin(x ** 3), axis=0),
-        ]).T
+        ]).T, g=np.empty((x.shape[0], 0)))
 
     @property
     def var_lower_bound(self):
@@ -174,7 +174,7 @@ class CONSTR(Problem):
             x[1] + 9 * x[0] - 6,
             -x[1] + 9 * x[0] - 1
         ])
-        return f.T, g.T
+        return Result(f=f.T, g=g.T)
 
     @property
     def var_lower_bound(self):
@@ -214,7 +214,7 @@ class SRN(Problem):
             225 - (x[0] ** 2 + x[1] ** 2),
             -10 - (x[0] - 3 * x[1])
         ])
-        return f.T, g.T
+        return Result(f=f.T, g=g.T)
     
     @property
     def var_lower_bound(self):
@@ -254,7 +254,7 @@ class TNK(Problem):
             -(-x[0] ** 2 - x[1] ** 2 + 1 + 0.1 * np.cos(16 * np.arctan(x[0] / x[1]))),
             0.5 - ((x[0] - 0.5) ** 2 + (x[1] - 0.5) ** 2)
         ])
-        return f.T, g.T
+        return Result(f=f.T, g=g.T)
 
     @property
     def var_bounds(self):
@@ -310,7 +310,7 @@ class WATER(Problem):
             2000.0 - (0.417 / (x[0] * x[1]) + 1721.26 * x[2] - 136.54),
             550.0 - (0.164 / (x[0] * x[1]) + 631.13 * x[2] - 54.48)
         ]) 
-        return f.T, g.T
+        return Result(f=f.T, g=g.T)
 
     @property
     def var_lower_bound(self):

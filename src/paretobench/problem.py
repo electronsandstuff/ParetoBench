@@ -37,8 +37,7 @@ class Problem(BaseModel):
         Returns:
             any: A tuple containing first the objective function values and second the values of the constraints
         """
-        ret = self._call(x)
-        return ret if isinstance(ret, tuple) else (ret, np.empty((x.shape[1], 0)))
+        return self._call(x)
     
     def _call(self, x: np.ndarray) -> any:
         """

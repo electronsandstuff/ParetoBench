@@ -1,6 +1,6 @@
 import numpy as np
 
-from .problem import Problem
+from .problem import Problem, Result
 from .utils import rastrigin
 
 
@@ -61,7 +61,7 @@ class CTP1(CTPx):
         g = []
         for i in range(self.j):
             g.append(f[1] - self._a[i]*np.exp(-self._b[i]*f[0]))
-        return f.T, np.vstack(g).T
+        return Result(f=f.T, g=np.vstack(g).T)
 
 
 class CTP2_7(CTPx):
@@ -112,7 +112,7 @@ class CTP2_7(CTPx):
              + np.cos(self._theta)*f[0])**self._c))**self._d
         g = np.vstack((c,))
         
-        return f.T, g.T
+        return Result(f=f.T, g=g.T)
 
 
 class CTP2(CTP2_7):
