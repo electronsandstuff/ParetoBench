@@ -48,6 +48,9 @@ class CF1(CFx, ProblemWithFixedPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         j = np.arange(2, self.n + 1)
         summand = (x[1:, :] - np.power(x[:1], 0.5 * (1.0 + 3 * (j[:, None] - 2) / (self.n - 2)))) ** 2
         f = np.vstack((
@@ -57,7 +60,7 @@ class CF1(CFx, ProblemWithFixedPF):
         g = np.vstack((
             f[0] + f[1] - self.a * np.abs(np.sin(self.b * np.pi * (f[0] - f[1] + 1))) - 1,
         ))
-        return f, g
+        return f.T, g.T
 
     @property
     def var_lower_bound(self):
@@ -89,6 +92,9 @@ class CF2(CFx, ProblemWithPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         j = np.arange(2, self.n + 1)
         i = j % 2
         summand = (x[1:, :] - np.cos(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n - np.pi / 2 * i[:, None])) ** 2
@@ -100,7 +106,7 @@ class CF2(CFx, ProblemWithPF):
         g = np.vstack((
             t / (1 + np.exp(4 * np.abs(t))),
         ))
-        return f, g
+        return f.T, g.T
 
     @property
     def var_bounds(self):
@@ -140,6 +146,9 @@ class CF3(CFx, ProblemWithPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         # Checked - 9/1/2020
         j = np.arange(2, self.n + 1)
         y = x[1:, :] - np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n)
@@ -156,7 +165,7 @@ class CF3(CFx, ProblemWithPF):
         g =  np.vstack((
             f[1] + f[0] ** 2 - self.a * np.sin(self.b * np.pi * (f[0] ** 2 - f[1] + 1)) - 1,
         ))
-        return f, g
+        return f.T, g.T
     
     @property
     def var_lower_bound(self):
@@ -186,6 +195,9 @@ class CF4(CFx, ProblemWithPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         # Checked - 9/1/2020
         j = np.arange(2, self.n + 1)
         y = x[1:, :] - np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n)
@@ -204,7 +216,7 @@ class CF4(CFx, ProblemWithPF):
         g = np.vstack((
             t / (1 + np.exp(4 * np.abs(t))),
         ))
-        return f, g
+        return f.T, g.T
 
     @property
     def var_lower_bound(self):
@@ -235,6 +247,9 @@ class CF5(CFx, ProblemWithPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         j = np.arange(2, self.n + 1)
         i = j % 2
         y = x[1:, :] - 0.8 * x[:1] * np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None])
@@ -253,7 +268,7 @@ class CF5(CFx, ProblemWithPF):
             x[1] - 0.8 * x[0] * np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n) - 0.5 * x[0] + 0.25,
         ))
         
-        return f, g
+        return f.T, g.T
 
     @property
     def var_lower_bound(self):
@@ -284,6 +299,9 @@ class CF6(CFx, ProblemWithPF):
         return 2
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         j = np.arange(2, self.n + 1)
         i = j % 2
         y = x[1:, :] - 0.8 * x[:1] * np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None])
@@ -302,7 +320,7 @@ class CF6(CFx, ProblemWithPF):
             g2
         ))
         
-        return f, g
+        return f.T, g.T
 
     @property
     def var_lower_bound(self):
@@ -333,6 +351,9 @@ class CF7(CFx, ProblemWithPF):
         return 2
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         j = np.arange(2, self.n + 1)
         i = j % 2
         y = x[1:, :] - np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None])
@@ -354,7 +375,7 @@ class CF7(CFx, ProblemWithPF):
             g2
         ))
         
-        return f, g
+        return f.T, g.T
 
     @property
     def var_lower_bound(self):
@@ -389,6 +410,9 @@ class CF8(CFx, ProblemWithPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         j = np.arange(3, self.n + 1)
         summand = (x[2:] - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)) ** 2
 
@@ -405,7 +429,7 @@ class CF8(CFx, ProblemWithPF):
                 np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1))) - 1,
         ))
         
-        return f, g
+        return f.T, g.T
 
     @property
     def var_lower_bound(self):
@@ -439,6 +463,9 @@ class CF9(CFx, ProblemWithPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         j = np.arange(3, self.n + 1)
         summand = (x[2:] - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)) ** 2
 
@@ -455,7 +482,7 @@ class CF9(CFx, ProblemWithPF):
                 self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
         ))
         
-        return f, g
+        return f.T, g.T
     
     @property
     def var_lower_bound(self):
@@ -485,6 +512,9 @@ class CF10(CFx, ProblemWithPF):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+    
         j = np.arange(3, self.n + 1)
         y = x[2:] - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)
         summand = 4 * y ** 2 - np.cos(8 * np.pi * y) + 1
@@ -502,7 +532,7 @@ class CF10(CFx, ProblemWithPF):
                 self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
         ))
         
-        return f, g
+        return f.T, g.T
 
     @property
     def var_lower_bound(self):
