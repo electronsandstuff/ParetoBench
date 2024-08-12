@@ -42,13 +42,13 @@ def test_evaluate(problem_name, n_eval = 64):
     assert not np.isnan(res.g).any()
     
     # Check that an exception is triggered on invalid input
-    with pytest.raises(pb.InputProblemError):
+    with pytest.raises(pb.InputError):
         p(x[:, 1:])
-    with pytest.raises(pb.InputProblemError):
+    with pytest.raises(pb.InputError):
         p(x[0, 1:])
-    with pytest.raises(pb.InputProblemError):
+    with pytest.raises(pb.InputError):
         p(x + (p.var_upper_bounds - p.var_lower_bounds + 1))
-    with pytest.raises(pb.InputProblemError):
+    with pytest.raises(pb.InputError):
         p(x[0] + (p.var_upper_bounds - p.var_lower_bounds + 1))
         
 

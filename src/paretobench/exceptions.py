@@ -19,7 +19,7 @@ class UnknownProblemError(Exception):
     pass
 
 
-class InputProblemError(Exception):
+class InputError(Exception):
     """
     The input provided to a problem is wrong somehow.
     """
