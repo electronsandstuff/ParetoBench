@@ -1,6 +1,6 @@
 import numpy as np
 
-from .problem import Problem
+from .problem import Problem, Result
 
 
 class SCH(Problem):
@@ -10,26 +10,32 @@ class SCH(Problem):
     Other name: Schaffer function N. 1
     """
     @property
-    def n_decision_vars(self):
+    def n(self):
         return 1
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     def _call(self, x):
-        return np.vstack((
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
+        return Result(f=np.vstack((
             x[0] ** 2,
             (x[0] - 2) ** 2
-        ))
+        )).T)
+        
+    @property
+    def var_lower_bounds(self):
+        return -1e3*np.ones(self.n)
+    
+    @property
+    def var_upper_bounds(self):
+        return 1e3*np.ones(self.n)
 
     @property
-    def decision_var_bounds(self):
-        return np.array([
-            [-1e3, ], [1e3, ],
-        ])
-
-    def get_reference(self):
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -41,27 +47,32 @@ class FON(Problem):
     Other name: Fonseca-Fleming Function
     """
     @property
-    def n_decision_vars(self):
+    def n(self):
         return 3
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     def _call(self, x):
-        return np.array([
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
+        return Result(f=np.array([
             1 - np.exp(-(x[0] - 1 / np.sqrt(3)) ** 2 - (x[1] - 1 / np.sqrt(3)) ** 2 - (x[2] - 1 / np.sqrt(3)) ** 2),
             1 - np.exp(-(x[0] + 1 / np.sqrt(3)) ** 2 - (x[1] + 1 / np.sqrt(3)) ** 2 - (x[2] + 1 / np.sqrt(3)) ** 2),
-        ])
+        ]).T)
 
     @property
-    def decision_var_bounds(self):
-        return np.array([
-            [-4.0, -4.0, -4.0],
-            [4.0, 4.0, 4.0],
-        ])
+    def var_lower_bounds(self):
+        return -4*np.ones(self.n)
     
-    def get_reference(self):
+    @property
+    def var_upper_bounds(self):
+        return 4*np.ones(self.n)
+    
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -73,31 +84,36 @@ class POL(Problem):
     Other name: Poloni’s two objective function
     """
     @property
-    def n_decision_vars(self):
+    def n(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         a1 = 0.5 * np.sin(1) - 2 * np.cos(1) + np.sin(2) - 1.5 * np.cos(2)
         a2 = 1.5 * np.sin(1) - np.cos(1) + 2 * np.sin(2) - 0.5 * np.cos(2)
         b1 = 0.5 * np.sin(x[0]) - 2 * np.cos(x[0]) + np.sin(x[1]) - 1.5 * np.cos(x[1])
         b2 = 1.5 * np.sin(x[0]) - np.cos(x[0]) + 2 * np.sin(x[1]) - 0.5 * np.cos(x[1])
-        return np.array([
+        return Result(f=np.array([
             1 + (a1 - b1) ** 2 + (a2 - b2) ** 2,
             (x[0] + 3) ** 2 + (x[1] + 1) ** 2,
-        ])
+        ]).T)
+        
+    @property
+    def var_lower_bounds(self):
+        return -np.pi*np.ones(self.n)
+    
+    @property
+    def var_upper_bounds(self):
+        return np.pi*np.ones(self.n)
 
     @property
-    def decision_var_bounds(self):
-        return np.array([
-            [-np.pi, -np.pi],
-            [np.pi, np.pi],
-        ])
-
-    def get_reference(self):
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
                
@@ -109,37 +125,41 @@ class KUR(Problem):
     Other name: Kursawe’s Function
     """
     n: int = 3
-        
-    @property
-    def n_decision_vars(self):
-        return self.n
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
 
     def _call(self, x):
-        return np.array([
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
+        return Result(f=np.array([
             np.sum(-10 * np.exp(-0.2 * np.sqrt(x[:-1] ** 2 + x[1:] ** 2)), axis=0),
             np.sum(np.abs(x) ** 0.8 + 5 * np.sin(x ** 3), axis=0),
-        ])
+        ]).T)
 
     @property
-    def decision_var_bounds(self):
-        return (np.ones((self.n, 2)) * np.array([-5, 5])).T
-
-    def get_reference(self):
+    def var_lower_bounds(self):
+        return -5*np.ones(self.n)
+    
+    @property
+    def var_upper_bounds(self):
+        return 5*np.ones(self.n)
+    
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
 
 class CONSTR(Problem):
     @property
-    def n_decision_vars(self):
+    def n(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     @property
@@ -147,6 +167,9 @@ class CONSTR(Problem):
         return 2
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         f = np.array([
             x[0],
             (1 + x[1]) / x[0]
@@ -155,27 +178,29 @@ class CONSTR(Problem):
             x[1] + 9 * x[0] - 6,
             -x[1] + 9 * x[0] - 1
         ])
-        return f, g
+        return Result(f=f.T, g=g.T)
 
     @property
-    def decision_var_bounds(self):
-        return np.array([
-            [0.1, 0.0],
-            [1.0, 5.0]
-        ])
+    def var_lower_bounds(self):
+        return np.array([0.1, 0.0])
+    
+    @property
+    def var_upper_bounds(self):
+        return np.array([[1.0, 5.0]])
         
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
 
 class SRN(Problem):
     @property
-    def n_decision_vars(self):
+    def n(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     @property
@@ -183,6 +208,9 @@ class SRN(Problem):
         return 2
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         f = np.array([
             (x[0] - 2) ** 2 + (x[1] - 1) ** 2 + 2,
             9 * x[0] - (x[1] - 1) ** 2
@@ -191,27 +219,29 @@ class SRN(Problem):
             225 - (x[0] ** 2 + x[1] ** 2),
             -10 - (x[0] - 3 * x[1])
         ])
-        return f, g
+        return Result(f=f.T, g=g.T)
+    
+    @property
+    def var_lower_bounds(self):
+        return -20*np.ones(self.n)
+    
+    @property
+    def var_upper_bounds(self):
+        return 20*np.ones(self.n)
 
     @property
-    def decision_var_bounds(self):
-        return np.array([
-            [-20.0, -20.0],
-            [20.0, 20.0]
-        ])
-
-    def get_reference(self):
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
      
 class TNK(Problem):
     @property
-    def n_decision_vars(self):
+    def n(self):
         return 2
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     @property
@@ -219,6 +249,9 @@ class TNK(Problem):
         return 2
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         f = np.array([
             x[0],
             x[1]
@@ -227,27 +260,37 @@ class TNK(Problem):
             -(-x[0] ** 2 - x[1] ** 2 + 1 + 0.1 * np.cos(16 * np.arctan(x[0] / x[1]))),
             0.5 - ((x[0] - 0.5) ** 2 + (x[1] - 0.5) ** 2)
         ])
-        return f, g
+        return Result(f=f.T, g=g.T)
 
     @property
-    def decision_var_bounds(self):
+    def var_bounds(self):
         return np.array([
             [0.0, 0.0],
             [np.pi, np.pi]
         ])
+    
+    
+    @property
+    def var_lower_bounds(self):
+        return np.zeros(self.n)
+    
+    @property
+    def var_upper_bounds(self):
+        return np.pi*np.ones(self.n)
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
 
 class WATER(Problem):
     @property
-    def n_decision_vars(self):
+    def n(self):
         return 3
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 5
     
     @property
@@ -255,6 +298,9 @@ class WATER(Problem):
         return 7
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         f = np.array([
             106780.37 * (x[1] + x[2]) + 61704.67,
             3000.0 * x[0],
@@ -271,15 +317,17 @@ class WATER(Problem):
             2000.0 - (0.417 / (x[0] * x[1]) + 1721.26 * x[2] - 136.54),
             550.0 - (0.164 / (x[0] * x[1]) + 631.13 * x[2] - 54.48)
         ]) 
-        return f, g
+        return Result(f=f.T, g=g.T)
 
     @property
-    def decision_var_bounds(self):
-        return np.array([
-            [0.01, 0.01, 0.01],
-            [0.45, 0.10, 0.10]
-        ])
+    def var_lower_bounds(self):
+        return np.array([0.01, 0.01, 0.01])
+    
+    @property
+    def var_upper_bounds(self):
+        return np.array([0.45, 0.10, 0.10])
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."

@@ -1,47 +1,110 @@
 import numpy as np
 from pydantic import BaseModel
+from dataclasses import dataclass, field
 
-from .exceptions import DeserializationError
+from .exceptions import DeserializationError, InputError
 from .factory import create_problem
 from .simple_serialize import dumps, loads
 
 
+@dataclass
+class Result:
+    """
+    This class represents the output from running one of the problems. When containing batched data, the first index is the 
+    batched index. Common literature names are used for the objectives (f) and inequality constraints (g).
+    """
+    f: np.ndarray
+    g: np.ndarray = field(default=None)
+    
+    def __post_init__(self):
+        """
+        Automatically set constraints if we didn't get any
+        """
+        if self.g is None:
+            if len(self.f.shape) == 2:
+                self.g = np.empty((self.f.shape[0], 0))
+            else:
+                self.g = np.empty((0,))
+
+            
+    def __repr__(self):
+        batch_size = self.f.shape[0]
+        num_objectives = self.f.shape[1]
+        num_constraints = self.g.shape[1] if self.g is not None else 0
+        return f"Result(batch_size={batch_size}, num_objectives={num_objectives}, num_constraints={num_constraints})"
+
+
 class Problem(BaseModel):
     """
-    The overarching class all problems inherit from
+    The overarching class all problems inherit from. Children must implement the following methods and properties.
+     * `m`: property, the number of objectives
+     * `n`: property, the number of decision variables
+     * `n_constraints`: property, the number of constraints
+     * `var_upper_bounds`: property, the array of upper bounds for decision variables
+     * `var_lower_bounds`: property, the array of lower bounds for decision variables
+     * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Result` object
     """    
-    def __call__(self, x: np.ndarray) -> any:
+    def __call__(self, x: np.ndarray, check_bounds=True) -> Result:
         """
-        Returns the values of the objective functions and constraints at the decision variables x.
+        Returns the values of the objective functions and constraints at the decision variables `x`. 
+        The input can be either batched or a single value.
+        
+        Note: When subclassing `Problem`, the function must be implemented by defining `_call`, not `__call__`.
 
-        Args:
-            x (np.ndarray): The decision variables. An mxn array representing the m variables and n individuals.
+        Parameters
+        ----------
+        x : np.ndarray
+            The decision variables. When batched, the first dimension is the batch dimension.
+        check_bounds : bool, optional
+            Whether or not to check that `x` is within the boundaries of the problem. Defaults to True.
 
-        Returns:
-            any: A tuple containing first the objective function values and second the values of the constraints
-        """
-        ret = self._call(x)
-        return ret if isinstance(ret, tuple) else (ret, np.empty((0, x.shape[1])))
+        Returns
+        -------
+        Result
+            A result object containing the objectives and constraints.
+        """            
+        # If a single input was provided
+        if len(x.shape) == 1:
+            if x.shape[0] != self.n_vars:
+                msg = f'Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[0]={x.shape[0]})'
+                raise InputError(msg)
+            if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
+                raise InputError("Input lies outside of problem bounds.")
+            res = self._call(x[None, :])
+            return Result(f=res.f[0, :], g=res.g[0, :])
+        
+        # If batched input is used
+        elif len(x.shape) == 2:
+            if x.shape[1] != self.n_vars:
+                msg = f'Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[1]={x.shape[1]})'
+                raise InputError(msg)
+            if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
+                raise InputError("Input lies outside of problem bounds.")
+            return self._call(x)
+        
+        # If user provided something not usable
+        else:
+            raise ValueError(f"Incompatible shape of input array x: {x.shape}")
     
-    def _call(self, x: np.ndarray) -> any:
+    def _call(self, x: np.ndarray) -> Result:
         """
-        This method is implemented by the child classes of problem and can return either the objectives only or both the objectives and constraints.
-        """
-        raise NotImplementedError()
-
-    @property
-    def n_decision_vars(self):
-        """
-        Returns the number of decision variables expected by this problem.
+        This method is implemented by the child classes of `Problem` and should operate on a batched array of inputs.
         """
         raise NotImplementedError()
 
     @property
-    def n_objectives(self):
+    def n_vars(self):
         """
-        Returns the number of objective functions used in this problem
+        Returns the number of decision variables expected by this problem. Passed through to property `n`.
         """
-        raise NotImplementedError()
+        return self.n
+
+    @property
+    def n_objs(self):
+        """
+        Returns the number of objective functions used in this problem. Passed through to property `m`.
+        """
+        return self.m
     
     @property
     def n_constraints(self):
@@ -51,14 +114,29 @@ class Problem(BaseModel):
         return 0
     
     @property
-    def decision_var_bounds(self):
+    def var_lower_bounds(self):
+        """
+        Returns the rectangular lower boundaries of the decision variables.
+        """
+        raise NotImplementedError()
+    
+    @property
+    def var_upper_bounds(self):
+        """
+        Returns the rectangular upper boundaries of the decision variables 
+        """
+        raise NotImplementedError()
+    
+    @property
+    def var_bounds(self):
         """
         Returns the rectangular boundaries of the decision variables (2d numpy array
         where first row is lower bound of each variable and second row are the upper bounds)
         """
-        raise NotImplementedError()
+        return np.vstack((self.var_lower_bounds, self.var_upper_bounds))
     
-    def get_reference(self):
+    @property
+    def reference(self):
         """
         Returns an APA formatted reference to where the problem was defined.
         """
