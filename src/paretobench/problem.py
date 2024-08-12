@@ -44,18 +44,24 @@ class Problem(BaseModel):
      * `var_lower_bounds`: property, the array of lower bounds for decision variables
      * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Result` object
     """    
-    def __call__(self, x: np.ndarray) -> Result:
+    def __call__(self, x: np.ndarray, check_bounds=True) -> Result:
         """
-        Returns the values of the objective functions and constraints at the decision variables x. The input can be either
-        batched or a single value.
+        Returns the values of the objective functions and constraints at the decision variables `x`. 
+        The input can be either batched or a single value.
         
-        Note: When subclassing `Problem` the function must be implemented by defining `_call` not `__call__`.
+        Note: When subclassing `Problem`, the function must be implemented by defining `_call`, not `__call__`.
 
-        Args:
-            x (np.ndarray): The decision variables. When batched, first dimension is batch dimension.
+        Parameters
+        ----------
+        x : np.ndarray
+            The decision variables. When batched, the first dimension is the batch dimension.
+        check_bounds : bool, optional
+            Whether or not to check that `x` is within the boundaries of the problem. Defaults to True.
 
-        Returns:
-            Result: A result object containing the objectives and constraints.
+        Returns
+        -------
+        Result
+            A result object containing the objectives and constraints.
         """
         # If a single input was provided
         if len(x.shape) == 1:
