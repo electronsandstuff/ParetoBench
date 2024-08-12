@@ -56,7 +56,8 @@ def test_get_params(problem_name):
     assert isinstance(p.m, int)
     assert isinstance(p.n_constraints, int)
     assert isinstance(p.var_bounds, np.ndarray)
-    
+    assert isinstance(p.get_reference(), str)
+
     # Check that if you actually call the values, you get the right sized objects (everything is consistent)
     bnd = p.var_bounds
     x = np.random.random((1, bnd.shape[1]))*(bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
