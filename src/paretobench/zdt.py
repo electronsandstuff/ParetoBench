@@ -16,11 +16,11 @@ class ZDTx(Problem, ProblemWithPF):
                "Evolutionary Computation, 8(2), 173–195. https://doi.org/10.1162/106365600568202"
 
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return np.zeros(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return np.ones(self.n)
 
 
@@ -99,11 +99,11 @@ class ZDT4(ZDTx):
         ]).T)
 
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return np.concatenate(([0], -5*np.ones(self.n-1)))
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return np.concatenate(([1], 5*np.ones(self.n-1)))
 
     def get_pareto_front(self, n):
