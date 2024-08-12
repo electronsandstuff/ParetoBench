@@ -2,7 +2,7 @@ import numpy as np
 from pydantic import BaseModel
 from dataclasses import dataclass, field
 
-from .exceptions import DeserializationError, InputProblemError
+from .exceptions import DeserializationError, InputError
 from .factory import create_problem
 from .simple_serialize import dumps, loads
 
@@ -67,9 +67,9 @@ class Problem(BaseModel):
         if len(x.shape) == 1:
             if x.shape[0] != self.n_vars:
                 msg = f'Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[0]={x.shape[0]})'
-                raise InputProblemError(msg)
+                raise InputError(msg)
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
-                raise InputProblemError("Input lies outside of problem bounds.")
+                raise InputError("Input lies outside of problem bounds.")
             res = self._call(x[None, :])
             return Result(f=res.f[0, :], g=res.g[0, :])
         
@@ -77,9 +77,9 @@ class Problem(BaseModel):
         elif len(x.shape) == 2:
             if x.shape[1] != self.n_vars:
                 msg = f'Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[1]={x.shape[1]})'
-                raise InputProblemError(msg)
+                raise InputError(msg)
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
-                raise InputProblemError("Input lies outside of problem bounds.")
+                raise InputError("Input lies outside of problem bounds.")
             return self._call(x)
         
         # If user provided something not usable
