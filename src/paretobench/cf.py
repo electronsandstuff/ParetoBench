@@ -110,12 +110,6 @@ class CF2(CFx, ProblemWithPF):
         return Result(f=f.T, g=g.T)
 
     @property
-    def var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-1, 1])).T
-        b[0, 0] = 0
-        return b
-
-    @property
     def var_lower_bounds(self):
         return np.concatenate(([0], -1*np.ones(self.n-1)))
     
