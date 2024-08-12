@@ -1,6 +1,6 @@
 import numpy as np
 
-from .problem import Problem, ProblemWithPF
+from .problem import Problem, ProblemWithPF, Result
 from .utils import get_hyperplane_points, get_nondominated
 from .wfg_utils import shape_linear, shape_convex, shape_concave, shape_mixed, shape_disconnected,\
     compute_x, transform_bias_polynomial, transform_bias_flat_region, transform_bias_parameter_dependent,\
@@ -20,28 +20,26 @@ class WFGx(Problem, ProblemWithPF):
         # Set internal attributes for later
         self._d = 1.0
         self._s = np.array([2*(i + 1) for i in range(self.m)])
-
-    @property
-    def decision_var_bounds(self):
-        bmin = np.zeros(self.n)
-        bmax = np.array([2*(i + 1) for i in range(self.n)])
-        return np.vstack((bmin, bmax))
     
     @property
-    def n_decision_vars(self):
-        return self.n
+    def var_lower_bounds(self):
+        return np.zeros(self.n)
     
     @property
-    def n_objectives(self):
-        return self.m
+    def var_upper_bounds(self):
+        return np.array([2*(i + 1) for i in range(self.n)])
     
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Huband, S., Hingston, P., Barone, L., & While, L. (2006). A review of multiobjective test problems and a scalable test "\
                "problem toolkit. IEEE Transactions on Evolutionary Computation, 10(5), 477–506. https://doi.org/10.1109/TEVC.2005.861417"
 
 
 class WFG1(WFGx):
     def _call(self, x, set_pos_zero=False):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -80,7 +78,7 @@ class WFG1(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
 
     def get_pareto_front(self, n, n_solver_guess=128, n_solver_iter=32):
@@ -117,11 +115,14 @@ class WFG1(WFGx):
         # Evaluate the objective functions
         f = shape_convex(x)
         f[-1] = shape_mixed(x, 5, 1)
-        return f*2*np.arange(1, self.m+1)[:, None]
+        return (f*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG2(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -156,7 +157,7 @@ class WFG2(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
  
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n, n_solver_guess=2048, n_solver_iter=32):
         # Invert the convex shape function to find points along the reference vectors
@@ -193,11 +194,14 @@ class WFG2(WFGx):
         f = shape_convex(x)
         f[-1] = shape_disconnected(x, 5, 1, 1)
         f = f[:, get_nondominated(f)]
-        return f*2*np.arange(1, self.m+1)[:, None]
+        return (f*2*np.arange(1, self.m+1)[:, None]).T
 
 
 class WFG3(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -231,16 +235,19 @@ class WFG3(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n):
         f = np.vstack((np.linspace(0, 1, n), np.full((self.m-2, n), 1/2), np.zeros((1, n))))
         f = shape_linear(f)
-        return f*2*np.arange(1, self.m+1)[:, None]
+        return (f*2*np.arange(1, self.m+1)[:, None]).T
 
 
 class WFG4(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -267,15 +274,18 @@ class WFG4(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG5(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -302,15 +312,18 @@ class WFG5(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
 
 
 class WFG6(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -335,15 +348,18 @@ class WFG6(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG7(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -376,15 +392,18 @@ class WFG7(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG8(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -417,15 +436,18 @@ class WFG8(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
     
 
 class WFG9(WFGx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         # Normalize the input
         b = np.array([2*(i + 1) for i in range(self.n)])
         y = x / b[:, None]
@@ -456,8 +478,8 @@ class WFG9(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return obj
+        return Result(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]
+        return (f / np.sqrt(np.sum(f**2, axis=0))*2*np.arange(1, self.m+1)[:, None]).T
