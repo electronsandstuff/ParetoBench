@@ -26,7 +26,8 @@ def get_pf_cf9_cf10(n, b):
 
 
 class CFx(Problem):
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Zhang, Q., Zhou, A., Zhao, S., Suganthan, P. N., Liu, W., & Tiwari, S. (2009). "\
                "Multiobjective optimization Test Instances for the CEC 2009 Special Session "\
                "and Competition. 31."

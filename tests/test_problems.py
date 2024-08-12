@@ -56,7 +56,7 @@ def test_get_params(problem_name):
     assert isinstance(p.m, int)
     assert isinstance(p.n_constraints, int)
     assert isinstance(p.var_bounds, np.ndarray)
-    assert isinstance(p.get_reference(), str)
+    assert isinstance(p.reference, str)
 
     # Check that if you actually call the values, you get the right sized objects (everything is consistent)
     bnd = p.var_bounds
@@ -87,9 +87,3 @@ def test_pareto_front(problem_name, npoints=1000):
     # Make sure the right size array is returned and it doesn't give bad values
     assert p.n_objs == f.shape[1]
     assert not np.isnan(f).any()
-
-
-@pytest.mark.parametrize("problem_name", pb.get_problem_names())
-def test_refs(problem_name):
-    p = pb.create_problem(problem_name)
-    assert isinstance(p.get_reference(), str)

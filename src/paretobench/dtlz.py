@@ -17,7 +17,8 @@ class DTLZx(Problem, ProblemWithPF):
     def var_upper_bounds(self):
         return np.ones(self.n)
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2002). Scalable multi-objective optimization test problems. "\
                "Proceedings of the 2002 Congress on Evolutionary Computation. CEC’02 (Cat. No.02TH8600), 1, 825–830 vol.1. "\
                "https://doi.org/10.1109/CEC.2002.1007032"
