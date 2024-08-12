@@ -5,7 +5,8 @@ from .utils import rastrigin
 
 
 class CTPx(Problem):
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Zitzler, E. (Ed.). (2001). Evolutionary multi-criterion optimization: First international conference, "\
                "EMO 2001, Zurich, Switzerland, March 2001: proceedings. Springer."
 

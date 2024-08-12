@@ -34,7 +34,8 @@ class SCH(Problem):
     def var_upper_bounds(self):
         return 1e3*np.ones(self.n)
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -70,7 +71,8 @@ class FON(Problem):
     def var_upper_bounds(self):
         return 4*np.ones(self.n)
     
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -110,7 +112,8 @@ class POL(Problem):
     def var_upper_bounds(self):
         return np.pi*np.ones(self.n)
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
                
@@ -144,7 +147,8 @@ class KUR(Problem):
     def var_upper_bounds(self):
         return 5*np.ones(self.n)
     
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -184,7 +188,8 @@ class CONSTR(Problem):
     def var_upper_bounds(self):
         return np.array([[1.0, 5.0]])
         
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -224,7 +229,8 @@ class SRN(Problem):
     def var_upper_bounds(self):
         return 20*np.ones(self.n)
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -272,7 +278,8 @@ class TNK(Problem):
     def var_upper_bounds(self):
         return np.pi*np.ones(self.n)
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
 
@@ -320,6 +327,7 @@ class WATER(Problem):
     def var_upper_bounds(self):
         return np.array([0.45, 0.10, 0.10])
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "\
                "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."

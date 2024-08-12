@@ -119,7 +119,8 @@ class Problem(BaseModel):
         """
         return np.vstack((self.var_lower_bounds, self.var_upper_bounds))
     
-    def get_reference(self):
+    @property
+    def reference(self):
         """
         Returns an APA formatted reference to where the problem was defined.
         """
