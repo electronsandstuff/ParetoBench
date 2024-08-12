@@ -9,13 +9,34 @@ def test_evaluate(problem_name, n_eval = 64):
     """
     Try creating each registered problem w/ default parameters and then call it.
     """
+    # Create the problem object (default parameters)
     p = pb.create_problem(problem_name)
+    
+    # Create a set of points to evaluate the problem on
     bnd = p.var_bounds
     x = np.random.random((n_eval, bnd.shape[1]))*(bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
+    
+    # Evaluate on batched data
     res = p(x)
     assert isinstance(res, pb.Result)
     assert isinstance(res.f, np.ndarray)
+    assert res.f.shape[0] == n_eval
+    assert res.f.shape[1] == p.n_objs
     assert isinstance(res.g, np.ndarray)
+    assert res.g.shape[0] == n_eval
+    assert res.g.shape[1] == p.n_constraints
+    assert not np.isnan(res.f).any()
+    assert not np.isnan(res.g).any()
+
+    # Evaluate on a single value
+    res = p(x[0])
+    assert isinstance(res, pb.Result)
+    assert isinstance(res.f, np.ndarray)
+    assert res.f.shape[0] == p.n_objs
+    assert len(res.f.shape) == 1
+    assert isinstance(res.g, np.ndarray)
+    assert res.g.shape[0] == p.n_constraints
+    assert len(res.g.shape) == 1
     assert not np.isnan(res.f).any()
     assert not np.isnan(res.g).any()
 

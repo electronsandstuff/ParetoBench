@@ -10,8 +10,8 @@ from .simple_serialize import dumps, loads
 @dataclass
 class Result:
     """
-    This class represents the batched output from running one of the problems. The first index is the batched index and common
-    literature names are used for the objectives (f) and inequality constraints (g).
+    This class represents the output from running one of the problems. When containing batched data, the first index is the 
+    batched index. Common literature names are used for the objectives (f) and inequality constraints (g).
     """
     f: np.ndarray
     g: np.ndarray = field(default=None)
@@ -21,7 +21,11 @@ class Result:
         Automatically set constraints if we didn't get any
         """
         if self.g is None:
-            self.g = np.empty((self.f.shape[0], 0))
+            if len(self.f.shape) == 2:
+                self.g = np.empty((self.f.shape[0], 0))
+            else:
+                self.g = np.empty((0,))
+
             
     def __repr__(self):
         batch_size = self.f.shape[0]
@@ -40,21 +44,35 @@ class Problem(BaseModel):
      * `var_lower_bounds`: property, the array of lower bounds for decision variables
      * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Result` object
     """    
-    def __call__(self, x: np.ndarray) -> any:
+    def __call__(self, x: np.ndarray) -> Result:
         """
-        Returns the values of the objective functions and constraints at the decision variables x.
+        Returns the values of the objective functions and constraints at the decision variables x. The input can be either
+        batched or a single value.
+        
+        Note: When subclassing `Problem` the function must be implemented by defining `_call` not `__call__`.
 
         Args:
-            x (np.ndarray): The decision variables. An mxn array representing the m variables and n individuals.
+            x (np.ndarray): The decision variables. When batched, first dimension is batch dimension.
 
         Returns:
-            any: A tuple containing first the objective function values and second the values of the constraints
+            Result: A result object containing the objectives and constraints.
         """
-        return self._call(x)
+        # If a single input was provided
+        if len(x.shape) == 1:
+            res = self._call(x[None, :])
+            return Result(f=res.f[0, :], g=res.g[0, :])
+        
+        # If batched input is used
+        elif len(x.shape) == 2:
+            return self._call(x)
+        
+        # If user provided something not usable
+        else:
+            raise ValueError(f"Incompatible shape of input array x: {x.shape}")
     
-    def _call(self, x: np.ndarray) -> any:
+    def _call(self, x: np.ndarray) -> Result:
         """
-        This method is implemented by the child classes of problem and can return either the objectives only or both the objectives and constraints.
+        This method is implemented by the child classes of `Problem` and should operate on a batched array of inputs.
         """
         raise NotImplementedError()
 
