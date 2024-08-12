@@ -22,11 +22,11 @@ class WFGx(Problem, ProblemWithPF):
         self._s = np.array([2*(i + 1) for i in range(self.m)])
     
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return np.zeros(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return np.array([2*(i + 1) for i in range(self.n)])
     
     def get_reference(self):

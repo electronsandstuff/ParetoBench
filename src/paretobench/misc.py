@@ -27,11 +27,11 @@ class SCH(Problem):
         )).T)
         
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return -1e3*np.ones(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return 1e3*np.ones(self.n)
 
     def get_reference(self):
@@ -63,11 +63,11 @@ class FON(Problem):
         ]).T)
 
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return -4*np.ones(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return 4*np.ones(self.n)
     
     def get_reference(self):
@@ -103,11 +103,11 @@ class POL(Problem):
         ]).T)
         
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return -np.pi*np.ones(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return np.pi*np.ones(self.n)
 
     def get_reference(self):
@@ -137,11 +137,11 @@ class KUR(Problem):
         ]).T)
 
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return -5*np.ones(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return 5*np.ones(self.n)
     
     def get_reference(self):
@@ -177,11 +177,11 @@ class CONSTR(Problem):
         return Result(f=f.T, g=g.T)
 
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return np.array([0.1, 0.0])
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return np.array([[1.0, 5.0]])
         
     def get_reference(self):
@@ -217,11 +217,11 @@ class SRN(Problem):
         return Result(f=f.T, g=g.T)
     
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return -20*np.ones(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return 20*np.ones(self.n)
 
     def get_reference(self):
@@ -265,11 +265,11 @@ class TNK(Problem):
     
     
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return np.zeros(self.n)
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return np.pi*np.ones(self.n)
 
     def get_reference(self):
@@ -313,11 +313,11 @@ class WATER(Problem):
         return Result(f=f.T, g=g.T)
 
     @property
-    def var_lower_bound(self):
+    def var_lower_bounds(self):
         return np.array([0.01, 0.01, 0.01])
     
     @property
-    def var_upper_bound(self):
+    def var_upper_bounds(self):
         return np.array([0.45, 0.10, 0.10])
 
     def get_reference(self):
