@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import pytest
 
 import paretobench as pb
 
@@ -39,7 +40,17 @@ def test_evaluate(problem_name, n_eval = 64):
     assert len(res.g.shape) == 1
     assert not np.isnan(res.f).any()
     assert not np.isnan(res.g).any()
-
+    
+    # Check that an exception is triggered on invalid input
+    with pytest.raises(pb.InputProblemError):
+        p(x[:, 1:])
+    with pytest.raises(pb.InputProblemError):
+        p(x[0, 1:])
+    with pytest.raises(pb.InputProblemError):
+        p(x + (p.var_upper_bounds - p.var_lower_bounds + 1))
+    with pytest.raises(pb.InputProblemError):
+        p(x[0] + (p.var_upper_bounds - p.var_lower_bounds + 1))
+        
 
 @pytest.mark.parametrize("problem_name", pb.get_problem_names())
 def test_get_params(problem_name):
