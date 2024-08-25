@@ -17,4 +17,5 @@ dependencies = [
   "numpy",
   "matplotlib",
   "pydantic",
+  "h5py"
 ]
