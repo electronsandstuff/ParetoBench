@@ -227,20 +227,17 @@ class Experiment:
 
         return cls(runs=runs, identifier=identifier)
     
-    def save(self, fname, version=1):
+    def save(self, fname):
         with h5py.File(fname, mode='w') as f:
             # Save metadata as attributes
             f.attrs['identifier'] = self.identifier
+            f.attrs['version'] = '1.0.0'
+            f.attrs['description'] = 'Multi-objective optimization algorithm history data saved by ParetoBench'
             
             # Save each run into its own group
-            if version == 1:
-                for idx, run in enumerate(self.runs):
-                    run._to_h5py_group(f.create_group("run_{:d}".format(idx)))
-            elif version == 2:
-                for idx, run in enumerate(self.runs):
-                    run._to_h5py_group(f.create_group("run_{:d}".format(idx)))
-            else:
-                raise ValueError(f'unrecognized version: {version}')
+            for idx, run in enumerate(self.runs):
+                run._to_h5py_group(f.create_group("run_{:d}".format(idx)))
+
                 
     @classmethod
     def load(cls, fname):        
