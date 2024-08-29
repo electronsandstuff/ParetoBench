@@ -166,6 +166,7 @@ class History:
                 g = g[start_idx:start_idx+pop_size],
                 feval=feval,
             ))
+            start_idx += pop_size
 
         # Return as a history object
         return cls(
