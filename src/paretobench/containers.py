@@ -19,6 +19,14 @@ class Population:
     g: np.ndarray
     feval: int
     
+    def __eq__(self, other):
+        if not isinstance(other, Population):
+            return False
+        return (np.array_equal(self.x, other.x) and
+                np.array_equal(self.f, other.f) and
+                np.array_equal(self.g, other.g) and
+                self.feval == other.feval)
+
     @classmethod
     def from_random(cls, n_objectives: int, n_decision_vars: int, n_constraints: int, pop_size: int,
                     feval: int = 0) -> 'Population':
@@ -75,6 +83,13 @@ class History:
     reports: List[Population]
     problem: str
     metadata: Dict[str, Union[str, int, float, bool]]
+
+    def __eq__(self, other):
+        if not isinstance(other, History):
+            return False
+        return (self.reports == other.reports and
+                self.problem == other.problem and
+                self.metadata == other.metadata)
 
     @classmethod
     def from_random(cls, n_populations: int, n_objectives: int, n_decision_vars: int, n_constraints: int, 
@@ -164,6 +179,12 @@ class History:
 class Experiment:
     runs: List[History]
     identifier: str
+
+    def __eq__(self, other):
+        if not isinstance(other, Experiment):
+            return False
+        return (self.runs == other.runs and
+                self.identifier == other.identifier)
 
     def __repr__(self) -> str:
         return f"Experiment(identifier='{self.identifier}', n_runs={len(self.runs)})"
