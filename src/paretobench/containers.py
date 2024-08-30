@@ -45,7 +45,7 @@ class Population(BaseModel):
         f_size = self.f.shape[0]
         g_size = self.g.shape[0]
         if len(set([x_size, f_size, g_size])) != 1:
-            raise ValueError('Batch dimensions do not match (len(x)={x_size}, len(f)={f_size}, len(g)={g_size})')
+            raise ValueError(f'Batch dimensions do not match (len(x)={x_size}, len(f)={f_size}, len(g)={g_size})')
         return self
 
     @field_validator('feval')
