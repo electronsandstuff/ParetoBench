@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 from typing import List, Dict, Union
 import h5py
@@ -6,6 +6,7 @@ import re
 import random
 import string
 from functools import reduce
+from datetime import datetime, timezone
 
 from .utils import pf_reduce
 
@@ -200,12 +201,23 @@ class History:
 class Experiment:
     runs: List[History]
     identifier: str
-
+    author: str = ''
+    software: str = ''
+    software_version: str = ''
+    comment: str = ''
+    creation_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    file_version: str = '1.0.0'
+    
     def __eq__(self, other):
         if not isinstance(other, Experiment):
             return False
-        return (self.runs == other.runs and
-                self.identifier == other.identifier)
+        return (self.identifier == other.identifier and
+                self.author == other.author and
+                self.software == other.software and
+                self.software_version == other.software_version and
+                self.comment == other.comment and
+                self.creation_time == other.creation_time and
+                self.runs == other.runs)
 
     def __repr__(self) -> str:
         return f"Experiment(identifier='{self.identifier}', n_runs={len(self.runs)})"
@@ -245,14 +257,26 @@ class Experiment:
         # Randomly generate an identifier for the experiment
         identifier = f"Experiment_{random.randint(1000, 9999)}"
 
-        return cls(runs=runs, identifier=identifier)
+        # Generate random values or placeholders for other attributes
+        author = f"Author_{random.randint(1, 100)}"
+        software = f"Software_{random.randint(1, 10)}"
+        software_version = f"{random.randint(1, 5)}.{random.randint(0, 9)}"
+        comment = "Randomly generated experiment"
+
+        return cls(runs=runs, identifier=identifier, author=author, software=software,
+                   software_version=software_version, comment=comment)
     
     def save(self, fname):
         with h5py.File(fname, mode='w') as f:
             # Save metadata as attributes
             f.attrs['identifier'] = self.identifier
-            f.attrs['version'] = '1.0.0'
-            f.attrs['description'] = 'Multi-objective optimization algorithm history data saved by ParetoBench'
+            f.attrs['author'] = self.author
+            f.attrs['software'] = self.software
+            f.attrs['software_version'] = self.software_version
+            f.attrs['comment'] = self.comment
+            f.attrs['creation_time'] = self.creation_time.isoformat()
+            f.attrs['file_version'] = self.file_version
+            f.attrs['file_format'] = 'ParetoBench Multi-Objective Optimization Data'
             
             # Save each run into its own group
             for idx, run in enumerate(self.runs):
@@ -260,7 +284,7 @@ class Experiment:
 
                 
     @classmethod
-    def load(cls, fname):        
+    def load(cls, fname):
         # Load the data
         with h5py.File(fname, mode='r') as f:
             # Load each of the runs keeping track of the order of the indices
@@ -271,8 +295,23 @@ class Experiment:
                     idx_runs.append((int(m.group(1)), History._from_h5py_group(run_grp)))
             runs = [x[1] for x in sorted(idx_runs, key=lambda x: x[0])]
             
+            # Extract other attributes
+            identifier = f.attrs['identifier']
+            author = f.attrs['author']
+            software = f.attrs['software']
+            software_version = f.attrs['software_version']
+            comment = f.attrs['comment']
+
+            # Convert the creation_time back to a timezone-aware datetime object
+            creation_time = datetime.fromisoformat(f.attrs['creation_time']).astimezone(timezone.utc)
+
             # Return as an experiment object
             return cls(
-                identifier=f.attrs['identifier'],
                 runs=runs,
+                identifier=identifier,
+                author=author,
+                software=software,
+                software_version=software_version,
+                comment=comment,
+                creation_time=creation_time
             )
