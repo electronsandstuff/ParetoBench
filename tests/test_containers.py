@@ -4,7 +4,7 @@ import os
 import numpy as np
 from pydantic import ValidationError
 
-from paretobench.containers import Experiment, Population
+from paretobench.containers import Experiment, Population, History
 
 
 def test_experiment_save_load():
@@ -49,3 +49,51 @@ def test_population_batch_dimension():
     # Test that creating an invalid Population instance raises a ValidationError
     with pytest.raises(ValidationError, match=r".*Batch dimensions do not match \(len\(x\)=10, len\(f\)=8, len\(g\)=10\).*"):
         Population(x=invalid_x, f=invalid_f, g=invalid_g, feval=1)
+
+
+def test_history_validation():
+    # Create valid populations with consistent decision variables, objectives, and constraints
+    valid_population_1 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=1)
+    valid_population_2 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=2)
+
+    # Create invalid populations
+    invalid_population_decision_vars = Population.from_random(n_objectives=3, n_decision_vars=6, n_constraints=2, pop_size=10, 
+                                                              feval=3)
+    invalid_population_objectives = Population.from_random(n_objectives=4, n_decision_vars=5, n_constraints=2, pop_size=10, 
+                                                           feval=4)
+    invalid_population_constraints = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=3, pop_size=10, 
+                                                            feval=5)
+
+    # Test that creating a valid History instance does not raise an error
+    try:
+        History(
+            reports=[valid_population_1, valid_population_2],
+            problem="Test Problem",
+            metadata={"description": "A valid test case"}
+        )
+    except ValidationError:
+        pytest.fail("History creation with consistent populations raised ValidationError unexpectedly!")
+
+    # Test that creating an invalid History instance raises a ValidationError due to inconsistent decision variables
+    with pytest.raises(ValidationError, match="Inconsistent number of decision variables in reports"):
+        History(
+            reports=[valid_population_1, invalid_population_decision_vars],
+            problem="Test Problem",
+            metadata={"description": "An invalid test case with inconsistent decision variables"}
+        )
+
+    # Test that creating an invalid History instance raises a ValidationError due to inconsistent objectives
+    with pytest.raises(ValidationError, match="Inconsistent number of objectives in reports"):
+        History(
+            reports=[valid_population_1, invalid_population_objectives],
+            problem="Test Problem",
+            metadata={"description": "An invalid test case with inconsistent objectives"}
+        )
+
+    # Test that creating an invalid History instance raises a ValidationError due to inconsistent constraints
+    with pytest.raises(ValidationError, match="Inconsistent number of constraints in reports"):
+        History(
+            reports=[valid_population_1, invalid_population_constraints],
+            problem="Test Problem",
+            metadata={"description": "An invalid test case with inconsistent constraints"}
+        )

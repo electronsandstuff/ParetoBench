@@ -38,7 +38,6 @@ class Population(BaseModel):
         
         return value
     
-    
     @model_validator(mode='after')
     def validate_batch_dimensions(self):
         x_size = self.x.shape[0]
