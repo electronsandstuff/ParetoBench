@@ -97,3 +97,39 @@ def test_history_validation():
             problem="Test Problem",
             metadata={"description": "An invalid test case with inconsistent constraints"}
         )
+
+    # Test for inconsistent names - case where some have names and others don't
+    population_with_names = Population.from_random(
+        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=6,
+        names_x=["var1", "var2", "var3", "var4", "var5"],
+        names_f=["obj1", "obj2", "obj3"],
+        names_g=["con1", "con2"]
+    )
+    population_without_names = Population.from_random(
+        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=7,
+        names_x=None,
+        names_f=None,
+        names_g=None
+    )
+
+    with pytest.raises(ValidationError, match="Inconsistent names for decision variables in reports"):
+        History(
+            reports=[population_with_names, population_without_names],
+            problem="Test Problem",
+            metadata={"description": "An invalid test case with inconsistent names"}
+        )
+
+    # Test for inconsistent names - case where names are different across populations
+    population_with_different_names = Population.from_random(
+        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=8,
+        names_x=["varA", "varB", "varC", "varD", "varE"],  # Different names
+        names_f=["obj1", "obj2", "obj3"],
+        names_g=["con1", "con2"]
+    )
+
+    with pytest.raises(ValidationError, match="Inconsistent names for decision variables in reports"):
+        History(
+            reports=[population_with_names, population_with_different_names],
+            problem="Test Problem",
+            metadata={"description": "An invalid test case with inconsistent names"}
+        )
