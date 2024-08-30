@@ -5,6 +5,9 @@ import h5py
 import re
 import random
 import string
+from functools import reduce
+
+from .utils import pf_reduce
 
 
 @dataclass
@@ -174,6 +177,23 @@ class History:
             reports=reports,
             metadata={k: v for k, v in grp['metadata'].attrs.items()},
         )
+
+    def to_nondominated(self):
+        """
+        Returns a history object with the same number of population objects, but the individuals
+        in each generation are the nondominated solutions seen up to this point.
+
+        Returns
+        -------
+        History
+            History object containing the nondominated solution
+        """
+        # Get the nondominated objectives
+        objs = reduce(pf_reduce, (g.f for g in self.reports), [])
+        
+        # Turn into a history object
+        reports = [Population(x=pop.x, f=f, g=pop.g, feval=pop.feval) for f, pop in zip(objs, self.reports)]
+        return History(reports=reports, problem=self.problem, metadata=self.metadata.copy())
 
     
 @dataclass
