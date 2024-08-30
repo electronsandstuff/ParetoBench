@@ -1,27 +1,59 @@
 from dataclasses import dataclass, field
 import numpy as np
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any, Tuple
 import h5py
 import re
 import random
 import string
 from functools import reduce
 from datetime import datetime, timezone
+from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 
 from .utils import pf_reduce
 
 
-@dataclass
-class Population:
+class Population(BaseModel):
     '''
     Stores the individuals in a population for one reporting interval in a genetic algorithm. Conventional names are used for
     the decision variables (x), the objectives (f), and inequality constraints (g). The first dimension of each array is the
     batch dimension. The number of evaluations of the objective functions performed to reach this state is also recored.
     '''
-    x: np.ndarray
-    f: np.ndarray
-    g: np.ndarray
+    x: np.ndarray = Field(...)
+    f: np.ndarray = Field(...)
+    g: np.ndarray = Field(...)
     feval: int
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator('x', 'f', 'g', mode='before')
+    def validate_numpy_arrays(cls, value: np.ndarray, field: Any) -> np.ndarray:
+        expected_dtype = np.float64
+        expected_ndim = 2
+
+        if not isinstance(value, np.ndarray):
+            raise TypeError(f"Expected a NumPy array for field '{field.name}', got {type(value)}")
+        if value.dtype != expected_dtype:
+            raise TypeError(f"Expected array of type {expected_dtype} for field '{field.name}', got {value.dtype}")
+        if value.ndim != expected_ndim:
+            raise ValueError(f"Expected array with {expected_ndim} dimensions for field '{field.name}', got {value.ndim}")
+        
+        return value
+    
+    
+    @model_validator(mode='after')
+    def validate_batch_dimensions(self):
+        x_size = self.x.shape[0]
+        f_size = self.f.shape[0]
+        g_size = self.g.shape[0]
+        if len(set([x_size, f_size, g_size])) != 1:
+            raise ValueError('Batch dimensions do not match (len(x)={x_size}, len(f)={f_size}, len(g)={g_size})')
+        return self
+
+    @field_validator('feval')
+    @classmethod
+    def validate_feval(cls, v):
+        if v < 0:
+            raise ValueError("feval must be a non-negative integer")
+        return v
     
     def __eq__(self, other):
         if not isinstance(other, Population):
