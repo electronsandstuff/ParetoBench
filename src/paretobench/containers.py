@@ -75,11 +75,14 @@ class Population(BaseModel):
         return (np.array_equal(self.x, other.x) and
                 np.array_equal(self.f, other.f) and
                 np.array_equal(self.g, other.g) and
-                self.feval == other.feval)
+                self.feval == other.feval and
+                self.names_x == other.names_x and
+                self.names_f == other.names_f and
+                self.names_g == other.names_g)
 
     @classmethod
     def from_random(cls, n_objectives: int, n_decision_vars: int, n_constraints: int, pop_size: int,
-                    feval: int = 0, names_x: List[str]=None, names_f: List[str]=None, names_g: List[str]=None) -> 'Population':
+                    feval: int = 0, generate_names: bool = False) -> 'Population':
         """
         Generate a randomized instance of the Population class.
 
@@ -93,12 +96,16 @@ class Population(BaseModel):
             The number of inequality constraints for each individual.
         pop_size : int
             The number of individuals in the population.
+        feval : int, optional
+            The number of evaluations of the objective functions performed to reach this state, by default 0.
+        generate_names : bool, optional
+            Whether to include names for the decision variables, objectives, and constraints, by default False.
 
         Returns
         -------
         Population
-            An instance of the Population class with random values for decision variables (`x`), objectives (`f`), 
-            and inequality constraints (`g`).
+            An instance of the Population class with random values for decision variables (`x`), objectives (`f`),
+            and inequality constraints (`g`). Optionally, names for these components can be included.
 
         Examples
         --------
@@ -115,6 +122,12 @@ class Population(BaseModel):
         x = np.random.rand(pop_size, n_decision_vars)
         f = np.random.rand(pop_size, n_objectives)
         g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
+
+        # Optionally generate names if include_names is True
+        names_x = [f"x{i+1}" for i in range(n_decision_vars)] if generate_names else None
+        names_f = [f"f{i+1}" for i in range(n_objectives)] if generate_names else None
+        names_g = [f"g{i+1}" for i in range(n_constraints)] if generate_names else None
+
         return cls(x=x, f=f, g=g, feval=feval, names_x=names_x, names_f=names_f, names_g=names_g)
     
     def __len__(self):
@@ -170,7 +183,7 @@ class History(BaseModel):
 
     @classmethod
     def from_random(cls, n_populations: int, n_objectives: int, n_decision_vars: int, n_constraints: int, 
-                    pop_size: int) -> 'History':
+                    pop_size: int, generate_names: bool = False) -> 'History':
         """
         Generate a randomized instance of the History class, including random problem name and metadata.
 
@@ -186,6 +199,8 @@ class History(BaseModel):
             The number of inequality constraints for each individual in each population.
         pop_size : int
             The number of individuals in each population.
+        generate_names : bool, optional
+            Whether to include names for the decision variables, objectives, and constraints, by default False.
 
         Returns
         -------
@@ -208,8 +223,8 @@ class History(BaseModel):
 
         # Generate populations with increasing feval values
         reports = [
-            Population.from_random(n_objectives, n_decision_vars, n_constraints, pop_size, feval=(i+1) * pop_size)
-            for i in range(n_populations)
+            Population.from_random(n_objectives, n_decision_vars, n_constraints, pop_size, feval=(i+1) * pop_size, 
+                                   generate_names=generate_names) for i in range(n_populations)
         ]
 
         return cls(reports=reports, problem=problem, metadata=metadata)
@@ -314,7 +329,7 @@ class Experiment(BaseModel):
 
     @classmethod
     def from_random(cls, n_histories: int, n_populations: int, n_objectives: int, n_decision_vars: int, n_constraints: int,
-                    pop_size: int) -> 'Experiment':
+                    pop_size: int, generate_names: bool = False) -> 'Experiment':
         """
         Generate a randomized instance of the Experiment class.
 
@@ -332,6 +347,8 @@ class Experiment(BaseModel):
             The number of inequality constraints for each individual in each population.
         pop_size : int
             The number of individuals in each population.
+        generate_names : bool, optional
+            Whether to include names for the decision variables, objectives, and constraints, by default False.
 
         Returns
         -------
@@ -340,8 +357,8 @@ class Experiment(BaseModel):
         """
         # Generate random histories
         runs = [
-            History.from_random(n_populations, n_objectives, n_decision_vars, n_constraints, pop_size)
-            for _ in range(n_histories)
+            History.from_random(n_populations, n_objectives, n_decision_vars, n_constraints, pop_size,
+                                generate_names=generate_names) for _ in range(n_histories)
         ]
         
         # Randomly generate an identifier for the experiment
@@ -371,8 +388,7 @@ class Experiment(BaseModel):
             # Save each run into its own group
             for idx, run in enumerate(self.runs):
                 run._to_h5py_group(f.create_group("run_{:d}".format(idx)))
-
-                
+              
     @classmethod
     def load(cls, fname):
         # Load the data

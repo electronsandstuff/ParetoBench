@@ -7,7 +7,8 @@ from pydantic import ValidationError
 from paretobench.containers import Experiment, Population, History
 
 
-def test_experiment_save_load():
+@pytest.mark.parametrize('generate_names', [False, True])
+def test_experiment_save_load(generate_names):
     # Create a randomized Experiment object
     experiment = Experiment.from_random(
         n_histories=32,
@@ -15,7 +16,8 @@ def test_experiment_save_load():
         n_objectives=5,
         n_decision_vars=30,
         n_constraints=2,
-        pop_size=50
+        pop_size=50,
+        generate_names=generate_names,
     )
     
     # Use a temporary directory to save the file
@@ -101,15 +103,12 @@ def test_history_validation():
     # Test for inconsistent names - case where some have names and others don't
     population_with_names = Population.from_random(
         n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=6,
-        names_x=["var1", "var2", "var3", "var4", "var5"],
-        names_f=["obj1", "obj2", "obj3"],
-        names_g=["con1", "con2"]
     )
+    population_with_names.names_x = ["var1", "var2", "var3", "var4", "var5"]
+    population_with_names.names_f = ["obj1", "obj2", "obj3"]
+    population_with_names.names_g = ["con1", "con2"]
     population_without_names = Population.from_random(
         n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=7,
-        names_x=None,
-        names_f=None,
-        names_g=None
     )
 
     with pytest.raises(ValidationError, match="Inconsistent names for decision variables in reports"):
@@ -122,10 +121,10 @@ def test_history_validation():
     # Test for inconsistent names - case where names are different across populations
     population_with_different_names = Population.from_random(
         n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=8,
-        names_x=["varA", "varB", "varC", "varD", "varE"],  # Different names
-        names_f=["obj1", "obj2", "obj3"],
-        names_g=["con1", "con2"]
     )
+    population_with_different_names.names_x = ["varA", "varB", "varC", "varD", "varE"]
+    population_with_different_names.names_f = ["obj1", "obj2", "obj3"]
+    population_with_different_names.names_g = ["con1", "con2"]
 
     with pytest.raises(ValidationError, match="Inconsistent names for decision variables in reports"):
         History(
