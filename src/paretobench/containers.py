@@ -242,17 +242,16 @@ class History(BaseModel):
         return History(reports=reports, problem=self.problem, metadata=self.metadata.copy())
 
     
-@dataclass
-class Experiment:
+class Experiment(BaseModel):
     runs: List[History]
     identifier: str
     author: str = ''
     software: str = ''
     software_version: str = ''
     comment: str = ''
-    creation_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     file_version: str = '1.0.0'
-    
+
     def __eq__(self, other):
         if not isinstance(other, Experiment):
             return False
