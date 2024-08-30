@@ -227,21 +227,39 @@ class History(BaseModel):
         g['x'] = np.concatenate([r.x for r in self.reports], axis=0)
         g['f'] = np.concatenate([r.f for r in self.reports], axis=0)
         g['g'] = np.concatenate([r.g for r in self.reports], axis=0)
+        
+        # Save names
+        if self.reports and self.reports[0].names_x is not None:
+            g['x'].attrs['names'] = self.reports[0].names_x
+        if self.reports and self.reports[0].names_f is not None:
+            g['f'].attrs['names'] = self.reports[0].names_f
+        if self.reports and self.reports[0].names_g is not None:
+            g['g'].attrs['names'] = self.reports[0].names_g
 
     @classmethod
     def _from_h5py_group(cls, grp: h5py.Group):
-        start_idx = 0
-        reports = []
+        # Get the decision vars, objectives, and constraints
         x = grp['x'][()]
         f = grp['f'][()]
         g = grp['g'][()]
+        
+        # Get the names
+        names_x = grp['x'].attrs.get('names', None)
+        names_f = grp['f'].attrs.get('names', None)
+        names_g = grp['g'].attrs.get('names', None)
 
+        # Create the population objects
+        start_idx = 0
+        reports = []
         for pop_size, feval in zip(grp.attrs['pop_sizes'], grp.attrs['fevals']):
             reports.append(Population(
                 x = x[start_idx:start_idx+pop_size],
                 f = f[start_idx:start_idx+pop_size],
                 g = g[start_idx:start_idx+pop_size],
                 feval=feval,
+                names_x=names_x,
+                names_f=names_f,
+                names_g=names_g,
             ))
             start_idx += pop_size
 
