@@ -9,8 +9,6 @@ from functools import reduce
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
 
-from .utils import pf_reduce
-
 
 class Population(BaseModel):
     '''
@@ -80,6 +78,91 @@ class Population(BaseModel):
                 self.names_f == other.names_f and
                 self.names_g == other.names_g)
 
+    def __add__(self, other: 'Population') -> 'Population':
+        if not isinstance(other, Population):
+            raise TypeError("Operands must be instances of Population")
+        
+        # Check that the names are consistent
+        if self.names_x != other.names_x:
+            raise ValueError("names_x are inconsistent between populations")
+        if self.names_f != other.names_f:
+            raise ValueError("names_f are inconsistent between populations")
+        if self.names_g != other.names_g:
+            raise ValueError("names_g are inconsistent between populations")
+        
+        # Concatenate the arrays along the batch dimension (axis=0)
+        new_x = np.concatenate((self.x, other.x), axis=0)
+        new_f = np.concatenate((self.f, other.f), axis=0)
+        new_g = np.concatenate((self.g, other.g), axis=0)
+        
+        # Unique the arrays
+        _, indices = np.unique(np.concat([new_x, new_f, new_g], axis=1), return_index=True, axis=0)
+        new_x = new_x[indices, :]
+        new_f = new_f[indices, :]
+        new_g = new_g[indices, :]
+        
+        # Set feval to the maximum of the two feval values
+        new_feval = max(self.feval, other.feval)
+        
+        # Return a new Population instance
+        return Population(
+            x=new_x,
+            f=new_f,
+            g=new_g,
+            feval=new_feval,
+            names_x=self.names_x,
+            names_f=self.names_f,
+            names_g=self.names_g
+        )
+
+    def __getitem__(self, idx: Union[slice, np.ndarray, List[int]]) -> 'Population':
+        """
+        Indexing operator to select along the batch dimension in the arrays.
+
+        Parameters
+        ----------
+        idx : slice, np.ndarray, or list of ints
+            The indices used to select along the batch dimension.
+
+        Returns
+        -------
+        Population
+            A new Population instance containing the selected individuals.
+        """
+        return Population(
+            x= self.x[idx],
+            f=self.f[idx],
+            g=self.g[idx],
+            feval=self.feval,
+            names_x=self.names_x,
+            names_f=self.names_f,
+            names_g=self.names_g
+        )
+
+    def get_nondominated_set(self):
+        # Compare the objectives
+        dom = np.bitwise_and(
+            (self.f[:, None, :] <= self.f[None, :, :]).all(axis=-1), 
+            (self.f[:, None, :] <  self.f[None, :, :]).any(axis=-1)
+        )
+        
+        # If one individual is feasible and the other isn't, set domination
+        feas = self.g >= 0.0
+        ind = np.bitwise_and(feas.all(axis=1)[:, None], ~feas.all(axis=1)[None, :])
+        dom[ind] = True
+        ind = np.bitwise_and(~feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
+        dom[ind] = False
+
+        # If both are infeasible, then the individual with the least constraint violation wins
+        constraint_violation = -np.sum(np.minimum(self.g, 0), axis=1)
+        comp = constraint_violation[:, None] < constraint_violation[None, :]
+        ind = ~np.bitwise_or(feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
+        dom[ind] = comp[ind]
+
+        # Return the nondominated individuals
+        nondominated = (np.sum(dom, axis=0) == 0)
+        return self[nondominated]
+        
     @classmethod
     def from_random(cls, n_objectives: int, n_decision_vars: int, n_constraints: int, pop_size: int,
                     feval: int = 0, generate_names: bool = False) -> 'Population':
@@ -295,12 +378,20 @@ class History(BaseModel):
         History
             History object containing the nondominated solution
         """
-        # Get the nondominated objectives
-        objs = reduce(pf_reduce, (g.f for g in self.reports), [])
+        if len(self.reports) < 2:
+            return self
         
-        # Turn into a history object
-        reports = [Population(x=pop.x, f=f, g=pop.g, feval=pop.feval) for f, pop in zip(objs, self.reports)]
-        return History(reports=reports, problem=self.problem, metadata=self.metadata.copy())
+        def pf_reduce(a, b):
+            return a + [(a[-1] + b).get_nondominated_set()]
+        
+        # Get the nondominated objectives
+        new_reports = reduce(pf_reduce, self.reports[1:], [self.reports[0]])
+        
+        # Make sure fevals carries over
+        for n, o in zip(new_reports, self.reports):
+            n.feval = o.feval
+
+        return History(reports=new_reports, problem=self.problem, metadata=self.metadata.copy())
 
     
 class Experiment(BaseModel):
