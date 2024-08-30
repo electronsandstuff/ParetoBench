@@ -124,3 +124,42 @@ def weighted_chunk_sizes(n, weights):
         else:
             break
     return ns
+
+
+def filter_nondominated(f):
+    """Returns only the nondominated values in the objectives `f`
+
+    Parameters
+    ----------
+    f : np.ndarray
+        The values of the objective functions for multiple individuals
+
+    Returns
+    -------
+    np.ndarray
+        The nondominated individuals
+    """
+    dom = np.bitwise_and(
+        (f[:, None, :] <= f[None, :, :]).all(axis=-1), 
+        (f[:, None, :] <  f[None, :, :]).any(axis=-1)
+    )
+    return f[(np.sum(dom, axis=0) == 0), :]
+
+
+def pf_reduce(a, b):
+    """From the list of objective function arrays `a`, add a new generation to the end with the nondominated values from the end
+    of a and the new population `b`.
+
+    Parameters
+    ----------
+    a : List[np.ndarray]
+        The list of previous generations
+    b : np.ndarray
+        The new generation to merge in
+
+    Returns
+    -------
+    List[np.ndarray]
+        The new list of objectives with the nondominated gneration added to the end
+    """
+    return a + [filter_nondominated(np.unique(np.concatenate(a[-1:] + [b], axis=1), axis=1))]

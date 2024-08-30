@@ -1,4 +1,53 @@
 import numpy as np
+from typing import Dict, Any
+from dataclasses import dataclass
+import pandas as pd
+
+from .containers import Experiment, History, Population
+
+
+@dataclass
+class EvalMetricsJob:
+    run_idx: int
+    metrics: Dict[str, Any]
+    hist: History
+
+    def run(self):
+        # Run through the evaluations, keeping only the nondominated solutions up to this point
+        pfs = self.hist.to_nondominated()
+        
+        # For each population, evaluate the metrics and return a new row in the table
+        rows = []
+        for idx, pop in enumerate(pfs.reports):
+            # Copy information to the row from the job
+            row = {
+                'problem': self.hist.problem,
+                'fevals': pop.feval,
+                'run_idx': self.run_idx,
+                'pop_idx': idx,
+            }
+            
+            # Evaluate the metrics
+            row.update({name: f(pop, self.hist.problem) for name, f in self.metrics.items()})
+            
+            # Add to the list of rows
+            rows.append(row)
+        return rows
+
+
+def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any]):
+    # Handle case of a function being passed for `metrics`
+    if callable(metrics):
+        metrics = {'metric': metrics}
+    
+    # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
+    jobs = []
+    for idx, run in enumerate(exp.runs):
+        jobs.append(EvalMetricsJob(hist=run, run_idx=idx, metrics=metrics.copy()))
+    
+    results = map(lambda x: x.run(), jobs)
+    return  pd.DataFrame(sum(results, []))
+
 
 
 def get_inverse_generational_distance(O, ref):
