@@ -1,13 +1,12 @@
-from dataclasses import dataclass, field
-import numpy as np
-from typing import List, Dict, Union, Any, Tuple, Optional
-import h5py
-import re
-import random
-import string
-from functools import reduce
 from datetime import datetime, timezone
+from functools import reduce
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
+from typing import List, Dict, Union, Any, Optional
+import h5py
+import numpy as np
+import random
+import re
+import string
 
 
 class Population(BaseModel):
