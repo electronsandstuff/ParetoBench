@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import numpy as np
-from typing import List, Dict, Union, Any, Tuple
+from typing import List, Dict, Union, Any, Tuple, Optional
 import h5py
 import re
 import random
@@ -24,6 +24,21 @@ class Population(BaseModel):
     feval: int
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    # Optional lists of names for decision variables, objectives, and constraints
+    names_x: Optional[List[str]] = None
+    names_f: Optional[List[str]] = None
+    names_g: Optional[List[str]] = None
+    
+    @model_validator(mode='after')
+    def validate_names(self):
+        if self.names_x and len(self.names_x) != self.x.shape[1]:
+            raise ValueError("Length of names_x must match the number of decision variables in x.")
+        if self.names_f and len(self.names_f) != self.f.shape[1]:
+            raise ValueError("Length of names_f must match the number of objectives in f.")
+        if self.names_g and len(self.names_g) != self.g.shape[1]:
+            raise ValueError("Length of names_g must match the number of constraints in g.")
+        return self
+    
     @field_validator('x', 'f', 'g', mode='before')
     def validate_numpy_arrays(cls, value: np.ndarray, field: Any) -> np.ndarray:
         expected_dtype = np.float64
@@ -64,7 +79,7 @@ class Population(BaseModel):
 
     @classmethod
     def from_random(cls, n_objectives: int, n_decision_vars: int, n_constraints: int, pop_size: int,
-                    feval: int = 0) -> 'Population':
+                    feval: int = 0, names_x: List[str]=None, names_f: List[str]=None, names_g: List[str]=None) -> 'Population':
         """
         Generate a randomized instance of the Population class.
 
@@ -100,7 +115,7 @@ class Population(BaseModel):
         x = np.random.rand(pop_size, n_decision_vars)
         f = np.random.rand(pop_size, n_objectives)
         g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
-        return cls(x=x, f=f, g=g, feval=feval)
+        return cls(x=x, f=f, g=g, feval=feval, names_x=names_x, names_f=names_f, names_g=names_g)
     
     def __len__(self):
         return self.x.shape[0]
@@ -130,6 +145,20 @@ class History(BaseModel):
             raise ValueError(f'Inconsistent number of objectives in reports: {n_objectives}')
         if n_constraints and len(set(n_constraints)) != 1:
             raise ValueError(f'Inconsistent number of constraints in reports: {n_constraints}')
+        
+        # Validate consistency of names across populations
+        names_x = [tuple(x.names_x) if x.names_x is not None else None for x in self.reports]
+        names_f = [tuple(x.names_f) if x.names_f is not None else None for x in self.reports]
+        names_g = [tuple(x.names_g) if x.names_g is not None else None for x in self.reports]
+
+        # If names are provided, check consistency
+        if names_x and len(set(names_x)) != 1:
+            raise ValueError(f'Inconsistent names for decision variables in reports: {names_x}')
+        if names_f and len(set(names_f)) != 1:
+            raise ValueError(f'Inconsistent names for objectives in reports: {names_f}')
+        if names_g and len(set(names_g)) != 1:
+            raise ValueError(f'Inconsistent names for constraints in reports: {names_g}')
+        
         return self
     
     def __eq__(self, other):
