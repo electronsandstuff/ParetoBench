@@ -107,19 +107,32 @@ class Population(BaseModel):
         return self.x.shape[0]
 
 
-@dataclass
-class History:
+class History(BaseModel):
     """
-    Reprsents the "history" of an optimizatoin algorithm solving a multiobjective optimization problem. Populations are recorded
-    at some reporting interval.
+    Represents the "history" of an optimization algorithm solving a multi-objective optimization problem.
+    Populations are recorded at some reporting interval.
     
     Assumptions:
-     - All reports must have consistent number of objectives, decision variables, and constraints.
+     - All reports must have a consistent number of objectives, decision variables, and constraints.
     """
     reports: List[Population]
     problem: str
     metadata: Dict[str, Union[str, int, float, bool]]
 
+    @model_validator(mode='after')
+    def validate_consistent_populations(self):
+        n_decision_vars = [x.x.shape[1] for x in self.reports]
+        n_objectives = [x.f.shape[1] for x in self.reports]
+        n_constraints = [x.g.shape[1] for x in self.reports]
+
+        if n_decision_vars and len(set(n_decision_vars)) != 1:
+            raise ValueError(f'Inconsistent number of decision variables in reports: {n_decision_vars}')
+        if n_objectives and len(set(n_objectives)) != 1:
+            raise ValueError(f'Inconsistent number of objectives in reports: {n_objectives}')
+        if n_constraints and len(set(n_constraints)) != 1:
+            raise ValueError(f'Inconsistent number of constraints in reports: {n_constraints}')
+        return self
+    
     def __eq__(self, other):
         if not isinstance(other, History):
             return False
