@@ -31,6 +31,15 @@ def test_experiment_save_load(generate_names):
         assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
 
 
+def test_generate_population():
+    pop = Population(
+        f=np.random.random((128, 3)),
+        feval=0
+    )
+    assert pop.x.shape[0] == 128
+    assert pop.g.shape[0] == 128
+
+
 def test_population_batch_dimension():
     # Create valid arrays with matching batch dimensions
     valid_x = np.random.rand(10, 5)
