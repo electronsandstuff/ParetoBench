@@ -57,6 +57,26 @@ def test_get_nondominated_indices(f, g, idx):
     assert all(pop.get_nondominated_indices() == idx)
 
 
+def test_to_nondominated():
+    """
+    Confirm that History.to_nondominated produces the nondominated individuals up to each point in the runs.
+    """
+    # Make a mock history object
+    hist = History.from_random(10, 3, 4, 0, 50)
+    hist_nd = hist.to_nondominated()
+    
+    for report_idx, report_nd in enumerate(hist_nd.reports):
+        # Calculate the nondominated individuals ourself
+        ref_nd = sum(hist.reports[1:report_idx+1], hist.reports[0]).get_nondominated_set()
+        
+        # Sort test and reference set so they are comparable
+        ref_idx = np.lexsort(np.concat((ref_nd.x, ref_nd.f), axis=1).T)
+        test_idx = np.lexsort(np.concat((report_nd.x, report_nd.f), axis=1).T)
+
+        # Make sure the two are the same
+        np.testing.assert_array_equal(ref_nd.x[ref_idx, :], report_nd.x[test_idx, :])
+        
+
 def test_population_batch_dimension():
     # Create valid arrays with matching batch dimensions
     valid_x = np.random.rand(10, 5)
