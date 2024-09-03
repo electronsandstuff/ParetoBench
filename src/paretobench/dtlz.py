@@ -1,6 +1,6 @@
 import numpy as np
 
-from .problem import Problem, ProblemWithPF
+from .problem import Problem, ProblemWithPF, Result
 from .utils import get_hyperplane_points, uniform_grid
 from .dtlz_utils import g_1_3, g_2_4_5, theta_5_6, f_2_to_6
 
@@ -8,22 +8,17 @@ from .dtlz_utils import g_1_3, g_2_4_5, theta_5_6, f_2_to_6
 class DTLZx(Problem, ProblemWithPF):
     m: int = 3
     n: int = 10
-
-    @property
-    def n_decision_vars(self):
-        return self.n
-
-    @property
-    def n_objectives(self):
-        return self.m
     
     @property
-    def decision_var_bounds(self):
-        bmin = np.zeros(self.n)
-        bmax = np.ones(self.n)
-        return np.vstack((bmin, bmax))
+    def var_lower_bounds(self):
+        return np.zeros(self.n)
+    
+    @property
+    def var_upper_bounds(self):
+        return np.ones(self.n)
 
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Deb, K., Thiele, L., Laumanns, M., & Zitzler, E. (2002). Scalable multi-objective optimization test problems. "\
                "Proceedings of the 2002 Congress on Evolutionary Computation. CEC’02 (Cat. No.02TH8600), 1, 825–830 vol.1. "\
                "https://doi.org/10.1109/CEC.2002.1007032"
@@ -34,74 +29,95 @@ class DTLZx(Problem, ProblemWithPF):
 
 class DTLZ1(DTLZx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         g = g_1_3(x[self.m - 1:, :], self.n - self.m + 1)        
         f1 = np.vstack([np.prod(x[:self.m - 1 - i, :], axis=0) for i in range(0, self.m)])
         f2 = np.vstack([np.ones(x.shape[1])] + [1 - x[self.m - 1 - i, :] for i in range(1, self.m)])
-        return (1 + g)*f1*f2/2
+        return Result(f=((1 + g)*f1*f2/2).T)
 
     def get_pareto_front(self, n):
-        return get_hyperplane_points(self.m, n)/2
+        return (get_hyperplane_points(self.m, n)/2).T
 
 
 class DTLZ2(DTLZx):
     def _call(self, x):
-        return (1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m)
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
+        return Result(f=((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m)).T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))
+        return (f / np.sqrt(np.sum(f**2, axis=0))).T
 
 
 class DTLZ3(DTLZx):
     def _call(self, x):
-        return (1 + g_1_3(x[self.m - 1:, :], self.n - self.m + 1))*f_2_to_6(x[:self.m - 1, :], self.m)
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
+        return Result(f=((1 + g_1_3(x[self.m - 1:, :], self.n - self.m + 1))*f_2_to_6(x[:self.m - 1, :], self.m)).T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))
+        return (f / np.sqrt(np.sum(f**2, axis=0))).T
     
     
 class DTLZ4(DTLZx):
     alpha: int = 100
     
     def _call(self, x):
-        return (1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m, alpha=self.alpha)
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
+        return Result(f=((1 + g_2_4_5(x[self.m - 1:, :]))*f_2_to_6(x[:self.m - 1, :], self.m, alpha=self.alpha)).T)
    
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return f / np.sqrt(np.sum(f**2, axis=0))
+        return (f / np.sqrt(np.sum(f**2, axis=0))).T
 
 
 class DTLZ5(DTLZx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         g = g_2_4_5(x[self.m - 1:, :])
-        return (1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)
+        return Result(f=((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T)
     
     def get_pareto_front(self, n):
         f = get_hyperplane_points(2, n)
         f = f / np.sqrt(np.sum(f**2, axis=0))[None, :]
         f = np.concatenate((np.repeat(f[:1], self.m-1, axis=0), f[1:]), axis=0)
-        return f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]
+        return (f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]).T
 
 
 class DTLZ6(DTLZx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         g = np.sum(x[self.m - 1:, :]**0.1, axis=0)
-        return (1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)
+        return Result(f=((1 + g)*f_2_to_6(theta_5_6(x, g, self.m), self.m)).T)
     
     def get_pareto_front(self, n):
         f = get_hyperplane_points(2, n)
         f = f / np.sqrt(np.sum(f**2, axis=0))[None, :]
         f = np.concatenate((np.repeat(f[:1], self.m-1, axis=0), f[1:]), axis=0)
-        return f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]
+        return (f / np.power(np.sqrt(2), np.concatenate(([self.m-2], np.arange(self.m-2, -1., -1.))))[:, None]).T
 
 
 class DTLZ7(DTLZx):
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         f1 = np.copy(x[:self.m-1, :])
         f2 = 2 + 9*np.sum(x[self.m-1:, :], axis=0)/(self.n - self.m + 1)
         f2 *= self.m - np.sum((1 + np.sin(3*np.pi*f1))*f1/(1 + f2[None, :]), axis=0)
-        return np.vstack([f1, f2])
+        return Result(f=np.vstack([f1, f2]).T)
     
     def get_pareto_front(self, n):
         # Break first m-1 dimensions into non-dominated chunks
@@ -115,7 +131,7 @@ class DTLZ7(DTLZx):
         x[x>mid] = (x[x>mid] - mid)*(regs[1][1] - regs[1][0])/(1 - mid) + regs[1][0]
         
         # Compute final objective
-        return np.concatenate((x, 2 * (self.m - np.sum(x/2*(1 + np.sin(3*np.pi*x)), axis=0))[None, :]), axis=0)
+        return np.concatenate((x, 2 * (self.m - np.sum(x/2*(1 + np.sin(3*np.pi*x)), axis=0))[None, :]), axis=0).T
 
 
 class DTLZ8(DTLZx):
@@ -124,6 +140,9 @@ class DTLZ8(DTLZx):
         return self.m
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         f = np.vstack([np.mean(x[np.floor(j*self.n/self.m).astype(int):np.floor((j+1)*self.n/self.m).astype(int)], axis=0) for j in range(self.m)])
         
         # First m-1 constraints
@@ -133,7 +152,7 @@ class DTLZ8(DTLZx):
         fsum = f[:-1, None, :] + f[None, :-1, :]
         fsum[np.diag_indices(2), :] = np.inf  # For i != j
         g = np.vstack(g + [2*f[-1] + np.min(np.min(fsum, axis=0), axis=0) - 1])
-        return f, g
+        return Result(f=f.T, g=g.T)
 
     def get_pareto_front(self, n):
         # Break points into the "pole" feature and the lower PF. Based on dimension, number in
@@ -166,7 +185,7 @@ class DTLZ8(DTLZx):
         # Add the "pole"
         pole = np.linspace(1/3, 1.0, max(n-f.shape[1], npole))
         pole = np.vstack((np.repeat((1-pole[None, :])/4, self.m-1, axis=0), pole))
-        return np.concatenate((f, pole), axis=1)
+        return np.concatenate((f, pole), axis=1).T
 
 
 class DTLZ9(DTLZx):
@@ -175,11 +194,14 @@ class DTLZ9(DTLZx):
         return self.m - 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         f = np.vstack([np.sum(x[np.floor(j*self.n/self.m).astype(int):np.floor((j+1)*self.n/self.m).astype(int)]**0.1, axis=0) for j in range(self.m)])
         g = np.vstack([f[-1]**2 + f[j]**2 - 1 for j in range(self.m-1)])
-        return f, g
+        return Result(f=f.T, g=g.T)
     
     def get_pareto_front(self, n):
         th = np.linspace(0, 1, n)
-        return np.concatenate((np.repeat(np.cos(np.pi/2*th[None, :]), self.m-1, axis=0), np.sin(np.pi/2*th[None, :])), axis=0)
+        return np.concatenate((np.repeat(np.cos(np.pi/2*th[None, :]), self.m-1, axis=0), np.sin(np.pi/2*th[None, :])), axis=0).T
         
