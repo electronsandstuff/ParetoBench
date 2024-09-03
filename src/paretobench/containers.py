@@ -156,7 +156,7 @@ class Population(BaseModel):
             names_g=self.names_g
         )
 
-    def get_nondominated_set(self):
+    def get_nondominated_indices(self):
         # Compare the objectives
         dom = np.bitwise_and(
             (self.f[:, None, :] <= self.f[None, :, :]).all(axis=-1), 
@@ -178,8 +178,11 @@ class Population(BaseModel):
 
         # Return the nondominated individuals
         nondominated = (np.sum(dom, axis=0) == 0)
-        return self[nondominated]
-        
+        return nondominated
+    
+    def get_nondominated_set(self):
+        return self[self.get_nondominated_indices()]
+    
     @classmethod
     def from_random(cls, n_objectives: int, n_decision_vars: int, n_constraints: int, pop_size: int,
                     feval: int = 0, generate_names: bool = False) -> 'Population':
