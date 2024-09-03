@@ -2,6 +2,8 @@ import numpy as np
 from typing import Dict, Any
 from dataclasses import dataclass
 import pandas as pd
+import concurrent.futures
+from operator import methodcaller
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
@@ -36,7 +38,7 @@ class EvalMetricsJob:
         return rows
 
 
-def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any]):
+def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any], n_procs=1):
     # Handle case of a function being passed for `metrics`
     if callable(metrics):
         metrics = {'metric': metrics}
@@ -46,7 +48,12 @@ def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any]):
     for idx, run in enumerate(exp.runs):
         jobs.append(EvalMetricsJob(run=run, run_idx=idx, metrics=metrics.copy()))
     
-    results = map(lambda x: x(), jobs)
+    # Run each of the jobs (potentially in parallel)
+    if n_procs == 1:
+        results = map(methodcaller('__call__'), jobs)
+    else:
+        with concurrent.futures.ProcessPoolExecutor(n_procs) as ex:
+            results = ex.map(methodcaller('__call__'), jobs)
     return  pd.DataFrame(sum(results, []))
 
 
@@ -70,7 +77,6 @@ class InverseGenerationalDistance:
         else:
             raise ValueError(f'Could not load Pareto front from object of type "{type(prob)}"')
     
-        print(pf.shape, " ", pop.f.shape)
         # Calculate the IGD metric
         # Compute pairwise distance between every point in the front and reference
         d = np.sqrt(np.sum((pop.f[None, :, :] - pf[:, None, :]) ** 2, axis=2))
