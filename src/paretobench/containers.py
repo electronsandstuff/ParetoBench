@@ -247,7 +247,7 @@ class History(BaseModel):
     """
     reports: List[Population]
     problem: str
-    metadata: Dict[str, Union[str, int, float, bool]]
+    metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
 
     @model_validator(mode='after')
     def validate_consistent_populations(self):
@@ -495,10 +495,13 @@ class Experiment(BaseModel):
             f.attrs['creation_time'] = self.creation_time.isoformat()
             f.attrs['file_version'] = self.file_version
             f.attrs['file_format'] = 'ParetoBench Multi-Objective Optimization Data'
-            
+    
+            # Calculate the necessary zero padding based on the number of runs
+            max_len = len(str(len(self.runs) - 1))
+        
             # Save each run into its own group
             for idx, run in enumerate(self.runs):
-                run._to_h5py_group(f.create_group("run_{:d}".format(idx)))
+                run._to_h5py_group(f.create_group(f"run_{idx:0{max_len}d}"))
               
     @classmethod
     def load(cls, fname):

@@ -10,25 +10,25 @@ from .containers import Experiment, History, Population
 class EvalMetricsJob:
     run_idx: int
     metrics: Dict[str, Any]
-    hist: History
+    run: History
 
-    def run(self):
+    def __eval__(self):
         # Run through the evaluations, keeping only the nondominated solutions up to this point
-        pfs = self.hist.to_nondominated()
+        pfs = self.run.to_nondominated()
         
         # For each population, evaluate the metrics and return a new row in the table
         rows = []
         for idx, pop in enumerate(pfs.reports):
             # Copy information to the row from the job
             row = {
-                'problem': self.hist.problem,
+                'problem': self.run.problem,
                 'fevals': pop.feval,
                 'run_idx': self.run_idx,
                 'pop_idx': idx,
             }
             
             # Evaluate the metrics
-            row.update({name: f(pop, self.hist.problem) for name, f in self.metrics.items()})
+            row.update({name: f(pop, self.run.problem) for name, f in self.metrics.items()})
             
             # Add to the list of rows
             rows.append(row)
@@ -45,9 +45,8 @@ def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any]):
     for idx, run in enumerate(exp.runs):
         jobs.append(EvalMetricsJob(hist=run, run_idx=idx, metrics=metrics.copy()))
     
-    results = map(lambda x: x.run(), jobs)
+    results = map(lambda x: x(), jobs)
     return  pd.DataFrame(sum(results, []))
-
 
 
 def get_inverse_generational_distance(O, ref):
