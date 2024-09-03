@@ -18,5 +18,6 @@ dependencies = [
   "matplotlib",
   "pydantic",
   "h5py",
-  "pandas"
+  "pandas",
+  "scipy"
 ]
