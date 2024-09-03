@@ -405,7 +405,7 @@ class History(BaseModel):
             return a + [(a[-1] + b).get_nondominated_set()]
         
         # Get the nondominated objectives
-        new_reports = reduce(pf_reduce, self.reports[1:], [self.reports[0]])
+        new_reports = reduce(pf_reduce, self.reports[1:], [self.reports[0].get_nondominated_set()])
         
         # Make sure fevals carries over
         for n, o in zip(new_reports, self.reports):
