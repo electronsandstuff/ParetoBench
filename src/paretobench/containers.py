@@ -13,11 +13,11 @@ class Population(BaseModel):
     '''
     Stores the individuals in a population for one reporting interval in a genetic algorithm. Conventional names are used for
     the decision variables (x), the objectives (f), and inequality constraints (g). The first dimension of each array is the
-    batch dimension. The number of evaluations of the objective functions performed to reach this state is also recored.
+    batch dimension. The number of evaluations of the objective functions performed to reach this state is also recorded.
     '''
-    x: Optional[np.ndarray] = None
-    f: Optional[np.ndarray] = None
-    g: Optional[np.ndarray] = None
+    x: np.ndarray
+    f: np.ndarray
+    g: np.ndarray
     feval: int
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -26,6 +26,32 @@ class Population(BaseModel):
     names_f: Optional[List[str]] = None
     names_g: Optional[List[str]] = None
     
+    @model_validator(mode='before')
+    @classmethod
+    def set_default_arrays(cls, values):
+        # Determine the batch size from the first non-None array
+        batch_size = next((arr.shape[0] for arr in [values.get('x'), values.get('f'), values.get('g')] if arr is not None), None)
+        if batch_size is None:
+            raise ValueError('Must specify one of x, f, or g')
+
+        # Set empty arrays for unspecified fields
+        if values.get('x') is None:
+            values['x'] = np.empty((batch_size, 0), dtype=np.float64)
+        if values.get('f') is None:
+            values['f'] = np.empty((batch_size, 0), dtype=np.float64)
+        if values.get('g') is None:
+            values['g'] = np.empty((batch_size, 0), dtype=np.float64)
+
+        return values
+
+    @model_validator(mode='after')
+    def validate_batch_dimensions(self):
+        # Validate batch dimensions
+        x_size, f_size, g_size = self.x.shape[0], self.f.shape[0], self.g.shape[0]
+        if len(set([x_size, f_size, g_size])) != 1:
+            raise ValueError(f'Batch dimensions do not match (len(x)={x_size}, len(f)={f_size}, len(g)={g_size})')
+        return self
+
     @model_validator(mode='after')
     def validate_names(self):
         if self.names_x and len(self.names_x) != self.x.shape[1]:
@@ -36,11 +62,9 @@ class Population(BaseModel):
             raise ValueError("Length of names_g must match the number of constraints in g.")
         return self
     
-    @field_validator('x', 'f', 'g', mode='before')
-    def validate_numpy_arrays(cls, value: Optional[np.ndarray], field: Any) -> Optional[np.ndarray]:
-        if value is None:
-            return value
-        
+    @field_validator('x', 'f', 'g')
+    @classmethod
+    def validate_numpy_arrays(cls, value: np.ndarray, field: Any) -> np.ndarray:
         expected_dtype = np.float64
         expected_ndim = 2
 
@@ -52,28 +76,6 @@ class Population(BaseModel):
             raise ValueError(f"Expected array with {expected_ndim} dimensions for field '{field.name}', got {value.ndim}")
         
         return value
-    
-    @model_validator(mode='after')
-    def validate_and_set_arrays(self):
-        # Determine the batch size from the first non-None array
-        batch_size = next((arr.shape[0] for arr in [self.x, self.f, self.g] if arr is not None), None)
-        if batch_size is None:
-            raise ValueError('Must specify one of x, f, or g')
-
-        # Set empty arrays for unspecified fields
-        if self.x is None:
-            self.x = np.empty((batch_size, 0), dtype=np.float64)
-        if self.f is None:
-            self.f = np.empty((batch_size, 0), dtype=np.float64)
-        if self.g is None:
-            self.g = np.empty((batch_size, 0), dtype=np.float64)
-
-        # Validate batch dimensions
-        x_size, f_size, g_size = self.x.shape[0], self.f.shape[0], self.g.shape[0]
-        if len(set([x_size, f_size, g_size])) != 1:
-            raise ValueError(f'Batch dimensions do not match (len(x)={x_size}, len(f)={f_size}, len(g)={g_size})')
-
-        return self
 
     @field_validator('feval')
     @classmethod
