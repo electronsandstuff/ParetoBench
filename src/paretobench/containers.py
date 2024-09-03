@@ -113,7 +113,7 @@ class Population(BaseModel):
         new_g = np.concatenate((self.g, other.g), axis=0)
         
         # Unique the arrays
-        _, indices = np.unique(np.concat([new_x, new_f, new_g], axis=1), return_index=True, axis=0)
+        _, indices = np.unique(np.concatenate([new_x, new_f, new_g], axis=1), return_index=True, axis=0)
         new_x = new_x[indices, :]
         new_f = new_f[indices, :]
         new_g = new_g[indices, :]

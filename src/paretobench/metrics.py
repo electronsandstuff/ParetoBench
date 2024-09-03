@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import pandas as pd
 
 from .containers import Experiment, History, Population
+from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
 
 
 @dataclass
@@ -12,7 +13,7 @@ class EvalMetricsJob:
     metrics: Dict[str, Any]
     run: History
 
-    def __eval__(self):
+    def __call__(self):
         # Run through the evaluations, keeping only the nondominated solutions up to this point
         pfs = self.run.to_nondominated()
         
@@ -43,10 +44,40 @@ def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any]):
     # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
     jobs = []
     for idx, run in enumerate(exp.runs):
-        jobs.append(EvalMetricsJob(hist=run, run_idx=idx, metrics=metrics.copy()))
+        jobs.append(EvalMetricsJob(run=run, run_idx=idx, metrics=metrics.copy()))
     
     results = map(lambda x: x(), jobs)
     return  pd.DataFrame(sum(results, []))
+
+
+class InverseGenerationalDistance:
+    def __init__(self, n_pf=1000):
+        """
+        Parameters
+        ----------
+        n_pf : int, optional
+            Number of points to calculate on the Pareto front, by default 1000
+        """
+        self.n_pf = n_pf
+
+    def __call__(self, pop: Population, problem: str):
+        # Get the Pareto front
+        prob = Problem.from_line_fmt(problem)
+        if isinstance(prob, ProblemWithPF):
+            pf = prob.get_pareto_front(self.n_pf)
+        elif isinstance(prob, ProblemWithFixedPF):
+            pf = prob.get_pareto_front()
+        else:
+            raise ValueError(f'Could not load Pareto front from object of type "{type(prob)}"')
+    
+        print(pf.shape, " ", pop.f.shape)
+        # Calculate the IGD metric
+        # Compute pairwise distance between every point in the front and reference
+        d = np.sqrt(np.sum((pop.f[None, :, :] - pf[:, None, :]) ** 2, axis=2))
+
+        # Find the minimum distance for each point and average it
+        d_min = np.min(d, axis=0)
+        return np.mean(d_min)
 
 
 def get_inverse_generational_distance(O, ref):
