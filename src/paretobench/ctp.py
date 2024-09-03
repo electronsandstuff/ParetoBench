@@ -1,13 +1,22 @@
 import numpy as np
 
-from .problem import Problem
+from .problem import Problem, Result
 from .utils import rastrigin
 
 
 class CTPx(Problem):
-    def get_reference(self):
+    @property
+    def reference(self):
         return "Zitzler, E. (Ed.). (2001). Evolutionary multi-criterion optimization: First international conference, "\
                "EMO 2001, Zurich, Switzerland, March 2001: proceedings. Springer."
+
+    @property
+    def var_lower_bounds(self):
+        return np.concatenate(([0], -5.12*np.ones(self.n-1)))
+    
+    @property
+    def var_upper_bounds(self):
+        return np.concatenate(([1], 5.12*np.ones(self.n-1)))
 
 
 class CTP1(CTPx):
@@ -33,11 +42,7 @@ class CTP1(CTPx):
         self._b = self._b[1:]
 
     @property
-    def n_decision_vars(self):
-        return self.n
-
-    @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     @property
@@ -45,6 +50,9 @@ class CTP1(CTPx):
         return self.j
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         rast = rastrigin(x[1:])
         f = np.vstack((
             x[0],
@@ -54,14 +62,7 @@ class CTP1(CTPx):
         g = []
         for i in range(self.j):
             g.append(f[1] - self._a[i]*np.exp(-self._b[i]*f[0]))
-        return f, np.vstack(g)
-
-    @property
-    def decision_var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-5.12, 5.12])).T
-        b[0, 0] = 0.0
-        b[1, 0] = 1.0
-        return b
+        return Result(f=f.T, g=np.vstack(g).T)
 
 
 class CTP2_7(CTPx):
@@ -87,13 +88,9 @@ class CTP2_7(CTPx):
         self._c = c
         self._d = d
         self._e = e
-        
-    @property
-    def n_decision_vars(self):
-        return self.n
 
     @property
-    def n_objectives(self):
+    def m(self):
         return 2
     
     @property
@@ -101,6 +98,9 @@ class CTP2_7(CTPx):
         return 1
     
     def _call(self, x):
+        # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
+        x = x.T
+        
         rast = rastrigin(x[1:])
 
         f = np.vstack((
@@ -113,14 +113,7 @@ class CTP2_7(CTPx):
              + np.cos(self._theta)*f[0])**self._c))**self._d
         g = np.vstack((c,))
         
-        return f, g
-
-    @property
-    def decision_var_bounds(self):
-        b = (np.ones((self.n, 2)) * np.array([-5.12, 5.12])).T
-        b[0, 0] = 0.0
-        b[1, 0] = 1.0
-        return b
+        return Result(f=f.T, g=g.T)
 
 
 class CTP2(CTP2_7):
