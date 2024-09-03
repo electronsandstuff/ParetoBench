@@ -40,6 +40,23 @@ def test_generate_population():
     assert pop.g.shape[0] == 128
 
 
+@pytest.mark.parametrize("f, g, idx", [
+    (np.array([[1.0, 0.0], [0.0, 1.0]]).T, None, [True, True]),
+    (np.array([[1.0, 0.0], [1.0, 1.0]]).T, None, [False, True]),
+    (np.array([[0.0, 1.0], [1.0, 1.0]]).T, None, [True, False]),
+    (np.array([[0.0, 1.0], [1.0, 0.0]]).T, np.array([[1.0, 0.1]]).T, [True, True]),
+    (np.array([[0.0, 1.0], [1.0, 0.0]]).T, np.array([[1.0, -0.1]]).T, [True, False]),
+    (np.array([[0.0, 1.0], [1.0, 0.0]]).T, np.array([[-1.0, -0.1]]).T, [False, True]),
+    (np.array([[0.0, 1.0], [1.0, 0.0]]).T, np.array([[-1.0, -0.1], [100.0, -0.1], [100.0, 3e3]]).T, [False, True]),
+])
+def test_get_nondominated_indices(f, g, idx):
+    """
+    Check domination function for Population on some simple examples. 
+    """
+    pop = Population(f=f, g=g, feval=0)
+    assert all(pop.get_nondominated_indices() == idx)
+
+
 def test_population_batch_dimension():
     # Create valid arrays with matching batch dimensions
     valid_x = np.random.rand(10, 5)
