@@ -12,7 +12,7 @@ from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
 
 @dataclass
 class EvalMetricsJob:
-    run_idx: int
+    eval_idx: int
     metrics: Dict[str, Any]
     run: History
 
@@ -27,7 +27,7 @@ class EvalMetricsJob:
             row = {
                 'problem': self.run.problem,
                 'fevals': pop.feval,
-                'run_idx': self.run_idx,
+                'eval_idx': self.eval_idx,
                 'pop_idx': idx,
             }
             
@@ -47,7 +47,7 @@ def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any], n_procs=1)
     # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
     jobs = []
     for idx, run in enumerate(exp.runs):
-        jobs.append(EvalMetricsJob(run=run, run_idx=idx, metrics=metrics.copy()))
+        jobs.append(EvalMetricsJob(run=run, eval_idx=idx, metrics=metrics.copy()))
     
     # Run each of the jobs (potentially in parallel)
     if n_procs == 1:
@@ -61,10 +61,11 @@ def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any], n_procs=1)
 def eval_metrics_mult_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs=1):
     # Load each of the experiments and analyze
     dfs = []
-    for fname in fnames:
+    for idx, fname in enumerate(fnames):
         exp = Experiment.load(fname)
         df = eval_metrics_experiment(exp, metrics, n_procs=n_procs)
         df['run_name'] = exp.identifier
+        df['run_idx'] = idx
         df['fname'] = fname
         dfs.append(df)
         
@@ -98,7 +99,7 @@ class InverseGenerationalDistance:
         d = np.sqrt(np.sum((pop.f[None, :, :] - pf[:, None, :]) ** 2, axis=2))
 
         # Find the minimum distance for each point and average it
-        d_min = np.min(d, axis=0)
+        d_min = np.min(d, axis=1)
         return np.mean(d_min)
 
 
