@@ -1,8 +1,9 @@
 import numpy as np
 from itertools import count
 
-from .problem import Problem, ProblemWithFixedPF, ProblemWithPF, Result
+from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
 from .utils import triangle_grid, triangle_grid_count
+from .containers import Population
 
 
 def get_pf_cf9_cf10(n, b):
@@ -61,7 +62,7 @@ class CF1(CFx, ProblemWithFixedPF):
         g = np.vstack((
             f[0] + f[1] - self.a * np.abs(np.sin(self.b * np.pi * (f[0] - f[1] + 1))) - 1,
         ))
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
@@ -107,7 +108,7 @@ class CF2(CFx, ProblemWithPF):
         g = np.vstack((
             t / (1 + np.exp(4 * np.abs(t))),
         ))
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
@@ -160,7 +161,7 @@ class CF3(CFx, ProblemWithPF):
         g =  np.vstack((
             f[1] + f[0] ** 2 - self.a * np.sin(self.b * np.pi * (f[0] ** 2 - f[1] + 1)) - 1,
         ))
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
     
     @property
     def var_lower_bounds(self):
@@ -211,7 +212,7 @@ class CF4(CFx, ProblemWithPF):
         g = np.vstack((
             t / (1 + np.exp(4 * np.abs(t))),
         ))
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
@@ -263,7 +264,7 @@ class CF5(CFx, ProblemWithPF):
             x[1] - 0.8 * x[0] * np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n) - 0.5 * x[0] + 0.25,
         ))
         
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
@@ -315,7 +316,7 @@ class CF6(CFx, ProblemWithPF):
             g2
         ))
         
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
@@ -370,7 +371,7 @@ class CF7(CFx, ProblemWithPF):
             g2
         ))
         
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
@@ -424,7 +425,7 @@ class CF8(CFx, ProblemWithPF):
                 np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1))) - 1,
         ))
         
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
@@ -477,7 +478,7 @@ class CF9(CFx, ProblemWithPF):
                 self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
         ))
         
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
     
     @property
     def var_lower_bounds(self):
@@ -527,7 +528,7 @@ class CF10(CFx, ProblemWithPF):
                 self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)) - 1,
         ))
         
-        return Result(f=f.T, g=g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
