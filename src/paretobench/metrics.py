@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import pandas as pd
 import concurrent.futures
 from operator import methodcaller
+from typing import List
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
@@ -55,6 +56,21 @@ def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any], n_procs=1)
         with concurrent.futures.ProcessPoolExecutor(n_procs) as ex:
             results = ex.map(methodcaller('__call__'), jobs)
     return  pd.DataFrame(sum(results, []))
+
+
+def eval_metrics_mult_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs=1):
+    # Load each of the experiments and analyze
+    dfs = []
+    for fname in fnames:
+        exp = Experiment.load(fname)
+        df = eval_metrics_experiment(exp, metrics, n_procs=n_procs)
+        df['run_name'] = exp.identifier
+        df['fname'] = fname
+        dfs.append(df)
+        
+    # Combine and return
+    df = pd.concat(dfs)
+    return df
 
 
 class InverseGenerationalDistance:
