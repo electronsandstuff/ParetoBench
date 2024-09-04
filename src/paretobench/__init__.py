@@ -1,4 +1,4 @@
-from .problem import Problem, ProblemWithFixedPF, ProblemWithPF, Result
+from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
 from .factory import register_problem, get_problem_names, create_problem
 from .exceptions import SerializationError, DeserializationError, UnknownProblemError, InputError
 from .containers import Population, History, Experiment

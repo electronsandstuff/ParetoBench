@@ -8,33 +8,6 @@ from .simple_serialize import dumps, loads
 from .containers import Population
 
 
-@dataclass
-class Result:
-    """
-    This class represents the output from running one of the problems. When containing batched data, the first index is the 
-    batched index. Common literature names are used for the objectives (f) and inequality constraints (g).
-    """
-    f: np.ndarray
-    g: np.ndarray = field(default=None)
-    
-    def __post_init__(self):
-        """
-        Automatically set constraints if we didn't get any
-        """
-        if self.g is None:
-            if len(self.f.shape) == 2:
-                self.g = np.empty((self.f.shape[0], 0))
-            else:
-                self.g = np.empty((0,))
-
-            
-    def __repr__(self):
-        batch_size = self.f.shape[0]
-        num_objectives = self.f.shape[1]
-        num_constraints = self.g.shape[1] if self.g is not None else 0
-        return f"Result(batch_size={batch_size}, num_objectives={num_objectives}, num_constraints={num_constraints})"
-
-
 class Problem(BaseModel):
     """
     The overarching class all problems inherit from. Children must implement the following methods and properties.
