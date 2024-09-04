@@ -64,7 +64,7 @@ def get_metric_names(df):
     df : Dataframe
         The table of metric values
     """
-    nm_keys = ['problem', 'fevals', 'eval_idx', 'pop_idx', 'run_idx', 'filename', 'run_name']
+    nm_keys = ['problem', 'fevals', 'eval_idx', 'pop_idx', 'run_idx', 'fname', 'run_name']
     return [x for x in df.columns.to_list() if x not in nm_keys]
 
 
@@ -158,6 +158,7 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         # Go through each container figuring out if we are the best
         for n in df['run_idx'].unique().tolist():
             y = df.loc[(df['run_idx'] == n) & (df['problem'] == problem)][metric]
+            
             if not len(y):
                 continue
             if ranksums(x.to_numpy(), y.to_numpy(), 'greater')[1] < wilcoxon_p:
@@ -166,14 +167,14 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
 
     # The metric names
     metrics = get_metric_names(df)
-    
+
     # Create the set of functions which we'll apply to aggregate the values
     agg_funs = {}
     for m in metrics:
         funs = [
             'mean',
             'std',
-            ('median', np.median),
+            'median',
             ('pct_2.5', lambda x: np.percentile(x, 2.5, axis=0)),
             ('pct_97.5', lambda x: np.percentile(x, 97.5, axis=0)),
             ('wilcoxon_best', lambda x: is_best(x, m))
