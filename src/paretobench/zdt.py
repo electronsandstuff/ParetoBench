@@ -1,7 +1,8 @@
 import numpy as np
 
-from .problem import Problem, ProblemWithPF, Result
+from .problem import Problem, ProblemWithPF
 from .utils import weighted_chunk_sizes
+from .containers import Population
 
 
 class ZDTx(Problem, ProblemWithPF):
@@ -13,7 +14,7 @@ class ZDTx(Problem, ProblemWithPF):
     
     @property
     def reference(self):
-        return "Zitzler, E., Deb, K., & Thiele, L. (2000). Comparison of Multiobjective Evolutionary Algorithms: Empirical Results. "\
+        return "Zitzler, E., Deb, K., & Thiele, L. (2000). Comparison of Multiobjective Evolutionary Algorithms: Empirical Populations. "\
                "Evolutionary Computation, 8(2), 173–195. https://doi.org/10.1162/106365600568202"
 
     @property
@@ -31,7 +32,7 @@ class ZDT1(ZDTx):
         x = x.T
         
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
-        return Result(f=np.array([
+        return Population(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g)),
         ]).T)
@@ -47,7 +48,7 @@ class ZDT2(ZDTx):
         x = x.T
         
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
-        return Result(f=np.array([
+        return Population(f=np.array([
             x[0],
             g * (1 - (x[0] / g) ** 2),
         ]).T)
@@ -63,7 +64,7 @@ class ZDT3(ZDTx):
         x = x.T
         
         g = 1 + 9 * np.sum(x[1:], axis=0) / (self.n - 1)
-        return Result(f=np.array([
+        return Population(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g) - x[0] / g * np.sin(10 * np.pi * x[0])),
         ]).T)
@@ -94,7 +95,7 @@ class ZDT4(ZDTx):
         x = x.T
         
         g = 1 + 10 * (self.n - 1) + np.sum(x[1:] ** 2 - 10 * np.cos(4 * np.pi * x[1:]), axis=0)
-        return Result(f=np.array([
+        return Population(f=np.array([
             x[0],
             g * (1 - np.sqrt(x[0] / g)),
         ]).T)
@@ -121,7 +122,7 @@ class ZDT6(ZDTx):
         
         f1 = 1 - np.exp(-4*x[0])*(np.sin(6*np.pi*x[0]))**6
         g = 1 + 9 * (np.sum(x[1:], axis=0) / (self.n - 1))**0.25
-        return Result(f=np.array([
+        return Population(f=np.array([
             f1,
             g * (1 - (f1 / g) ** 2),
         ]).T)

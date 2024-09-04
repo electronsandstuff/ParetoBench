@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from .exceptions import DeserializationError, InputError
 from .factory import create_problem
 from .simple_serialize import dumps, loads
+from .containers import Population
 
 
 @dataclass
@@ -42,9 +43,9 @@ class Problem(BaseModel):
      * `n_constraints`: property, the number of constraints
      * `var_upper_bounds`: property, the array of upper bounds for decision variables
      * `var_lower_bounds`: property, the array of lower bounds for decision variables
-     * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Result` object
+     * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Population` object
     """    
-    def __call__(self, x: np.ndarray, check_bounds=True) -> Result:
+    def __call__(self, x: np.ndarray, check_bounds=True) -> Population:
         """
         Returns the values of the objective functions and constraints at the decision variables `x`. 
         The input can be either batched or a single value.
@@ -60,8 +61,8 @@ class Problem(BaseModel):
 
         Returns
         -------
-        Result
-            A result object containing the objectives and constraints.
+        Population
+            A population object containing the objectives and constraints.
         """            
         # If a single input was provided
         if len(x.shape) == 1:
@@ -70,8 +71,7 @@ class Problem(BaseModel):
                 raise InputError(msg)
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
-            res = self._call(x[None, :])
-            return Result(f=res.f[0, :], g=res.g[0, :])
+            pop = self._call(x[None, :])
         
         # If batched input is used
         elif len(x.shape) == 2:
@@ -80,13 +80,17 @@ class Problem(BaseModel):
                 raise InputError(msg)
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
-            return self._call(x)
+            pop = self._call(x)
         
         # If user provided something not usable
         else:
             raise ValueError(f"Incompatible shape of input array x: {x.shape}")
+        
+        # Set the decision variables
+        pop.x = x
+        return pop
     
-    def _call(self, x: np.ndarray) -> Result:
+    def _call(self, x: np.ndarray) -> Population:
         """
         This method is implemented by the child classes of `Problem` and should operate on a batched array of inputs.
         """

@@ -1,6 +1,7 @@
 from .problem import Problem, ProblemWithFixedPF, ProblemWithPF, Result
 from .factory import register_problem, get_problem_names, create_problem
 from .exceptions import SerializationError, DeserializationError, UnknownProblemError, InputError
+from .containers import Population, History, Experiment
 
 from .dtlz import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9
 for p in [DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9]:
