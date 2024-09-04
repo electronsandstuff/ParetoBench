@@ -28,7 +28,7 @@ class Population(BaseModel):
     
     @model_validator(mode='before')
     @classmethod
-    def set_default_arrays(cls, values):
+    def set_default_vals(cls, values):
         # Determine the batch size from the first non-None array
         batch_size = next((arr.shape[0] for arr in [values.get('x'), values.get('f'), values.get('g')] if arr is not None), None)
         if batch_size is None:
@@ -42,6 +42,9 @@ class Population(BaseModel):
         if values.get('g') is None:
             values['g'] = np.empty((batch_size, 0), dtype=np.float64)
 
+        # Set feval to number of individuals if not included
+        if values.get('feval') is None:
+            values['feval'] = batch_size
         return values
 
     @model_validator(mode='after')

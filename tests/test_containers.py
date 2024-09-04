@@ -70,8 +70,8 @@ def test_to_nondominated():
         ref_nd = sum(hist.reports[1:report_idx+1], hist.reports[0]).get_nondominated_set()
         
         # Sort test and reference set so they are comparable
-        ref_idx = np.lexsort(np.concat((ref_nd.x, ref_nd.f), axis=1).T)
-        test_idx = np.lexsort(np.concat((report_nd.x, report_nd.f), axis=1).T)
+        ref_idx = np.lexsort(np.concatenate((ref_nd.x, ref_nd.f), axis=1).T)
+        test_idx = np.lexsort(np.concatenate((report_nd.x, report_nd.f), axis=1).T)
 
         # Make sure the two are the same
         np.testing.assert_array_equal(ref_nd.x[ref_idx, :], report_nd.x[test_idx, :])

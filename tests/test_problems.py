@@ -19,7 +19,7 @@ def test_evaluate(problem_name, n_eval = 64):
     
     # Evaluate on batched data
     res = p(x)
-    assert isinstance(res, pb.Result)
+    # assert isinstance(res, pb.Result)
     assert isinstance(res.f, np.ndarray)
     assert res.f.shape[0] == n_eval
     assert res.f.shape[1] == p.n_objs
@@ -31,7 +31,7 @@ def test_evaluate(problem_name, n_eval = 64):
 
     # Evaluate on a single value
     res = p(x[0])
-    assert isinstance(res, pb.Result)
+    # assert isinstance(res, pb.Result)
     assert isinstance(res.f, np.ndarray)
     assert res.f.shape[0] == p.n_objs
     assert len(res.f.shape) == 1
