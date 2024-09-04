@@ -3,8 +3,56 @@ from scipy.stats import ranksums
 import numpy as np
 import paretobench
 
-from .containers import MOGARun
-from .utils import get_index_before, normalize_problem_name
+from .exceptions import UnknownProblemError
+from .problem import Problem
+
+
+def normalize_problem_name(name):
+    """
+    Standardizes the format (whitespace, order of parameters, and default parameters) of problem names so that they can be
+    referenced easily tables of metrics (for example).
+    
+    If the problem is not registered to ParetoBench, the name is simply passed through unchanged.
+
+    Parameters
+    ----------
+    name : str
+        The problem name
+
+    Returns
+    -------
+    str
+        The normalized problem name
+    """
+    try:
+        return Problem.from_line_fmt(name).to_line_fmt()
+    except UnknownProblemError:
+        return name
+
+
+def get_index_before(xv, xq):
+    """
+    For a sorted array of values (xa) and an array of queries, get the indices to the elements of xv which are the closest in
+    value to those in x without exceeding their value.
+
+    Parameters
+    ----------
+    xv : np.ndarray
+        The values to lookup
+    xq : np.ndarray
+        The query values
+
+    Returns
+    -------
+    np.ndarray
+        The indices (same shape as xq)
+    """
+    # Check that all query values are valid (larger than at least one element in xv)
+    if np.any(xq < np.min(xv)):
+        raise ValueError('At least one value in the queries (xq) is less than all values in xv. Cannot continue.')
+    
+    # Get the indices
+    return np.maximum(np.searchsorted(xv, xq, side='right') - 1, 0)
 
 
 def get_metric_names(df):
