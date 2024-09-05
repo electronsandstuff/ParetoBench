@@ -39,39 +39,40 @@ class EvalMetricsJob:
         return rows
 
 
-def eval_metrics_experiment(exp: Experiment, metrics: Dict[str, Any], n_procs=1):
+def eval_metrics_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs=1):
     # Handle case of a function being passed for `metrics`
     if callable(metrics):
         metrics = {'metric': metrics}
-    
-    # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
-    jobs = []
-    for idx, run in enumerate(exp.runs):
-        jobs.append(EvalMetricsJob(run=run, eval_idx=idx, metrics=metrics.copy()))
-    
-    # Run each of the jobs (potentially in parallel)
-    if n_procs == 1:
-        results = map(methodcaller('__call__'), jobs)
-    else:
-        with concurrent.futures.ProcessPoolExecutor(n_procs) as ex:
-            results = ex.map(methodcaller('__call__'), jobs)
-    return  pd.DataFrame(sum(results, []))
 
-
-def eval_metrics_mult_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs=1):
     # Load each of the experiments and analyze
     dfs = []
     for idx, fname in enumerate(fnames):
+        # Load the experiment
         exp = Experiment.load(fname)
-        df = eval_metrics_experiment(exp, metrics, n_procs=n_procs)
+        
+        # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
+        jobs = []
+        for idx, run in enumerate(exp.runs):
+            jobs.append(EvalMetricsJob(run=run, eval_idx=idx, metrics=metrics.copy()))
+        
+        # Run each of the jobs (potentially in parallel)
+        if n_procs == 1:
+            results = map(methodcaller('__call__'), jobs)
+        else:
+            with concurrent.futures.ProcessPoolExecutor(n_procs) as ex:
+                results = ex.map(methodcaller('__call__'), jobs)
+            
+        # Construct the dataframe for this experiment
+        df = pd.DataFrame(sum(results, []))
         df['run_name'] = exp.identifier
         df['run_idx'] = idx
         df['fname'] = fname
+        
+        # Add to the list of dataframes
         dfs.append(df)
         
     # Combine and return
-    df = pd.concat(dfs)
-    return df
+    return pd.concat(dfs)
 
 
 class InverseGenerationalDistance:
