@@ -64,7 +64,7 @@ def eval_metrics_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs
             
         # Construct the dataframe for this experiment
         df = pd.DataFrame(sum(results, []))
-        df['exp_name'] = exp.identifier
+        df['exp_name'] = exp.name
         df['exp_idx'] = exp_idx
         df['fname'] = fname
         
