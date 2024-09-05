@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import pandas as pd
 import concurrent.futures
 from operator import methodcaller
-from typing import List
+from typing import List, Union
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
@@ -85,9 +85,16 @@ class InverseGenerationalDistance:
         """
         self.n_pf = n_pf
 
-    def __call__(self, pop: Population, problem: str):
+    def __call__(self, pop: Population, problem: Union[Problem, str]):
+        # Handle the problem
+        if isinstance(problem, str):
+            prob = Problem.from_line_fmt(problem)
+        elif isinstance(problem, Problem):
+            prob = problem
+        else:
+            raise ValueError('Function must be passed problem object or description in single line format.')
+        
         # Get the Pareto front
-        prob = Problem.from_line_fmt(problem)
         if isinstance(prob, ProblemWithPF):
             pf = prob.get_pareto_front(self.n_pf)
         elif isinstance(prob, ProblemWithFixedPF):
