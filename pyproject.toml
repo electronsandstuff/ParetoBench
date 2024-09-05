@@ -19,5 +19,6 @@ dependencies = [
   "pydantic",
   "h5py",
   "pandas",
-  "scipy"
+  "scipy",
+  "jinja2"
 ]
