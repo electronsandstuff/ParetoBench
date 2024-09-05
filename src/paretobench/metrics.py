@@ -12,7 +12,7 @@ from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
 
 @dataclass
 class EvalMetricsJob:
-    eval_idx: int
+    run_idx: int
     metrics: Dict[str, Any]
     run: History
 
@@ -27,7 +27,7 @@ class EvalMetricsJob:
             row = {
                 'problem': self.run.problem,
                 'fevals': pop.feval,
-                'eval_idx': self.eval_idx,
+                'run_idx': self.run_idx,
                 'pop_idx': idx,
             }
             
@@ -46,14 +46,14 @@ def eval_metrics_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs
 
     # Load each of the experiments and analyze
     dfs = []
-    for idx, fname in enumerate(fnames):
+    for exp_idx, fname in enumerate(fnames):
         # Load the experiment
         exp = Experiment.load(fname)
         
         # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
         jobs = []
-        for idx, run in enumerate(exp.runs):
-            jobs.append(EvalMetricsJob(run=run, eval_idx=idx, metrics=metrics.copy()))
+        for run_idx, run in enumerate(exp.runs):
+            jobs.append(EvalMetricsJob(run=run, run_idx=run_idx, metrics=metrics.copy()))
         
         # Run each of the jobs (potentially in parallel)
         if n_procs == 1:
@@ -64,8 +64,8 @@ def eval_metrics_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs
             
         # Construct the dataframe for this experiment
         df = pd.DataFrame(sum(results, []))
-        df['run_name'] = exp.identifier
-        df['run_idx'] = idx
+        df['exp_name'] = exp.identifier
+        df['exp_idx'] = exp_idx
         df['fname'] = fname
         
         # Add to the list of dataframes

@@ -64,7 +64,7 @@ def get_metric_names(df):
     df : Dataframe
         The table of metric values
     """
-    nm_keys = ['problem', 'fevals', 'eval_idx', 'pop_idx', 'run_idx', 'fname', 'run_name']
+    nm_keys = ['problem', 'fevals', 'run_idx', 'pop_idx', 'exp_idx', 'fname', 'exp_name']
     return [x for x in df.columns.to_list() if x not in nm_keys]
 
 
@@ -81,7 +81,7 @@ def apply_feval_cutoff(df, max_feval=300):
         Cutoff of how many function evaluations are allowed, by default 300
     """
     df = df[df['fevals'] <= max_feval]
-    idx = df.groupby(by=['eval_idx', 'run_idx', 'problem'])['fevals'].idxmax()
+    idx = df.groupby(by=['run_idx', 'exp_idx', 'problem'])['fevals'].idxmax()
     return df.loc[idx].reset_index(drop=True)
 
 
@@ -91,7 +91,7 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
     the last generation in each optimization run before it exceeded the specified maximum number of function evaluations. Mean,
     std. deviation and other statistics of the metric values at this generation are recorded. The Wilcoxon rank sum test is used
     to discern which runs are the "best" across a given problem and metric. Optionally, the Wilcoxon rank sum test can also be
-    used to generate comparisons with a specific run (selected by its `run_idx`). This is useful for benchmarking a new
+    used to generate comparisons with a specific run (selected by its `exp_idx`). This is useful for benchmarking a new
     optimization algorithm.
     
     The output table will have hierarchical columns. The top level colunms are the metric names from the orginal table. The next
@@ -109,7 +109,7 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
     max_feval : int
         Maximum number of function evaluations
     wilcoxon_idx : int/None, optional
-        The value of `run_idx` to use as the reference in the Wilcoxon rank sum test comparisons, by default None
+        The value of `exp_idx` to use as the reference in the Wilcoxon rank sum test comparisons, by default None
     wilcoxon_p : float, optional
         p value threshold for the rank sum test, by default 0.05
     keep_filename : bool
@@ -132,14 +132,14 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         Given the grouped evaluations for this problem and run, compare ourself with the "reference" run
         """
         # If we are the reference run don't perform the comparison against ourself
-        if df.loc[x.index[0]]['run_idx'] == wilcoxon_idx:
+        if df.loc[x.index[0]]['exp_idx'] == wilcoxon_idx:
             return ''
         
         # Get the problem name
         problem = df.loc[x.index[0]]['problem']
 
         # Get the values for the metric on this problem from the container we are comparing agianst
-        y = df.loc[(df['run_idx'] == wilcoxon_idx) & (df['problem'] == problem)][metric]
+        y = df.loc[(df['exp_idx'] == wilcoxon_idx) & (df['problem'] == problem)][metric]
         
         # Use the stats test to compare values
         if ranksums(x.to_numpy(), y.to_numpy(), 'less')[1] < wilcoxon_p:
@@ -156,8 +156,8 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         problem = df.loc[x.index[0]]['problem']
         
         # Go through each container figuring out if we are the best
-        for n in df['run_idx'].unique().tolist():
-            y = df.loc[(df['run_idx'] == n) & (df['problem'] == problem)][metric]
+        for n in df['exp_idx'].unique().tolist():
+            y = df.loc[(df['exp_idx'] == n) & (df['problem'] == problem)][metric]
             
             if not len(y):
                 continue
@@ -183,11 +183,11 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         agg_funs[m] = funs
         
     # Apply the aggregation and return
-    by = ['problem', 'run_idx']
+    by = ['problem', 'exp_idx']
     if keep_filename:
         by.append('filename')
-    if 'run_name' in df.columns:
-        by.append('run_name')
+    if 'exp_name' in df.columns:
+        by.append('exp_name')
     return df.groupby(by).agg(agg_funs)
 
 
@@ -273,7 +273,7 @@ def construct_metric_comparison_table(df, metric=None, problem_params=[], mean_f
     # Pivot so we get a table of just the txt values
     df = df.pivot_table(
         index='problem', 
-        columns=('run_name' if 'run_name' in df.index.names else 'run_idx'),
+        columns=('exp_name' if 'exp_name' in df.index.names else 'exp_idx'),
         values=['cell_txt'], 
         aggfunc=lambda x: x,
         fill_value = '-',
@@ -352,7 +352,7 @@ def aggregate_metric_series_apply_fn(df):
     # Note: lambda accepts keyword arguments as a hack to prevent an error with (what I think) is different pandas
     # versions. In earlier versions of pandas apply will try to pass `include_groups` as a kwarg to the lambda. However, in
     # later versions we need to set it here to avoid a deprecation warning.
-    min_feval = max(df.groupby('eval_idx').apply(lambda x, **kw: x['fevals'].min(), include_groups=False))
+    min_feval = max(df.groupby('run_idx').apply(lambda x, **kw: x['fevals'].min(), include_groups=False))
     fevals = fevals[fevals >= min_feval]
     fevals = fevals.astype(int)
 
@@ -364,7 +364,7 @@ def aggregate_metric_series_apply_fn(df):
     for metric in metrics:
         # The "interpolated" (step-wise) metric values at each of the function evaluations in `fevals`
         apply_fn = lambda g, **kw: gather_metric_values_stepwise(g, metric, fevals)
-        vals = df.groupby('eval_idx').apply(apply_fn, include_groups=False)
+        vals = df.groupby('run_idx').apply(apply_fn, include_groups=False)
         vals = np.array(vals.to_list())  # Each row contains the values of the metric for a single evaluation at `fevals`
         
         # Calculate statistics on it and add to the dict of data
@@ -404,11 +404,11 @@ def aggregate_metric_series(df, keep_filename=False):
         Table with the aggregated series
     """
     # Apply the aggregation and return
-    by = ['problem', 'run_idx']
+    by = ['problem', 'exp_idx']
     if keep_filename:
         by.append('filename')
-    if 'run_name' in df.columns:
-        by.append('run_name')
+    if 'exp_name' in df.columns:
+        by.append('exp_name')
     
     # The lambda has the parameter `kw` as a hack (see note in `aggregate_metric_series_apply_fn`)
     return df.groupby(by).apply(lambda x,  **kw: aggregate_metric_series_apply_fn(x), include_groups=False)
