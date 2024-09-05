@@ -419,7 +419,7 @@ class History(BaseModel):
     
 class Experiment(BaseModel):
     runs: List[History]
-    identifier: str
+    name: str
     author: str = ''
     software: str = ''
     software_version: str = ''
@@ -430,7 +430,7 @@ class Experiment(BaseModel):
     def __eq__(self, other):
         if not isinstance(other, Experiment):
             return False
-        return (self.identifier == other.identifier and
+        return (self.name == other.name and
                 self.author == other.author and
                 self.software == other.software and
                 self.software_version == other.software_version and
@@ -439,7 +439,7 @@ class Experiment(BaseModel):
                 self.runs == other.runs)
 
     def __repr__(self) -> str:
-        return f"Experiment(identifier='{self.identifier}', n_runs={len(self.runs)})"
+        return f"Experiment(name='{self.name}', n_runs={len(self.runs)})"
 
     @classmethod
     def from_random(cls, n_histories: int, n_populations: int, n_objectives: int, n_decision_vars: int, n_constraints: int,
@@ -467,7 +467,7 @@ class Experiment(BaseModel):
         Returns
         -------
         Experiment
-            An instance of the Experiment class with a list of randomly generated History instances and a random identifier.
+            An instance of the Experiment class with a list of randomly generated History instances and a random name.
         """
         # Generate random histories
         runs = [
@@ -475,8 +475,8 @@ class Experiment(BaseModel):
                                 generate_names=generate_names) for _ in range(n_histories)
         ]
         
-        # Randomly generate an identifier for the experiment
-        identifier = f"Experiment_{random.randint(1000, 9999)}"
+        # Randomly generate an name for the experiment
+        name = f"Experiment_{random.randint(1000, 9999)}"
 
         # Generate random values or placeholders for other attributes
         author = f"Author_{random.randint(1, 100)}"
@@ -484,13 +484,13 @@ class Experiment(BaseModel):
         software_version = f"{random.randint(1, 5)}.{random.randint(0, 9)}"
         comment = "Randomly generated experiment"
 
-        return cls(runs=runs, identifier=identifier, author=author, software=software,
+        return cls(runs=runs, name=name, author=author, software=software,
                    software_version=software_version, comment=comment)
     
     def save(self, fname):
         with h5py.File(fname, mode='w') as f:
             # Save metadata as attributes
-            f.attrs['identifier'] = self.identifier
+            f.attrs['name'] = self.name
             f.attrs['author'] = self.author
             f.attrs['software'] = self.software
             f.attrs['software_version'] = self.software_version
@@ -517,13 +517,6 @@ class Experiment(BaseModel):
                 if m:
                     idx_runs.append((int(m.group(1)), History._from_h5py_group(run_grp)))
             runs = [x[1] for x in sorted(idx_runs, key=lambda x: x[0])]
-            
-            # Extract other attributes
-            identifier = f.attrs['identifier']
-            author = f.attrs['author']
-            software = f.attrs['software']
-            software_version = f.attrs['software_version']
-            comment = f.attrs['comment']
 
             # Convert the creation_time back to a timezone-aware datetime object
             creation_time = datetime.fromisoformat(f.attrs['creation_time']).astimezone(timezone.utc)
@@ -531,10 +524,10 @@ class Experiment(BaseModel):
             # Return as an experiment object
             return cls(
                 runs=runs,
-                identifier=identifier,
-                author=author,
-                software=software,
-                software_version=software_version,
-                comment=comment,
+                name=f.attrs['name'],
+                author=f.attrs['author'],
+                software=f.attrs['software'],
+                software_version= f.attrs['software_version'],
+                comment=f.attrs['comment'],
                 creation_time=creation_time
             )
