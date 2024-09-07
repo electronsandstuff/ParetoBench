@@ -39,16 +39,23 @@ class EvalMetricsJob:
         return rows
 
 
-def eval_metrics_experiments(fnames: List[str], metrics: Dict[str, Any], n_procs=1):
+def eval_metrics_experiments(experiments: List[Union[Experiment, str]], metrics: Dict[str, Any], n_procs=1):
     # Handle case of a function being passed for `metrics`
     if callable(metrics):
         metrics = {'metric': metrics}
 
     # Load each of the experiments and analyze
     dfs = []
-    for exp_idx, fname in enumerate(fnames):
-        # Load the experiment
-        exp = Experiment.load(fname)
+    for exp_idx, exp_in in enumerate(experiments):
+        # Load the experiment if its a file
+        if isinstance(exp_in, str):
+            exp = Experiment.load(exp_in)
+            fname = exp_in
+        elif isinstance(exp_in, Experiment):
+            exp = exp_in
+            fname = ''
+        else:
+            ValueError(f'Incompatible experiment type: idx={exp_idx}, type={type(exp_in)}')
         
         # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
         jobs = []
