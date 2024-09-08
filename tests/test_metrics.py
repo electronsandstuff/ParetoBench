@@ -44,8 +44,7 @@ def test_inverse_generational_distance():
     assert val == np.mean([0, 0, np.sqrt(0.5**2 + 0.5**2)])
 
 
-
-@pytest.mark.parametrize('input_type', ['MOGARun', 'file'])
+@pytest.mark.parametrize('input_type', ['MOGARun', 'file', 'single'])
 def test_eval_metrics_experiments(input_type):
     """
     This test generates some MOGARun objects and uses eval_metrics_experiments to evaluate them with a test metric. It confirms that
@@ -57,7 +56,11 @@ def test_eval_metrics_experiments(input_type):
         What type of input to use (MOGARun or file)
     """
     # Create some test objects
-    runs = generate_moga_runs()
+    if input_type == 'single':
+        runs = generate_moga_runs(1)
+    else:
+        runs = generate_moga_runs()
+    
     
     with tempfile.TemporaryDirectory() as dir:
         # Handle creating the input (files or moga run objects)
@@ -69,6 +72,8 @@ def test_eval_metrics_experiments(input_type):
                 fun_ins.append(fname)
         elif input_type == 'MOGARun':
             fun_ins = runs
+        elif input_type == 'single':
+            fun_ins = runs[0]
         else:
             raise ValueError(f'Unrecognized input_type: "{ input_type }"')
         
