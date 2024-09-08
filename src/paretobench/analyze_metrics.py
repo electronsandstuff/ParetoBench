@@ -435,7 +435,7 @@ def comparison_table_to_latex(df):
 
     # Count the number of each comparison for the columns and construct the summary to go at the bottom
     summary_str = r' \multicolumn{1}{c}{%d/%d/%d} '
-    comparisons = df.applymap(lambda x: (x[-1] if len(x) > 4 else '')).apply(pd.Series.value_counts).fillna(0)
+    comparisons = df.map(lambda x: (x[-1] if len(x) > 4 else '')).apply(pd.Series.value_counts).fillna(0)
     comparisons = comparisons.apply(lambda x: summary_str % (int(x.get('+', 0)), int(x.get('-', 0)), int(x.get('=', 0))))
 
     # Construct text for the final row
