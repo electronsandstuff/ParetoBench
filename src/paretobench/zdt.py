@@ -14,7 +14,7 @@ class ZDTx(Problem, ProblemWithPF):
     
     @property
     def reference(self):
-        return "Zitzler, E., Deb, K., & Thiele, L. (2000). Comparison of Multiobjective Evolutionary Algorithms: Empirical Populations. "\
+        return "Zitzler, E., Deb, K., & Thiele, L. (2000). Comparison of Multiobjective Evolutionary Algorithms: Empirical Results. "\
                "Evolutionary Computation, 8(2), 173–195. https://doi.org/10.1162/106365600568202"
 
     @property
