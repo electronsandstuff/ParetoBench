@@ -1,10 +1,10 @@
-import numpy as np
-from typing import Dict, Any
 from dataclasses import dataclass
-import pandas as pd
-import concurrent.futures
 from operator import methodcaller
+from typing import Dict, Any
 from typing import List, Union
+import concurrent.futures
+import numpy as np
+import pandas as pd
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
@@ -12,8 +12,11 @@ from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
 
 @dataclass
 class EvalMetricsJob:
-    run_idx: int
+    """
+    Represents a "job" in the batch calculation of metrics from experiment objects.
+    """
     metrics: Dict[str, Any]
+    run_idx: int
     run: History
 
     def __call__(self):
@@ -39,10 +42,52 @@ class EvalMetricsJob:
         return rows
 
 
-def eval_metrics_experiments(experiments: List[Union[Experiment, str]], metrics: Dict[str, Any], n_procs=1):
+def eval_metrics_experiments(
+        experiments: Union[Union[Experiment, str], List[Union[Experiment, str]]],
+        metrics: Dict[str, Any],
+        n_procs=1
+    ):
+    """
+    Evaluates a set of metrics on all of the nondominated solutions in the populations contained in `experiments`.  Calculation
+    includes some basic parallelism using the `multiprocessing` library and can be enabled with 
+    the `n_procs` parameter.
+    
+    The metric should have the following signature.
+    `metric(pop: Population, problem: str)`
+    The problem will be a definition of a problem in "single line" format and the population will contain only nondominated
+    solutions.
+    
+    The resulting dataframe will have the following columns.
+    * `problem`: The problem (in single line format)
+    * `exp_idx`: The index of this experiment in the list
+    * `exp_name`: The attribute `Experiment.name` for this evaluation
+    * `run_idx`: The index of the run within the experiment
+    * `pop_idx`: An index for the Population object within the run
+    * `fevals`: The number of function evaluations used to achieve this result
+    * `fname`: The filename the experiment was loaded from. Empty string if not loaded from file.
+    * One column with the name of each metric and the values stored in it
+
+    Parameters
+    ----------
+    experiments : Union[Union[Experiment, str], List[Union[Experiment, str]]]
+        The experiment or list of experiments. May either be loaded experiment object or filenames.
+    metrics : Dict[str, Any]
+        Map from metric names to functions which will evaluate them. Passing a function here will give it the name `metric`.
+    n_procs : int, optional
+        Number of processes to use in `multiprocessing.Pool`. Set to one to disable, by default 1
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas dataframe with the results of evaluating the metrics.
+    """
     # Handle case of a function being passed for `metrics`
     if callable(metrics):
         metrics = {'metric': metrics}
+
+    # Handle single valued experiments
+    if not isinstance(experiments, list):
+        experiments = [experiments]
 
     # Load each of the experiments and analyze
     dfs = []
@@ -83,6 +128,9 @@ def eval_metrics_experiments(experiments: List[Union[Experiment, str]], metrics:
 
 
 class InverseGenerationalDistance:
+    """
+    Calculates the inverse generational distance for the population to the Pareto front in the named problem.
+    """
     def __init__(self, n_pf=1000):
         """
         Parameters
