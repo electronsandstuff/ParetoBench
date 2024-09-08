@@ -22,23 +22,24 @@ def example_metric(pop, prob):
     return np.mean(pop.f) + sum(ord(x) for x in prob)
 
 
-def generate_moga_runs(n_runs=4, names=None):
+def generate_moga_runs(names=None):
     """
     Helper function to generate multiple randomized Experiment objects for testing the metric analysis functions. Forces them
     to all have the same problems in them.
 
     Parameters
     ----------
-    n_runs : int, optional
-        The number of runs to make, by default 4
+    names: str
+        Names to use for the experiments
 
     Returns
     -------
     List[Experiment]
         The runs
     """
+    # Handle defulat name
     if names is None:
-        names = ['' for _ in range(n_runs)]
+        names = ['', '', '', '']
     
     # Make each run
     experiments = []
@@ -54,4 +55,3 @@ def generate_moga_runs(n_runs=4, names=None):
     
     # Return it
     return experiments
-

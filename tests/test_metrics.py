@@ -57,7 +57,7 @@ def test_eval_metrics_experiments(input_type):
     """
     # Create some test objects
     if input_type == 'single':
-        runs = generate_moga_runs(1)
+        runs = generate_moga_runs(names=['test'])
     else:
         runs = generate_moga_runs()
     
