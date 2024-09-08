@@ -1,15 +1,12 @@
 import numpy as np
-import os
 import pandas as pd
 import pandas.api.types as ptypes
 import paretobench
 import pytest
-import tempfile
 
-from paretobench.analyze_metrics import aggregate_metrics_feval_budget, apply_feval_cutoff, normalize_problem_name
-from paretobench.analyze_metrics import aggregate_metric_series, construct_metric_comparison_table, comparison_table_to_latex
-from paretobench import Experiment
 from paretobench import eval_metrics_experiments
+from paretobench.analyze_metrics import aggregate_metric_series, construct_metric_comparison_table, comparison_table_to_latex
+from paretobench.analyze_metrics import aggregate_metrics_feval_budget, apply_feval_cutoff, normalize_problem_name
 from .utils import generate_moga_runs, example_metric
 
 
