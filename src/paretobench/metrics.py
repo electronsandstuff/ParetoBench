@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from operator import methodcaller
-from typing import Dict, Any
-from typing import List, Union
+from typing import Dict, Any, List, Union
 import concurrent.futures
 import numpy as np
+import os
 import pandas as pd
 
 from .containers import Experiment, History, Population
@@ -13,8 +13,12 @@ from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
 @dataclass
 class EvalMetricsJob:
     """
-    Represents a "job" in the batch calculation of metrics from experiment objects.
+    Represents a "job" in the batch calculation of metrics from experiment objects. One job will evaluate all populations within
+    a single `History` object and return a list of rows (as dictionaries) with the metric values, one for each population.
     """
+    exp_idx: int
+    exp_name: str
+    fname: str
     metrics: Dict[str, Any]
     run_idx: int
     run: History
@@ -32,6 +36,9 @@ class EvalMetricsJob:
                 'fevals': pop.feval,
                 'run_idx': self.run_idx,
                 'pop_idx': idx,
+                'exp_name': self.exp_name,
+                'exp_idx': self.exp_idx,
+                'fname': self.fname,
             }
             
             # Evaluate the metrics
@@ -52,7 +59,7 @@ def eval_metrics_experiments(
     includes some basic parallelism using the `multiprocessing` library and can be enabled with 
     the `n_procs` parameter.
     
-    The metric should have the following signature.
+    The metrics should have the following signature.
     `metric(pop: Population, problem: str)`
     The problem will be a definition of a problem in "single line" format and the population will contain only nondominated
     solutions.
@@ -70,7 +77,7 @@ def eval_metrics_experiments(
     Parameters
     ----------
     experiments : Union[Union[Experiment, str], List[Union[Experiment, str]]]
-        The experiment or list of experiments. May either be loaded experiment object or filenames.
+        The experiment or list of experiments. May either be loaded experiment objects or filenames.
     metrics : Dict[str, Any]
         Map from metric names to functions which will evaluate them. Passing a function here will give it the name `metric`.
     n_procs : int, optional
@@ -92,8 +99,8 @@ def eval_metrics_experiments(
     # Load each of the experiments and analyze
     dfs = []
     for exp_idx, exp_in in enumerate(experiments):
-        # Load the experiment if its a file
-        if isinstance(exp_in, str):
+        # Load the experiment if it's a file
+        if isinstance(exp_in, (str, os.PathLike)):
             exp = Experiment.load(exp_in)
             fname = exp_in
         elif isinstance(exp_in, Experiment):
@@ -105,23 +112,27 @@ def eval_metrics_experiments(
         # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
         jobs = []
         for run_idx, run in enumerate(exp.runs):
-            jobs.append(EvalMetricsJob(run=run, run_idx=run_idx, metrics=metrics.copy()))
+            jobs.append(EvalMetricsJob(
+                run=run, 
+                run_idx=run_idx,
+                metrics=metrics.copy(), 
+                exp_name=exp.name, 
+                exp_idx=exp_idx, 
+                fname=fname
+            ))
         
         # Run each of the jobs (potentially in parallel)
+        # Note: the map happens inside of the loop over experiments because the files must be opened before constructing the
+        # jobs. Performing the batching in a way that includes all experiments would incur the (potentially large) memory hit
+        # of having all experiment objects loaded in memory at the same time.
         if n_procs == 1:
             results = map(methodcaller('__call__'), jobs)
         else:
             with concurrent.futures.ProcessPoolExecutor(n_procs) as ex:
                 results = ex.map(methodcaller('__call__'), jobs)
             
-        # Construct the dataframe for this experiment
-        df = pd.DataFrame(sum(results, []))
-        df['exp_name'] = exp.name
-        df['exp_idx'] = exp_idx
-        df['fname'] = fname
-        
-        # Add to the list of dataframes
-        dfs.append(df)
+        # Construct the dataframe for this experiment (results is list of list of rows)
+        dfs.append(pd.DataFrame(sum(results, [])))
         
     # Combine and return
     return pd.concat(dfs)
