@@ -37,7 +37,7 @@ def generate_moga_experiments(names=None):
     List[Experiment]
         The runs
     """
-    # Handle defulat name
+    # Handle default name
     if names is None:
         names = ['', '', '', '']
     
