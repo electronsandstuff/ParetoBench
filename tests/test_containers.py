@@ -37,7 +37,7 @@ def test_experiment_save_load(generate_names):
 def test_generate_population():
     pop = Population(
         f=np.random.random((128, 3)),
-        feval=0
+        fevals=0
     )
     assert pop.x.shape[0] == 128
     assert pop.g.shape[0] == 128
@@ -56,7 +56,7 @@ def test_get_nondominated_indices(f, g, idx):
     """
     Check domination function for Population on some simple examples. 
     """
-    pop = Population(f=f, g=g, feval=0)
+    pop = Population(f=f, g=g, fevals=0)
     assert all(pop.get_nondominated_indices() == idx)
 
 
@@ -79,8 +79,8 @@ def test_to_nondominated():
         # Make sure the two are the same
         np.testing.assert_array_equal(ref_nd.x[ref_idx, :], report_nd.x[test_idx, :])
         
-        # Double check that feval hasn't changed
-        assert report_nd.feval == hist.reports[report_idx].feval
+        # Double check that fevals hasn't changed
+        assert report_nd.fevals == hist.reports[report_idx].fevals
         
 
 def test_population_batch_dimension():
@@ -99,13 +99,13 @@ def test_population_batch_dimension():
 
     # Test that creating a valid Population instance does not raise an error
     try:
-        Population(x=valid_x, f=valid_f, g=valid_g, feval=1)
+        Population(x=valid_x, f=valid_f, g=valid_g, fevals=1)
     except ValidationError:
         pytest.fail("Population creation with valid batch dimensions raised ValidationError unexpectedly!")
 
     # Test that creating an invalid Population instance raises a ValidationError
     with pytest.raises(ValidationError, match=r".*Batch dimensions do not match \(len\(x\)=10, len\(f\)=8, len\(g\)=10\).*"):
-        Population(x=invalid_x, f=invalid_f, g=invalid_g, feval=1)
+        Population(x=invalid_x, f=invalid_f, g=invalid_g, fevals=1)
 
 
 def test_history_validation():
@@ -113,16 +113,16 @@ def test_history_validation():
     Make sure that consistency checks for history objects work.
     """
     # Create valid populations with consistent decision variables, objectives, and constraints
-    valid_population_1 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=1)
-    valid_population_2 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=2)
+    valid_population_1 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, fevals=1)
+    valid_population_2 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, fevals=2)
 
     # Create invalid populations
     invalid_population_decision_vars = Population.from_random(n_objectives=3, n_decision_vars=6, n_constraints=2, pop_size=10, 
-                                                              feval=3)
+                                                              fevals=3)
     invalid_population_objectives = Population.from_random(n_objectives=4, n_decision_vars=5, n_constraints=2, pop_size=10, 
-                                                           feval=4)
+                                                           fevals=4)
     invalid_population_constraints = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=3, pop_size=10, 
-                                                            feval=5)
+                                                            fevals=5)
 
     # Test that creating a valid History instance does not raise an error
     try:
@@ -160,13 +160,13 @@ def test_history_validation():
 
     # Test for inconsistent names - case where some have names and others don't
     population_with_names = Population.from_random(
-        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=6,
+        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, fevals=6,
     )
     population_with_names.names_x = ["var1", "var2", "var3", "var4", "var5"]
     population_with_names.names_f = ["obj1", "obj2", "obj3"]
     population_with_names.names_g = ["con1", "con2"]
     population_without_names = Population.from_random(
-        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=7,
+        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, fevals=7,
     )
 
     with pytest.raises(ValidationError, match="Inconsistent names for decision variables in reports"):
@@ -178,7 +178,7 @@ def test_history_validation():
 
     # Test for inconsistent names - case where names are different across populations
     population_with_different_names = Population.from_random(
-        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=8,
+        n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, fevals=8,
     )
     population_with_different_names.names_x = ["varA", "varB", "varC", "varD", "varE"]
     population_with_different_names.names_f = ["obj1", "obj2", "obj3"]

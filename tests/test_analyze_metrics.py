@@ -63,13 +63,13 @@ def test_aggregate_metrics_stats_test():
     for exp_idx in range(4):
         for problem in run_locs:
             for run_idx, val in enumerate(np.random.normal(run_locs[problem][exp_idx], 0.1, size=64)):
-                for feval in range(10):
+                for fevals in range(10):
                     rows.append({
                         'run_idx': run_idx, 
                         'exp_idx': exp_idx, 
                         'problem': problem,
-                        'fevals': feval,
-                        'test': val if feval == 8 else 0.0,
+                        'fevals': fevals,
+                        'test': val if fevals == 8 else 0.0,
                         'fname': '',
                     })
     df = pd.DataFrame(rows)
@@ -108,13 +108,13 @@ def test_feval_cutoff():
     for run_idx in range(16):
         for exp_idx in range(4):
             for problem in ['ZDT1', 'ZDT2']:
-                for feval in range(10):
+                for fevals in range(10):
                     rows.append({
                         'run_idx': run_idx, 
                         'exp_idx': exp_idx, 
                         'problem': problem,
-                        'fevals': feval,
-                        'test': 1.0 if feval == 7 else 0.0
+                        'fevals': fevals,
+                        'test': 1.0 if fevals == 7 else 0.0
                     })
     df = pd.DataFrame(rows)
     
@@ -184,12 +184,12 @@ def test_aggregate_metrics_series():
         test_fevals = np.random.choice(agg.xs(exp_idx, level='exp_idx').index.get_level_values('fevals'), size=3, replace=False)
         
         # Test against the other aggregation function
-        for feval in test_fevals:
-            for idx, actual_row in aggregate_metrics_feval_budget(df[df['exp_idx'] == exp_idx], max_feval=feval).iterrows():
+        for fevals in test_fevals:
+            for idx, actual_row in aggregate_metrics_feval_budget(df[df['exp_idx'] == exp_idx], max_feval=fevals).iterrows():
                 problem = idx[0]
                 
                 # Get the row which corresponds to this row in the test dataframe
-                test_row = agg.loc[(problem, exp_idx, run.name, feval)]
+                test_row = agg.loc[(problem, exp_idx, run.name, fevals)]
 
                 # Compare with the "actual" value
                 np.testing.assert_allclose(actual_row[('test', 'mean')], test_row[('test', 'mean')])

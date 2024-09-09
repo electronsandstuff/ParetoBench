@@ -23,7 +23,7 @@ class Population(BaseModel):
     x: np.ndarray
     f: np.ndarray
     g: np.ndarray
-    feval: int
+    fevals: int
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # Optional lists of names for decision variables, objectives, and constraints
@@ -35,8 +35,8 @@ class Population(BaseModel):
     @classmethod
     def set_default_vals(cls, values):
         """
-        Handles automatic setting of `x`, `f`,  `g`, `feval` when some are not specified. The arrays are set to an empty array
-        with a zero length non-batch dimension. The number of function evaluations (`feval`) is set to the number of individuals
+        Handles automatic setting of `x`, `f`,  `g`, `fevals` when some are not specified. The arrays are set to an empty array
+        with a zero length non-batch dimension. The number of function evaluations (`fevals`) is set to the number of individuals
         in the population (assuming here that each was evaluated to get to this point).
         """
         # Determine the batch size from the first non-None array
@@ -52,9 +52,9 @@ class Population(BaseModel):
         if values.get('g') is None:
             values['g'] = np.empty((batch_size, 0), dtype=np.float64)
 
-        # Set feval to number of individuals if not included
-        if values.get('feval') is None:
-            values['feval'] = batch_size
+        # Set fevals to number of individuals if not included
+        if values.get('fevals') is None:
+            values['fevals'] = batch_size
         return values
 
     @model_validator(mode='after')
@@ -95,11 +95,11 @@ class Population(BaseModel):
         
         return value
 
-    @field_validator('feval')
+    @field_validator('fevals')
     @classmethod
     def validate_feval(cls, v):
         if v < 0:
-            raise ValueError("feval must be a non-negative integer")
+            raise ValueError("fevals must be a non-negative integer")
         return v
     
     def __eq__(self, other):
@@ -108,7 +108,7 @@ class Population(BaseModel):
         return (np.array_equal(self.x, other.x) and
                 np.array_equal(self.f, other.f) and
                 np.array_equal(self.g, other.g) and
-                self.feval == other.feval and
+                self.fevals == other.fevals and
                 self.names_x == other.names_x and
                 self.names_f == other.names_f and
                 self.names_g == other.names_g)
@@ -140,15 +140,15 @@ class Population(BaseModel):
         new_f = new_f[indices, :]
         new_g = new_g[indices, :]
         
-        # Set feval to the maximum of the two feval values
-        new_feval =self.feval + other.feval
+        # Set fevals to the maximum of the two fevals values
+        new_feval =self.fevals + other.fevals
         
         # Return a new Population instance
         return Population(
             x=new_x,
             f=new_f,
             g=new_g,
-            feval=new_feval,
+            fevals=new_feval,
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g
@@ -172,7 +172,7 @@ class Population(BaseModel):
             x= self.x[idx],
             f=self.f[idx],
             g=self.g[idx],
-            feval=self.feval,
+            fevals=self.fevals,
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g
@@ -210,7 +210,7 @@ class Population(BaseModel):
     
     @classmethod
     def from_random(cls, n_objectives: int, n_decision_vars: int, n_constraints: int, pop_size: int,
-                    feval: int = 0, generate_names: bool = False) -> 'Population':
+                    fevals: int = 0, generate_names: bool = False) -> 'Population':
         """
         Generate a randomized instance of the Population class.
 
@@ -224,7 +224,7 @@ class Population(BaseModel):
             The number of inequality constraints for each individual.
         pop_size : int
             The number of individuals in the population.
-        feval : int, optional
+        fevals : int, optional
             The number of evaluations of the objective functions performed to reach this state, by default 0.
         generate_names : bool, optional
             Whether to include names for the decision variables, objectives, and constraints, by default False.
@@ -244,7 +244,7 @@ class Population(BaseModel):
         (10, 3)
         >>> print(random_population.g.shape)
         (10, 2)
-        >>> print(random_population.feval)
+        >>> print(random_population.fevals)
         0
         """
         x = np.random.rand(pop_size, n_decision_vars)
@@ -256,7 +256,7 @@ class Population(BaseModel):
         names_f = [f"f{i+1}" for i in range(n_objectives)] if generate_names else None
         names_g = [f"g{i+1}" for i in range(n_constraints)] if generate_names else None
 
-        return cls(x=x, f=f, g=g, feval=feval, names_x=names_x, names_f=names_f, names_g=names_g)
+        return cls(x=x, f=f, g=g, fevals=fevals, names_x=names_x, names_f=names_f, names_g=names_g)
     
     def __len__(self):
         return self.x.shape[0]
@@ -353,9 +353,9 @@ class History(BaseModel):
         ]
         metadata = dict(zip(metadata_keys, metadata_values))
 
-        # Generate populations with increasing feval values
+        # Generate populations with increasing fevals values
         reports = [
-            Population.from_random(n_objectives, n_decision_vars, n_constraints, pop_size, feval=(i+1) * pop_size, 
+            Population.from_random(n_objectives, n_decision_vars, n_constraints, pop_size, fevals=(i+1) * pop_size, 
                                    generate_names=generate_names) for i in range(n_populations)
         ]
 
@@ -381,7 +381,7 @@ class History(BaseModel):
         
         # Save data from each population into one bigger dataset to reduce API calls to HDF5 file reader
         g.attrs['pop_sizes'] = [len(r) for r in self.reports]
-        g.attrs['fevals'] = [r.feval for r in self.reports]
+        g.attrs['fevals'] = [r.fevals for r in self.reports]
         g['x'] = np.concatenate([r.x for r in self.reports], axis=0)
         g['f'] = np.concatenate([r.f for r in self.reports], axis=0)
         g['g'] = np.concatenate([r.g for r in self.reports], axis=0)
@@ -422,12 +422,12 @@ class History(BaseModel):
         # Create the population objects
         start_idx = 0
         reports = []
-        for pop_size, feval in zip(grp.attrs['pop_sizes'], grp.attrs['fevals']):
+        for pop_size, fevals in zip(grp.attrs['pop_sizes'], grp.attrs['fevals']):
             reports.append(Population(
                 x = x[start_idx:start_idx+pop_size],
                 f = f[start_idx:start_idx+pop_size],
                 g = g[start_idx:start_idx+pop_size],
-                feval=feval,
+                fevals=fevals,
                 names_x=names_x,
                 names_f=names_f,
                 names_g=names_g,
@@ -462,7 +462,7 @@ class History(BaseModel):
         
         # Make sure fevals carries over
         for n, o in zip(new_reports, self.reports):
-            n.feval = o.feval
+            n.fevals = o.fevals
 
         return History(reports=new_reports, problem=self.problem, metadata=self.metadata.copy())
 

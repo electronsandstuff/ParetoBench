@@ -33,7 +33,7 @@ class EvalMetricsJob:
             # Copy information to the row from the job
             row = {
                 'problem': self.run.problem,
-                'fevals': pop.feval,
+                'fevals': pop.fevals,
                 'run_idx': self.run_idx,
                 'pop_idx': idx,
                 'exp_name': self.exp_name,
