@@ -69,7 +69,8 @@ def test_aggregate_metrics_stats_test():
                         'exp_idx': exp_idx, 
                         'problem': problem,
                         'fevals': feval,
-                        'test': val if feval == 8 else 0.0
+                        'test': val if feval == 8 else 0.0,
+                        'fname': '',
                     })
     df = pd.DataFrame(rows)
 
@@ -91,10 +92,10 @@ def test_aggregate_metrics_stats_test():
                 wilcoxon_comp = '='
             else:
                 wilcoxon_comp = '-'
-            assert agg.loc[prob_norm, exp_idx][('test', 'wilcoxon_comp')] == wilcoxon_comp
+            assert agg.loc[prob_norm, exp_idx].iloc[0][('test', 'wilcoxon_comp')] == wilcoxon_comp
             
             # Check if we are one of the best in the row
-            assert agg.loc[prob_norm, exp_idx][('test', 'wilcoxon_best')] == (loc == min(run_locs[prob]))
+            assert agg.loc[prob_norm, exp_idx].iloc[0][('test', 'wilcoxon_best')] == (loc == min(run_locs[prob]))
 
 
 def test_feval_cutoff():

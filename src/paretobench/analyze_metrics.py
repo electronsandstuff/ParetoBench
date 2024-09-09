@@ -183,7 +183,7 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         
     # Apply the aggregation and return
     by = ['problem', 'exp_idx']
-    by.append('filename')
+    by.append('fname')
     if 'exp_name' in df.columns:
         by.append('exp_name')
     return df.groupby(by).agg(agg_funs)
@@ -413,7 +413,7 @@ def aggregate_metric_series(df, keep_filename=False):
 
 
 def comparison_table_to_latex(df):
-    """
+    r"""
     Converts the table created from `construct_metric_comparison_table` into latex with nice formatting. Headers are centered
     and bolded. A summary row of the comparisons in the style of IEEE Transactions on Evolutionary Computation is added at the
     bottom.
