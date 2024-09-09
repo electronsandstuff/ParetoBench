@@ -1,14 +1,17 @@
+from pydantic import ValidationError
+import numpy as np
+import os
 import pytest
 import tempfile
-import os
-import numpy as np
-from pydantic import ValidationError
 
 from paretobench.containers import Experiment, Population, History
 
 
 @pytest.mark.parametrize('generate_names', [False, True])
 def test_experiment_save_load(generate_names):
+    """
+    Make a randomized experiment, save it to disk, load it, and then confirm everything matches.
+    """
     # Create a randomized Experiment object
     experiment = Experiment.from_random(
         n_histories=32,
@@ -81,6 +84,9 @@ def test_to_nondominated():
         
 
 def test_population_batch_dimension():
+    """
+    Confirm validation of batch dimension size works correctly.
+    """
     # Create valid arrays with matching batch dimensions
     valid_x = np.random.rand(10, 5)
     valid_f = np.random.rand(10, 3)
@@ -103,6 +109,9 @@ def test_population_batch_dimension():
 
 
 def test_history_validation():
+    """
+    Make sure that consistency checks for history objects work.
+    """
     # Create valid populations with consistent decision variables, objectives, and constraints
     valid_population_1 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=1)
     valid_population_2 = Population.from_random(n_objectives=3, n_decision_vars=5, n_constraints=2, pop_size=10, feval=2)
