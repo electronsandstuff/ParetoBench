@@ -14,6 +14,11 @@ class Population(BaseModel):
     Stores the individuals in a population for one reporting interval in a genetic algorithm. Conventional names are used for
     the decision variables (x), the objectives (f), and inequality constraints (g). The first dimension of each array is the
     batch dimension. The number of evaluations of the objective functions performed to reach this state is also recorded.
+    Objectives are assumed to be part of a minimization problem and constraints are set such that individuals with g_i > 0 are
+    feasible.
+    
+    All arrays must have the same size batch dimension even if they are empty. In this case the non-batch dimension will be
+    zero length. Names may be associated with decision variables, objectives, or constraints in the form of lists.
     '''
     x: np.ndarray
     f: np.ndarray
@@ -29,6 +34,11 @@ class Population(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def set_default_vals(cls, values):
+        """
+        Handles automatic setting of `x`, `f`,  `g`, `feval` when some are not specified. The arrays are set to an empty array
+        with a zero length non-batch dimension. The number of function evaluations (`feval`) is set to the number of individuals
+        in the population (assuming here that each was evaluated to get to this point).
+        """
         # Determine the batch size from the first non-None array
         batch_size = next((arr.shape[0] for arr in [values.get('x'), values.get('f'), values.get('g')] if arr is not None), None)
         if batch_size is None:
@@ -49,6 +59,9 @@ class Population(BaseModel):
 
     @model_validator(mode='after')
     def validate_batch_dimensions(self):
+        """
+        Confirms that the arrays have the same length batch dimension.
+        """
         # Validate batch dimensions
         x_size, f_size, g_size = self.x.shape[0], self.f.shape[0], self.g.shape[0]
         if len(set([x_size, f_size, g_size])) != 1:
@@ -57,6 +70,10 @@ class Population(BaseModel):
 
     @model_validator(mode='after')
     def validate_names(self):
+        """
+        Checks that the name lists, if used, are correctly sized to the number of decision variables, objectives, or
+        constraints.
+        """
         if self.names_x and len(self.names_x) != self.x.shape[1]:
             raise ValueError("Length of names_x must match the number of decision variables in x.")
         if self.names_f and len(self.names_f) != self.f.shape[1]:
@@ -68,15 +85,13 @@ class Population(BaseModel):
     @field_validator('x', 'f', 'g')
     @classmethod
     def validate_numpy_arrays(cls, value: np.ndarray, field: Any) -> np.ndarray:
-        expected_dtype = np.float64
-        expected_ndim = 2
-
-        if not isinstance(value, np.ndarray):
-            raise TypeError(f"Expected a NumPy array for field '{field.name}', got {type(value)}")
-        if value.dtype != expected_dtype:
-            raise TypeError(f"Expected array of type {expected_dtype} for field '{field.name}', got {value.dtype}")
-        if value.ndim != expected_ndim:
-            raise ValueError(f"Expected array with {expected_ndim} dimensions for field '{field.name}', got {value.ndim}")
+        """
+        Double checks that the arrays have the right numbe of dimensions and datatype.
+        """
+        if value.dtype != np.float64:
+            raise TypeError(f"Expected array of type { np.float64} for field '{field.name}', got {value.dtype}")
+        if value.ndim != 2:
+            raise ValueError(f"Expected array with 2 dimensions for field '{field.name}', got {value.ndim}")
         
         return value
 
@@ -99,6 +114,10 @@ class Population(BaseModel):
                 self.names_g == other.names_g)
 
     def __add__(self, other: 'Population') -> 'Population':
+        """
+        The sum of two populations is defined here as the population containing all unique individuals from both (set union).
+        The number of function evaluations is by default set to the sum of the function evaluations in each input population.
+        """
         if not isinstance(other, Population):
             raise TypeError("Operands must be instances of Population")
         
@@ -122,7 +141,7 @@ class Population(BaseModel):
         new_g = new_g[indices, :]
         
         # Set feval to the maximum of the two feval values
-        new_feval = max(self.feval, other.feval)
+        new_feval =self.feval + other.feval
         
         # Return a new Population instance
         return Population(
@@ -160,6 +179,9 @@ class Population(BaseModel):
         )
 
     def get_nondominated_indices(self):
+        """
+        Returns a boolean array of whether or not an individual is non-dominated.
+        """
         # Compare the objectives
         dom = np.bitwise_and(
             (self.f[:, None, :] <= self.f[None, :, :]).all(axis=-1), 
@@ -242,11 +264,12 @@ class Population(BaseModel):
 
 class History(BaseModel):
     """
-    Represents the "history" of an optimization algorithm solving a multi-objective optimization problem.
-    Populations are recorded at some reporting interval.
+    Contains populations output from a multiobjective genetic algorithm at some reporting interval in order to track
+    its history as it converges to a solution.
     
     Assumptions:
      - All reports must have a consistent number of objectives, decision variables, and constraints.
+     - Names, if used, must be consistent across populations
     """
     reports: List[Population]
     problem: str
@@ -254,6 +277,9 @@ class History(BaseModel):
 
     @model_validator(mode='after')
     def validate_consistent_populations(self):
+        """
+        Makes sure that all populations have the same number of objectives, constraints, and decision variables.
+        """
         n_decision_vars = [x.x.shape[1] for x in self.reports]
         n_objectives = [x.f.shape[1] for x in self.reports]
         n_constraints = [x.g.shape[1] for x in self.reports]
@@ -336,6 +362,17 @@ class History(BaseModel):
         return cls(reports=reports, problem=problem, metadata=metadata)
     
     def _to_h5py_group(self, g: h5py.Group):
+        """
+        Store the history object in an HDF5 group. The populations are concatenated together and stored together as a few small
+        arrays rather than their own groups to limit the number of python calls to the HDF5 API. This is done for performance
+        reasons and the speed of both variants (concatenated ararys and populations in groups) were benchmarked with the 
+        concatenated arrays performing up to 10x faster on combined write/read tests.
+
+        Parameters
+        ----------
+        g : h5py.Group
+            The h5py group to write our data to.
+        """
         # Save the metadata
         g.attrs['problem'] = self.problem
         g_md = g.create_group("metadata")
@@ -359,6 +396,19 @@ class History(BaseModel):
 
     @classmethod
     def _from_h5py_group(cls, grp: h5py.Group):
+        """
+        Construct a new History object from data in an HDF5 group.
+
+        Parameters
+        ----------
+        grp : h5py.Group
+            The group containing the history data.
+
+        Returns
+        -------
+        History
+            The loaded history object
+        """
         # Get the decision vars, objectives, and constraints
         x = grp['x'][()]
         f = grp['f'][()]
@@ -393,8 +443,8 @@ class History(BaseModel):
 
     def to_nondominated(self):
         """
-        Returns a history object with the same number of population objects, but the individuals
-        in each generation are the nondominated solutions seen up to this point.
+        Returns a history object with the same number of population objects, but the individuals in each generation are the
+        nondominated solutions seen up to this point. The function evaluation count is unchanged.
 
         Returns
         -------
@@ -418,6 +468,10 @@ class History(BaseModel):
 
     
 class Experiment(BaseModel):
+    """
+    Represents on "experiment" performed on a multibojective genetic algorithm. It may contain several evaluations of the
+    algorithm on different problems or repeated iterations on the same problem.
+    """
     runs: List[History]
     name: str
     author: str = ''
@@ -488,6 +542,14 @@ class Experiment(BaseModel):
                    software_version=software_version, comment=comment)
     
     def save(self, fname):
+        """
+        Saves the experiment data into an HDF5 file at the specified filename.
+
+        Parameters
+        ----------
+        fname : str
+            Filename to save to
+        """
         with h5py.File(fname, mode='w') as f:
             # Save metadata as attributes
             f.attrs['name'] = self.name
@@ -508,6 +570,27 @@ class Experiment(BaseModel):
               
     @classmethod
     def load(cls, fname):
+        """
+        Creates a new Experiment object from an HDF5 file on disk.
+
+        Parameters
+        ----------
+        fname : str
+            Filename to load the data from
+
+        Returns
+        -------
+        Experiment
+            The loaded experiment object
+            
+        Examples
+        --------
+        >>> exp = Experiment.load('state_of_the_art_algorithm_benchmarking_data.h5')
+        >>> print(exp.name)
+        NewAlg
+        >>> print(len(exp.runs))
+        64
+        """
         # Load the data
         with h5py.File(fname, mode='r') as f:
             # Load each of the runs keeping track of the order of the indices

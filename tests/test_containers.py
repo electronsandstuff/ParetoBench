@@ -76,6 +76,9 @@ def test_to_nondominated():
         # Make sure the two are the same
         np.testing.assert_array_equal(ref_nd.x[ref_idx, :], report_nd.x[test_idx, :])
         
+        # Double check that feval hasn't changed
+        assert report_nd.feval == hist.reports[report_idx].feval
+        
 
 def test_population_batch_dimension():
     # Create valid arrays with matching batch dimensions
