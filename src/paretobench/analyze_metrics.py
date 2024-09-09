@@ -32,15 +32,15 @@ def normalize_problem_name(name):
 
 def get_index_before(xv, xq):
     """
-    For a sorted array of values (xa) and an array of queries, get the indices to the elements of xv which are the closest in
-    value to those in x without exceeding their value.
+    For every element in the "query array" xq, finds the index of the value in the sorted  "values array" xv which is closest to
+    the query without exceeding its value.
 
     Parameters
     ----------
     xv : np.ndarray
-        The values to lookup
+        The sorted array of values
     xq : np.ndarray
-        The query values
+        The query array
 
     Returns
     -------
@@ -70,8 +70,8 @@ def get_metric_names(df):
 
 def apply_feval_cutoff(df, max_feval=300):
     """
-    Trims the rows in the dataframe from `eval_metrics_mult` to only include those which are the last generation before the
-    optimization algorithm exceeded the specified number of function evaluations.
+    Trims the rows in the dataframe from `eval_metrics_mult` to only include those which are associated with the last reporting
+    interval before the optimization algorithm exceeded the specified number of function evaluations.
 
     Parameters
     ----------
@@ -85,14 +85,15 @@ def apply_feval_cutoff(df, max_feval=300):
     return df.loc[idx].reset_index(drop=True)
 
 
-def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxon_p=0.05, keep_filename=False):
+def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxon_p=0.05):
     """
-    Calculate aggregate statistics from the metric dataframe generated with `eval_metrics_mult`. The aggregation is performed on
-    the last generation in each optimization run before it exceeded the specified maximum number of function evaluations. Mean,
-    std. deviation and other statistics of the metric values at this generation are recorded. The Wilcoxon rank sum test is used
-    to discern which runs are the "best" across a given problem and metric. Optionally, the Wilcoxon rank sum test can also be
-    used to generate comparisons with a specific run (selected by its `exp_idx`). This is useful for benchmarking a new
-    optimization algorithm.
+    Calculate aggregate statistics from the metric dataframe generated with `eval_metrics_experiments`. The aggregation is
+    performed on the last generation in each optimization run before it exceeded the specified maximum number of function
+    evaluations. Mean, std. deviation and other statistics of the metric values at this generation are recorded.
+    
+    The Wilcoxon rank sum test is used to discern which runs are the "best" across a given problem and metric. Optionally, the
+    Wilcoxon rank sum test can also be used to generate comparisons with a specific run (selected by its `exp_idx`). This is
+    useful for benchmarking a new optimization algorithm.
     
     The output table will have hierarchical columns. The top level colunms are the metric names from the orginal table. The next
     level of columns are aggregate values. These are the following
@@ -105,15 +106,13 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
     Parameters
     ----------
     df : Dataframe
-        The dataframe of metric values
+        The dataframe of metric values from `eval_metrics_experiments`
     max_feval : int
         Maximum number of function evaluations
     wilcoxon_idx : int/None, optional
         The value of `exp_idx` to use as the reference in the Wilcoxon rank sum test comparisons, by default None
     wilcoxon_p : float, optional
         p value threshold for the rank sum test, by default 0.05
-    keep_filename : bool
-        Keep filename in the aggregated table.
 
     Returns
     -------
@@ -184,8 +183,7 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         
     # Apply the aggregation and return
     by = ['problem', 'exp_idx']
-    if keep_filename:
-        by.append('filename')
+    by.append('filename')
     if 'exp_name' in df.columns:
         by.append('exp_name')
     return df.groupby(by).agg(agg_funs)
@@ -194,8 +192,8 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
 def construct_metric_comparison_table(df, metric=None, problem_params=[], mean_fmt_kwargs={'precision': 3, 'exp_digits': 1},
                                       std_fmt_kwargs={'precision': 3, 'exp_digits': 1}):
     """
-    Constructs a table with the problems as the index and the runs as the columns with a summary of one of the metrics as the
-    values along with comparisons and highlighting the best values in each row.
+    Constructs a table with the problems as the index and the experiments as the columns with a summary of one of the metrics as
+    the values along with comparisons and highlighting the best values in each row.
     
     The index will always include the problem name. Additional information about the problem (such as m, the number of
     objectives) can be included in the index. This is specified by a list of tuples of the names of the parameters and getter
@@ -382,11 +380,11 @@ def aggregate_metric_series_apply_fn(df):
 
 def aggregate_metric_series(df, keep_filename=False):
     """
-    This function aggregates the series of metrics vs fevals in the passed dataframe. The dataframe should have the schema
-    output by `eval_metrics_mult`. This will have the value of metrics versus the number of function evaluations for multiple
-    problems, multiple runs, and multiple evaluations in each of the runs.
+    Performs aggregation of metrics calculated on a single problem and within a single experiment for all fevals. The input
+    dataframe should have the schema output by `eval_metrics_experiments`. This will have the value of metrics versus the number
+    of function evaluations for multiple problems, multiple runs, and multiple evaluations in each of the runs.
     
-    This analysis will calculate statistics on the metrics at each value of `fevals` for the runs. If the array
+    This analysis will calculate statistics on the metrics at each value of `fevals` for the runs. If the array of
     `fevals` is not the same between runs which are being aggregated then it happens at all unique values of `fevals`
     across the runs. These values are used as a cutoff and at any given number of function evaluations the data is being
     averaged at, all datapoints in a run up until that number of function evaluations has been exhausted are considered.
@@ -419,6 +417,17 @@ def comparison_table_to_latex(df):
     Converts the table created from `construct_metric_comparison_table` into latex with nice formatting. Headers are centered
     and bolded. A summary row of the comparisons in the style of IEEE Transactions on Evolutionary Computation is added at the
     bottom.
+    
+    The table will be made in the `tabular` environment and uses the `multirow` package. A custom command for bolding of the
+    cells should be defined at the top of your file.
+    
+    ```
+    % Loaded for benchmark tables
+    \usepackage{multirow}
+    
+    % For bolding the cells in the tables
+    \newcommand{\cellbold}{\cellcolor{gray!50}}
+    ```
 
     Parameters
     ----------
