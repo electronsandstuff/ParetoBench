@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
 import pandas.api.types as ptypes
-import paretobench
 import pytest
 
-from paretobench import eval_metrics_experiments
+from paretobench import eval_metrics_experiments, Problem
 from paretobench.analyze_metrics import aggregate_metric_series, construct_metric_comparison_table, comparison_table_to_latex
 from paretobench.analyze_metrics import aggregate_metrics_feval_budget, apply_feval_cutoff, normalize_problem_name
-from .utils import generate_moga_runs, example_metric
+from .utils import generate_moga_experiments, example_metric
 
 
 def test_aggregate_metrics_feval_budget():
@@ -16,7 +15,7 @@ def test_aggregate_metrics_feval_budget():
     correctly.
     """
     # Create some test objects
-    runs = generate_moga_runs()
+    runs = generate_moga_experiments()
         
     # Get the metric values and aggregate
     df = eval_metrics_experiments(runs, metrics={'test': example_metric})
@@ -133,12 +132,12 @@ def test_feval_cutoff():
 ])
 def test_construct_metric_comparison_table(use_names, metric, problem_params):
     """
-    Create a comparison table from a set of MOGARun objects. Perform some basic checks that the rows and columns show up
+    Create a comparison table from a set of Experiment objects. Perform some basic checks that the rows and columns show up
     appropriately with and without specification of the names.
     """
     # Create some test objects
     names = ['a', 'b', 'c', 'd'] if use_names else None
-    runs = generate_moga_runs(names=names)
+    runs = generate_moga_experiments(names=names)
         
     # Construct the comparison table
     df = eval_metrics_experiments(runs, metrics={'test': example_metric})
@@ -146,7 +145,7 @@ def test_construct_metric_comparison_table(use_names, metric, problem_params):
     dfm = construct_metric_comparison_table(df, metric, problem_params=problem_params)
     
     # Check we get the right row and column names
-    indices_act = set(('ZDT1', paretobench.Problem.from_line_fmt(p.problem).n) for p in runs[0].runs)
+    indices_act = set(('ZDT1', Problem.from_line_fmt(p.problem).n) for p in runs[0].runs)
     indices_tst = set(dfm.index)
     assert indices_act == indices_tst
     assert set(dfm.columns) == set(r.name for r in runs)
@@ -160,7 +159,7 @@ def test_aggregate_metrics_series():
     np.random.seed(0)
     
     # Create some test objects
-    runs = generate_moga_runs()
+    runs = generate_moga_experiments()
         
     # Get the metric values and aggregate
     df = eval_metrics_experiments(runs, metrics={'test': example_metric})
@@ -200,7 +199,7 @@ def test_comparison_table_to_latex():
     Make sure that `comparison_table_to_latex` runs on reasonable input and produces something that looks like latex.
     """
     # Create some test objects
-    runs = generate_moga_runs(names=['a', 'b', 'c', 'd'])
+    runs = generate_moga_experiments(names=['a', 'b', 'c', 'd'])
         
     # Construct the comparison table
     df = eval_metrics_experiments(runs, metrics={'test': example_metric})

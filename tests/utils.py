@@ -22,7 +22,7 @@ def example_metric(pop, prob):
     return np.mean(pop.f) + sum(ord(x) for x in prob)
 
 
-def generate_moga_runs(names=None):
+def generate_moga_experiments(names=None):
     """
     Helper function to generate multiple randomized Experiment objects for testing the metric analysis functions. Forces them
     to all have the same problems in them.
