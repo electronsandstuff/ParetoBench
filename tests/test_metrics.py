@@ -44,23 +44,22 @@ def test_inverse_generational_distance():
     assert val == np.mean([0, 0, np.sqrt(0.5**2 + 0.5**2)])
 
 
-@pytest.mark.parametrize('input_type', ['MOGARun', 'file', 'single'])
+@pytest.mark.parametrize('input_type', ['Experiment', 'file', 'single'])
 def test_eval_metrics_experiments(input_type):
     """
-    This test generates some MOGARun objects and uses eval_metrics_experiments to evaluate them with a test metric. It confirms that
-    the right fields are generated and that the results line up with the individual eval_metrics method in MOGARun.
-
+    This test generates some Experiment objects and uses eval_metrics_experiments to evaluate them with a test metric. It
+    confirms that the right fields are generated.
+    
     Parameters
     ----------
     input_type : str
-        What type of input to use (MOGARun or file)
+        What type of input to use (Experiments, files, or a single object)
     """
     # Create some test objects
     if input_type == 'single':
         runs = generate_moga_runs(names=['test'])
     else:
         runs = generate_moga_runs()
-    
     
     with tempfile.TemporaryDirectory() as dir:
         # Handle creating the input (files or moga run objects)
@@ -70,7 +69,7 @@ def test_eval_metrics_experiments(input_type):
                 fname = os.path.join(dir, f'run-{idx}.h5')
                 run.save(fname)
                 fun_ins.append(fname)
-        elif input_type == 'MOGARun':
+        elif input_type == 'Experiment':
             fun_ins = runs
         elif input_type == 'single':
             fun_ins = runs[0]
@@ -87,5 +86,5 @@ def test_eval_metrics_experiments(input_type):
     if input_type == 'file':
         actual_fnames = df.apply(lambda x: fun_ins[x['exp_idx']], axis=1)
         assert (df['fname'] == actual_fnames).all()
-    elif input_type == 'MOGARun':
+    elif input_type == 'Experiment':
         assert (df['fname'] == '').all()
