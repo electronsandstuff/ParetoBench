@@ -4,7 +4,7 @@ import paretobench as pb
 import pytest
 import tempfile
 
-from .utils import generate_moga_runs, example_metric
+from .utils import generate_moga_experiments, example_metric
 
 
 class ProblemExample(pb.Problem, pb.ProblemWithFixedPF):
@@ -57,9 +57,9 @@ def test_eval_metrics_experiments(input_type):
     """
     # Create some test objects
     if input_type == 'single':
-        runs = generate_moga_runs(names=['test'])
+        runs = generate_moga_experiments(names=['test'])
     else:
-        runs = generate_moga_runs()
+        runs = generate_moga_experiments()
     
     with tempfile.TemporaryDirectory() as dir:
         # Handle creating the input (files or moga run objects)
