@@ -1,11 +1,12 @@
 import numpy as np
 
-from .problem import Problem, ProblemWithPF, Result
+from .problem import Problem, ProblemWithPF
 from .utils import get_hyperplane_points, get_nondominated
 from .wfg_utils import shape_linear, shape_convex, shape_concave, shape_mixed, shape_disconnected,\
     compute_x, transform_bias_polynomial, transform_bias_flat_region, transform_bias_parameter_dependent,\
     transform_shift_linear, transform_shift_deceptive, transform_shift_multimodal,\
     transform_reduction_weighted_sum, transform_reduction_non_separable
+from .containers import Population
 
 
 class WFGx(Problem, ProblemWithPF):
@@ -78,7 +79,7 @@ class WFG1(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
 
     def get_pareto_front(self, n, n_solver_guess=128, n_solver_iter=32):
@@ -157,7 +158,7 @@ class WFG2(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
  
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n, n_solver_guess=2048, n_solver_iter=32):
         # Invert the convex shape function to find points along the reference vectors
@@ -235,7 +236,7 @@ class WFG3(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n):
         f = np.vstack((np.linspace(0, 1, n), np.full((self.m-2, n), 1/2), np.zeros((1, n))))
@@ -274,7 +275,7 @@ class WFG4(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -312,7 +313,7 @@ class WFG5(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -348,7 +349,7 @@ class WFG6(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -392,7 +393,7 @@ class WFG7(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -436,7 +437,7 @@ class WFG8(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -478,7 +479,7 @@ class WFG9(WFGx):
         obj = (self._d * new_x[-1])[None, :] + self._s[:, None] * h
 
         # Return it
-        return Result(f=obj.T)
+        return Population(f=obj.T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
