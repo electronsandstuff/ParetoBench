@@ -141,7 +141,7 @@ def eval_metrics_experiments(
         metrics = {metrics.name: metrics}
     elif callable(metrics):
         metrics = {'metric': metrics}
-    elif isinstance(experiments, list):
+    elif isinstance(metrics, list):
         d_metrics = {}
         for idx, metric in enumerate(metrics):
             if isinstance(metric, Metric):
