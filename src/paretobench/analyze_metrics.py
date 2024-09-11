@@ -1,8 +1,9 @@
-import pandas as pd
+from collections import defaultdict
 from scipy.stats import ranksums
-import numpy as np
-import paretobench
 from typing import Union, Dict, List, Tuple, Any, Callable
+import numpy as np
+import pandas as pd
+import paretobench
 
 from .exceptions import UnknownProblemError
 from .problem import Problem
@@ -139,6 +140,7 @@ def aggregate_metrics_feval_budget(
     if metric_direction_override is not None:
         directions.update(metric_direction_override)
     
+    
     # Clean up the problem names and cutoff the fevals
     df['problem'] = df.apply(lambda x: normalize_problem_name(x['problem']), axis=1)
     df = apply_feval_cutoff(df, max_feval)
@@ -181,8 +183,11 @@ def aggregate_metrics_feval_budget(
                 return False
         return True
 
-    # The metric names
+    # Get metric names and validate
     metrics = get_metric_names(df)
+    for metric in metrics:
+        if metric not in directions:
+            raise ValueError(f'Must specify "direction" of metric with `metric_direction_override`: not defined for "{metric}"')
 
     # Create the set of functions which we'll apply to aggregate the values
     agg_funs = {}
