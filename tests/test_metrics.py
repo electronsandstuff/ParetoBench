@@ -124,3 +124,25 @@ def test_eval_metrics_experiments_invalid_experiment_type():
             experiments=[pb.Experiment(runs=[], name=''), 123],
             metrics=lambda pop, problem: None
         )
+
+
+def test_eval_metrics_experiments_duplicate_metric_name():
+    # Make a mock metric
+    class DummyMetric:
+        def __init__(self, name):
+            self.name = name
+        
+    # Test for duplicate metric name error
+    with pytest.raises(ValueError, match=r'Duplicate name for `metrics\[1\]`: "metric1"'):
+        metric1 = ("metric1", lambda pop, problem: None)
+        metric2 = ("metric1", lambda pop, problem: None)
+        pb.eval_metrics_experiments(experiments=[], metrics=[metric1, metric2])
+
+
+def test_eval_metrics_experiments_unrecognized_metric_type_in_list():
+    # Test for unrecognized type in the list of metrics
+    with pytest.raises(TypeError, match=r"Unrecognized type for `metrics\[0\]`"):
+        pb.eval_metrics_experiments(experiments=[], metrics=[123])
+
+    with pytest.raises(TypeError, match=r"Unrecognized type for `metrics\[1\]`"):
+        pb.eval_metrics_experiments(experiments=[],  metrics=[("valid_metric", lambda pop, problem: None), 123])
