@@ -147,14 +147,24 @@ def eval_metrics_experiments(
     elif isinstance(metrics, list):
         d_metrics = {}
         for idx, metric in enumerate(metrics):
+            # Get key and value depending on type of metric
             if isinstance(metric, Metric):
-                d_metrics[metric.name] = metric
+                key = metric.name
+                val = metric
             elif isinstance(metric, tuple):
                 if not isinstance(metric[0], str):
                     raise TypeError(f'Unrecognized type for `metrics[{idx}][0]`: {type(metric[0])}')
                 if not callable(metric[1]):
                     raise TypeError(f'`metrics[{idx}][1]` is not callable')
-                d_metrics[metric[0]] = metric[1]
+                key = metric[0]
+                val = metric[1]
+            else:
+                raise TypeError(f'Unrecognized type for `metrics[{idx}]`: {type(metric)}')
+            
+            # Check that we aren't overwriting another metric and add to dict
+            if key in d_metrics:
+                raise ValueError(f'Duplicate name for `metrics[{idx}]`: "{key}"')
+            d_metrics[key] = val
         metrics = d_metrics
     else:
         raise TypeError(f'Unrecognized type for `metrics`: {type(metrics)}')
