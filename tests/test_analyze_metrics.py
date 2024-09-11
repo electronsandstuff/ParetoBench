@@ -18,8 +18,8 @@ def test_aggregate_metrics_feval_budget():
     runs = generate_moga_experiments()
         
     # Get the metric values and aggregate
-    df = eval_metrics_experiments(runs, metrics={'test': example_metric})
-    agg = aggregate_metrics_feval_budget(df)
+    df = eval_metrics_experiments(runs, metrics=('test', example_metric))
+    agg = aggregate_metrics_feval_budget(df, metric_direction_override={'test': '-'})
     
     # Assert the right indices show up with the right types
     assert ptypes.is_string_dtype(agg.index.get_level_values('problem'))
@@ -74,7 +74,7 @@ def test_aggregate_metrics_stats_test():
     df = pd.DataFrame(rows)
 
     # Aggregate to get stats test values
-    agg = aggregate_metrics_feval_budget(df, max_feval=8, wilcoxon_idx=0)
+    agg = aggregate_metrics_feval_budget(df, max_feval=8, wilcoxon_idx=0, metric_direction_override={'test': '-'})
     
     # Check each problem for the comparisons
     for prob in run_locs:
@@ -140,8 +140,8 @@ def test_construct_metric_comparison_table(use_names, metric, problem_params):
     runs = generate_moga_experiments(names=names)
         
     # Construct the comparison table
-    df = eval_metrics_experiments(runs, metrics={'test': example_metric})
-    df = aggregate_metrics_feval_budget(df)
+    df = eval_metrics_experiments(runs, metrics=('test', example_metric))
+    df = aggregate_metrics_feval_budget(df, metric_direction_override={'test': '-'})
     dfm = construct_metric_comparison_table(df, metric, problem_params=problem_params)
     
     # Check we get the right row and column names
@@ -162,7 +162,7 @@ def test_aggregate_metrics_series():
     runs = generate_moga_experiments()
         
     # Get the metric values and aggregate
-    df = eval_metrics_experiments(runs, metrics={'test': example_metric})
+    df = eval_metrics_experiments(runs, metrics=('test', example_metric))
     agg = aggregate_metric_series(df)
     
     # Assert the right indices show up with the right types
@@ -184,7 +184,9 @@ def test_aggregate_metrics_series():
         
         # Test against the other aggregation function
         for fevals in test_fevals:
-            for idx, actual_row in aggregate_metrics_feval_budget(df[df['exp_idx'] == exp_idx], max_feval=fevals).iterrows():
+            for idx, actual_row in aggregate_metrics_feval_budget(df[df['exp_idx'] == exp_idx], max_feval=fevals, 
+                                                                  metric_direction_override={'test': '-'}).iterrows():
+                # Get the problem
                 problem = idx[0]
                 
                 # Get the row which corresponds to this row in the test dataframe
@@ -202,8 +204,8 @@ def test_comparison_table_to_latex():
     runs = generate_moga_experiments(names=['a', 'b', 'c', 'd'])
         
     # Construct the comparison table
-    df = eval_metrics_experiments(runs, metrics={'test': example_metric})
-    df = aggregate_metrics_feval_budget(df)
+    df = eval_metrics_experiments(runs, metrics=('test', example_metric))
+    df = aggregate_metrics_feval_budget(df, metric_direction_override={'test': '-'})
     df = construct_metric_comparison_table(df, problem_params='n')
     
     # Test the conversion function
