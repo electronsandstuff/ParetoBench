@@ -2,13 +2,13 @@ import pandas as pd
 from scipy.stats import ranksums
 import numpy as np
 import paretobench
-from typing import Union, Dict
+from typing import Union, Dict, List, Tuple, Any, Callable
 
 from .exceptions import UnknownProblemError
 from .problem import Problem
 
 
-def normalize_problem_name(name):
+def normalize_problem_name(name: str) -> str:
     """
     Standardizes the format (whitespace, order of parameters, and default parameters) of problem names so that they can be
     referenced easily tables of metrics (for example).
@@ -31,7 +31,7 @@ def normalize_problem_name(name):
         return name
 
 
-def get_index_before(xv, xq):
+def get_index_before(xv: np.ndarray, xq: np.ndarray) -> np.ndarray:
     """
     For every element in the "query array" xq, finds the index of the value in the sorted  "values array" xv which is closest to
     the query without exceeding its value.
@@ -56,7 +56,7 @@ def get_index_before(xv, xq):
     return np.maximum(np.searchsorted(xv, xq, side='right') - 1, 0)
 
 
-def get_metric_names(df):
+def get_metric_names(df: pd.DataFrame) -> List[str]:
     """
     From a table containing the calculated metrics (and other columns) get the list of the metric names.
 
@@ -69,7 +69,7 @@ def get_metric_names(df):
     return [x for x in df.columns.to_list() if x not in nm_keys]
 
 
-def apply_feval_cutoff(df, max_feval=300):
+def apply_feval_cutoff(df: pd.DataFrame, max_feval: int = 300) -> pd.DataFrame:
     """
     Trims the rows in the dataframe from `eval_metrics_mult` to only include those which are associated with the last reporting
     interval before the optimization algorithm exceeded the specified number of function evaluations.
@@ -206,8 +206,13 @@ def aggregate_metrics_feval_budget(
     return df.groupby(by).agg(agg_funs)
 
 
-def construct_metric_comparison_table(df, metric=None, problem_params=[], mean_fmt_kwargs={'precision': 3, 'exp_digits': 1},
-                                      std_fmt_kwargs={'precision': 3, 'exp_digits': 1}):
+def construct_metric_comparison_table(
+        df: pd.DataFrame, 
+        metric: Union[str, None] = None, 
+        problem_params: Union[None, List[Union[str, Tuple[str, Callable], Tuple[str, str]]]] = None,
+        mean_fmt_kwargs: Union[None, Dict[str, Any]] = None,
+        std_fmt_kwargs: Union[None, Dict[str, Any]] = None,
+    ) -> pd.DataFrame:
     """
     Constructs a table with the problems as the index and the experiments as the columns with a summary of one of the metrics as
     the values along with comparisons and highlighting the best values in each row.
@@ -242,6 +247,16 @@ def construct_metric_comparison_table(df, metric=None, problem_params=[], mean_f
     # Avoid mutating original dataframe
     df = df.copy()
     
+    # Empty problem params
+    if problem_params is None:
+        problem_params = []
+    
+    # Default formatting
+    if mean_fmt_kwargs is None:
+        mean_fmt_kwargs = {'precision': 3, 'exp_digits': 1}
+    if std_fmt_kwargs is None:
+        std_fmt_kwargs = {'precision': 3, 'exp_digits': 1}
+        
     # Deal with default metric
     if metric is None:
         metric = df.columns[0][0]
@@ -319,7 +334,7 @@ def construct_metric_comparison_table(df, metric=None, problem_params=[], mean_f
     return df
 
 
-def gather_metric_values_stepwise(df, metric, fevals):
+def gather_metric_values_stepwise(df: pd.DataFrame, metric: str, fevals: int) -> pd.DataFrame:
     """
     Gets the latest generation values of the metric before exhausting the function evaluation budgets in the array `fevals`.
     Operates on a table containing a single optimizer evaluation.
@@ -345,7 +360,7 @@ def gather_metric_values_stepwise(df, metric, fevals):
     return  df_sorted[metric].values[get_index_before(df_sorted['fevals'], fevals)]
     
     
-def aggregate_metric_series_apply_fn(df):
+def aggregate_metric_series_apply_fn(df: pd.DataFrame) -> pd.DataFrame:
     """
     For a dataframe containing a single problem and run (with multiple evaluations) collect statistics of the metrics over all
     evaluations at each value of `fevals`. This function is used by `aggregate_metric_series`.
@@ -395,7 +410,7 @@ def aggregate_metric_series_apply_fn(df):
     return df
 
 
-def aggregate_metric_series(df, keep_filename=False):
+def aggregate_metric_series(df: pd.DataFrame, keep_filename: bool = False) -> pd.DataFrame:
     """
     Performs aggregation of metrics calculated on a single problem and within a single experiment for all fevals. The input
     dataframe should have the schema output by `eval_metrics_experiments`. This will have the value of metrics versus the number
@@ -429,7 +444,7 @@ def aggregate_metric_series(df, keep_filename=False):
     return df.groupby(by).apply(lambda x,  **kw: aggregate_metric_series_apply_fn(x), include_groups=False)
 
 
-def comparison_table_to_latex(df):
+def comparison_table_to_latex(df: pd.DataFrame) -> str:
     r"""
     Converts the table created from `construct_metric_comparison_table` into latex with nice formatting. Headers are centered
     and bolded. A summary row of the comparisons in the style of IEEE Transactions on Evolutionary Computation is added at the
