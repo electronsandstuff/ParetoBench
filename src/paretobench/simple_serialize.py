@@ -40,7 +40,7 @@ def dumps(data: dict):
             items.append(f'{k}="{v_safe}"')
         else:
             items.append(f'{k}={v}')
-    return ", ".join(items)
+    return ", ".join(sorted(items))
 
 
 def split_unquoted(s: str, split_char=',', quote_char='"', escape_char='\\'):
