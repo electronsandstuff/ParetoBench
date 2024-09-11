@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from operator import methodcaller
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Callable, Tuple
 import concurrent.futures
 import numpy as np
 import os
@@ -8,6 +8,55 @@ import pandas as pd
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
+
+
+class Metric:
+    @property
+    def name(self):
+        raise NotImplementedError
+    
+
+class InverseGenerationalDistance(Metric):
+    """
+    Calculates the inverse generational distance for the population to the Pareto front in the named problem.
+    """
+    def __init__(self, n_pf=1000):
+        """
+        Parameters
+        ----------
+        n_pf : int, optional
+            Number of points to calculate on the Pareto front, by default 1000
+        """
+        self.n_pf = n_pf
+
+    def __call__(self, pop: Population, problem: Union[Problem, str]):
+        # Handle the problem
+        if isinstance(problem, str):
+            prob = Problem.from_line_fmt(problem)
+        elif isinstance(problem, Problem):
+            prob = problem
+        else:
+            raise ValueError('Function must be passed problem object or description in single line format.')
+        
+        # Get the Pareto front
+        if isinstance(prob, ProblemWithPF):
+            pf = prob.get_pareto_front(self.n_pf)
+        elif isinstance(prob, ProblemWithFixedPF):
+            pf = prob.get_pareto_front()
+        else:
+            raise ValueError(f'Could not load Pareto front from object of type "{type(prob)}"')
+    
+        # Calculate the IGD metric
+        # Compute pairwise distance between every point in the front and reference
+        d = np.sqrt(np.sum((pop.f[None, :, :] - pf[:, None, :]) ** 2, axis=2))
+
+        # Find the minimum distance for each point and average it
+        d_min = np.min(d, axis=1)
+        return np.mean(d_min)
+
+    @property
+    def name(self):
+        return 'igd'
 
 
 @dataclass
@@ -51,16 +100,14 @@ class EvalMetricsJob:
 
 def eval_metrics_experiments(
         experiments: Union[Union[Experiment, str], List[Union[Experiment, str]]],
-        metrics: Dict[str, Any],
+        metrics: Union[Metric, Callable, List[Union[Metric, Tuple[str, Callable]]]],
         n_procs=1
     ):
     """
     Evaluates a set of metrics on all of the nondominated solutions in the populations contained in `experiments`.  Calculation
-    includes some basic parallelism using the `multiprocessing` library and can be enabled with 
-    the `n_procs` parameter.
+    includes some basic parallelism using the `multiprocessing` library and can be enabled with the `n_procs` parameter.
     
-    The metrics should have the following signature.
-    `metric(pop: Population, problem: str)`
+    The metrics should have the following signature: `metric(pop: Population, problem: str)`
     The problem will be a definition of a problem in "single line" format and the population will contain only nondominated
     solutions.
     
@@ -78,8 +125,9 @@ def eval_metrics_experiments(
     ----------
     experiments : Union[Union[Experiment, str], List[Union[Experiment, str]]]
         The experiment or list of experiments. May either be loaded experiment objects or filenames.
-    metrics : Dict[str, Any]
-        Map from metric names to functions which will evaluate them. Passing a function here will give it the name `metric`.
+    metrics : Union[Metric, Callable, List[Union[Metric, Tuple[str, Callable]]]]
+        The metric functions (see note above for signature). Either single metric, or list of Metrics, or list of tuples with
+        metric names and the callables.
     n_procs : int, optional
         Number of processes to use in `multiprocessing.Pool`. Set to one to disable, by default 1
 
@@ -88,13 +136,25 @@ def eval_metrics_experiments(
     pd.DataFrame
         Pandas dataframe with the results of evaluating the metrics.
     """
-    # Handle case of a function being passed for `metrics`
-    if callable(metrics):
+    # Handle all input types for `metrics` converting it to a dict mapping names to callables
+    if isinstance(metrics, Metric):
+        metrics = {metrics.name: metrics}
+    elif callable(metrics):
         metrics = {'metric': metrics}
-
-    # Handle single valued experiments
-    if not isinstance(experiments, list):
-        experiments = [experiments]
+    elif isinstance(experiments, list):
+        d_metrics = {}
+        for idx, metric in enumerate(metrics):
+            if isinstance(metric, Metric):
+                d_metrics[metric.name] = metric
+            elif isinstance(metric, tuple):
+                if not isinstance(metric[0], str):
+                    raise TypeError(f'Unrecognized type for `metrics[{idx}][0]`: {type(metric[0])}')
+                if not callable(metric[1]):
+                    raise TypeError(f'`metrics[{idx}][1]` is not callable')
+                d_metrics[metric[0]] = metric[1]
+        metrics = d_metrics
+    else:
+        raise TypeError(f'Unrecognized type for `metrics`: {type(metrics)}')
 
     # Load each of the experiments and analyze
     dfs = []
@@ -136,42 +196,3 @@ def eval_metrics_experiments(
         
     # Combine and return
     return pd.concat(dfs)
-
-
-class InverseGenerationalDistance:
-    """
-    Calculates the inverse generational distance for the population to the Pareto front in the named problem.
-    """
-    def __init__(self, n_pf=1000):
-        """
-        Parameters
-        ----------
-        n_pf : int, optional
-            Number of points to calculate on the Pareto front, by default 1000
-        """
-        self.n_pf = n_pf
-
-    def __call__(self, pop: Population, problem: Union[Problem, str]):
-        # Handle the problem
-        if isinstance(problem, str):
-            prob = Problem.from_line_fmt(problem)
-        elif isinstance(problem, Problem):
-            prob = problem
-        else:
-            raise ValueError('Function must be passed problem object or description in single line format.')
-        
-        # Get the Pareto front
-        if isinstance(prob, ProblemWithPF):
-            pf = prob.get_pareto_front(self.n_pf)
-        elif isinstance(prob, ProblemWithFixedPF):
-            pf = prob.get_pareto_front()
-        else:
-            raise ValueError(f'Could not load Pareto front from object of type "{type(prob)}"')
-    
-        # Calculate the IGD metric
-        # Compute pairwise distance between every point in the front and reference
-        d = np.sqrt(np.sum((pop.f[None, :, :] - pf[:, None, :]) ** 2, axis=2))
-
-        # Find the minimum distance for each point and average it
-        d_min = np.min(d, axis=1)
-        return np.mean(d_min)
