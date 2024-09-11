@@ -2,6 +2,7 @@ import pandas as pd
 from scipy.stats import ranksums
 import numpy as np
 import paretobench
+from typing import Union, Dict
 
 from .exceptions import UnknownProblemError
 from .problem import Problem
@@ -85,7 +86,13 @@ def apply_feval_cutoff(df, max_feval=300):
     return df.loc[idx].reset_index(drop=True)
 
 
-def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxon_p=0.05):
+def aggregate_metrics_feval_budget(
+        df: pd.DataFrame,
+        max_feval: int = 300,
+        metric_direction_override: Union[None, Dict[str, str]] = None,
+        wilcoxon_p: float = 0.05,
+        wilcoxon_idx: Union[int, None] = None
+    ) -> pd.DataFrame:
     """
     Calculate aggregate statistics from the metric dataframe generated with `eval_metrics_experiments`. The aggregation is
     performed on the last generation in each optimization run before it exceeded the specified maximum number of function
@@ -109,6 +116,8 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         The dataframe of metric values from `eval_metrics_experiments`
     max_feval : int
         Maximum number of function evaluations
+    metric_direction_override : dict
+        A mapping of metric names to '+' or '-' to indicate whether bigger is better (+) or smaller is better (-)
     wilcoxon_idx : int/None, optional
         The value of `exp_idx` to use as the reference in the Wilcoxon rank sum test comparisons, by default None
     wilcoxon_p : float, optional
@@ -121,6 +130,14 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
     """
     # Don't mutate the dataframe
     df = df.copy()
+    
+    # Set up the metric "directions"
+    directions = {
+        'igd': '-',
+        'hypervolume': '+',
+    }
+    if metric_direction_override is not None:
+        directions.update(metric_direction_override)
     
     # Clean up the problem names and cutoff the fevals
     df['problem'] = df.apply(lambda x: normalize_problem_name(x['problem']), axis=1)
@@ -142,9 +159,9 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
         
         # Use the stats test to compare values
         if ranksums(x.to_numpy(), y.to_numpy(), 'less')[1] < wilcoxon_p:
-            return '+'
+            return {'-': '+', '+': '-'}[directions[metric]]
         if ranksums(x.to_numpy(), y.to_numpy(), 'greater')[1] < wilcoxon_p:
-            return '-'
+            return directions[metric]
         return '='
     
     def is_best(x, metric):
@@ -160,7 +177,7 @@ def aggregate_metrics_feval_budget(df, max_feval=300, wilcoxon_idx=None, wilcoxo
             
             if not len(y):
                 continue
-            if ranksums(x.to_numpy(), y.to_numpy(), 'greater')[1] < wilcoxon_p:
+            if ranksums(x.to_numpy(), y.to_numpy(), {'-': 'greater', '+': 'less'}[directions[metric]])[1] < wilcoxon_p:
                 return False
         return True
 
