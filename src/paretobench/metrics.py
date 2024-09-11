@@ -100,7 +100,7 @@ class EvalMetricsJob:
 
 def eval_metrics_experiments(
         experiments: Union[Union[Experiment, str], List[Union[Experiment, str]]],
-        metrics: Union[Metric, Callable, List[Union[Metric, Tuple[str, Callable]]]],
+        metrics: Union[Metric, Callable, Tuple[str, Callable], List[Union[Metric, Tuple[str, Callable]]]],
         n_procs=1
     ):
     """
@@ -127,7 +127,8 @@ def eval_metrics_experiments(
         The experiment or list of experiments. May either be loaded experiment objects or filenames.
     metrics : Union[Metric, Callable, List[Union[Metric, Tuple[str, Callable]]]]
         The metric functions (see note above for signature). Either single metric, or list of Metrics, or list of tuples with
-        metric names and the callables.
+        metric names and the callables. The single metric can be metric object, callable (will be named 'metric' in table) or 
+        tuple of name and callable.
     n_procs : int, optional
         Number of processes to use in `multiprocessing.Pool`. Set to one to disable, by default 1
 
@@ -141,6 +142,8 @@ def eval_metrics_experiments(
         metrics = {metrics.name: metrics}
     elif callable(metrics):
         metrics = {'metric': metrics}
+    elif isinstance(metrics, tuple) and isinstance(metrics[0], str) and callable(metrics[1]):
+        metrics = {metrics[0]: metrics[1]}
     elif isinstance(metrics, list):
         d_metrics = {}
         for idx, metric in enumerate(metrics):
@@ -156,6 +159,10 @@ def eval_metrics_experiments(
     else:
         raise TypeError(f'Unrecognized type for `metrics`: {type(metrics)}')
 
+    # Handle single valued experiments
+    if not isinstance(experiments, list):
+        experiments = [experiments]
+
     # Load each of the experiments and analyze
     dfs = []
     for exp_idx, exp_in in enumerate(experiments):
@@ -167,7 +174,7 @@ def eval_metrics_experiments(
             exp = exp_in
             fname = ''
         else:
-            ValueError(f'Incompatible experiment type: idx={exp_idx}, type={type(exp_in)}')
+            raise ValueError(f'Incompatible experiment type: idx={exp_idx}, type={type(exp_in)}')
         
         # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
         jobs = []

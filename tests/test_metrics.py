@@ -77,7 +77,7 @@ def test_eval_metrics_experiments(input_type):
             raise ValueError(f'Unrecognized input_type: "{ input_type }"')
         
         # Try running a metric calc
-        df = pb.eval_metrics_experiments(fun_ins, metrics={'test': example_metric})
+        df = pb.eval_metrics_experiments(fun_ins, metrics=('test', example_metric))
 
     # Make sure we get the expected number of rows
     assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
@@ -88,3 +88,39 @@ def test_eval_metrics_experiments(input_type):
         assert (df['fname'] == actual_fnames).all()
     elif input_type == 'Experiment':
         assert (df['fname'] == '').all()
+
+
+def test_eval_metrics_experiments_invalid_metric_type():
+    # Test unrecognized `metrics` type
+    with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):
+        pb.eval_metrics_experiments(experiments=[], metrics={'test': 1234})
+    with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):
+        pb.eval_metrics_experiments(experiments=[], metrics=1234)
+
+
+def test_eval_metrics_experiments_invalid_tuple_type():
+    # Test if first element of the tuple in metrics is not a string
+    with pytest.raises(TypeError, match="Unrecognized type for `metrics"):
+        pb.eval_metrics_experiments(experiments=[], metrics=[(123, lambda x: x)])
+
+
+def test_eval_metrics_experiments_invalid_callable_in_tuple():
+    # Test if the second element of the tuple is not callable
+    with pytest.raises(TypeError, match="`metrics\\[0\\]\\[1\\]` is not callable"):
+        pb.eval_metrics_experiments(experiments=[], metrics=[("valid_name", 123)])
+
+
+def test_eval_metrics_experiments_invalid_experiment_type():
+    # Test unrecognized `experiments` type (e.g., int)
+    with pytest.raises(ValueError, match="Incompatible experiment type: idx=0"):
+        pb.eval_metrics_experiments(
+            experiments=123,
+            metrics=lambda pop, problem: None 
+        )
+        
+    # Test list with an invalid experiment type inside
+    with pytest.raises(ValueError, match="Incompatible experiment type: idx=1"):
+        pb.eval_metrics_experiments(
+            experiments=[pb.Experiment(runs=[], name=''), 123],
+            metrics=lambda pop, problem: None
+        )
