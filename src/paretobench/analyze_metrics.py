@@ -140,7 +140,6 @@ def aggregate_metrics_feval_budget(
     if metric_direction_override is not None:
         directions.update(metric_direction_override)
     
-    
     # Clean up the problem names and cutoff the fevals
     df['problem'] = df.apply(lambda x: normalize_problem_name(x['problem']), axis=1)
     df = apply_feval_cutoff(df, max_feval)
