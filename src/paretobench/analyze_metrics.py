@@ -338,7 +338,7 @@ def construct_metric_comparison_table(
     return df
 
 
-def gather_metric_values_stepwise(df: pd.DataFrame, metric: str, fevals: int) -> pd.DataFrame:
+def gather_metric_values_stepwise(df: pd.DataFrame, metric: str, fevals: int) -> np.ndarray:
     """
     Gets the latest generation values of the metric before exhausting the function evaluation budgets in the array `fevals`.
     Operates on a table containing a single optimizer evaluation.
@@ -376,7 +376,7 @@ def aggregate_metric_series_apply_fn(df: pd.DataFrame) -> pd.DataFrame:
 
     Returns
     -------
-    dict
+    pd.DataFrame
         The mean and std. deviation of the metrics and the points they were evaluated at
     """
     # The values of feval where we will evaluate the metrics
