@@ -34,6 +34,24 @@ def test_experiment_save_load(generate_names):
         assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
 
 
+def test_empty_history():
+    """
+    Make a randomized experiment, save it to disk, load it, and then confirm everything matches.
+    """
+    # Create a randomized Experiment object
+    experiment = Experiment(name='', runs=[History(reports=[], problem='')])
+    
+    # Use a temporary directory to save the file
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Define the file path
+        file_path = os.path.join(tmpdir, 'test.h5')
+        experiment.save(file_path)
+        
+        # Load the experiment from the file and compare with original
+        loaded_experiment = Experiment.load(file_path)
+        assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
+
+
 def test_generate_population():
     pop = Population(
         f=np.random.random((128, 3)),
