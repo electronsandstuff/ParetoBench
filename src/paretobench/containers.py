@@ -84,14 +84,14 @@ class Population(BaseModel):
     
     @field_validator('x', 'f', 'g')
     @classmethod
-    def validate_numpy_arrays(cls, value: np.ndarray, field: Any) -> np.ndarray:
+    def validate_numpy_arrays(cls, value: np.ndarray, info) -> np.ndarray:
         """
         Double checks that the arrays have the right numbe of dimensions and datatype.
         """
         if value.dtype != np.float64:
-            raise TypeError(f"Expected array of type { np.float64} for field '{field.name}', got {value.dtype}")
+            raise TypeError(f"Expected array of type { np.float64} for field '{info.field_name}', got {value.dtype}")
         if value.ndim != 2:
-            raise ValueError(f"Expected array with 2 dimensions for field '{field.name}', got {value.ndim}")
+            raise ValueError(f"Expected array with 2 dimensions for field '{info.field_name}', got {value.ndim}")
         
         return value
 
@@ -381,10 +381,15 @@ class History(BaseModel):
         
         # Save data from each population into one bigger dataset to reduce API calls to HDF5 file reader
         g.attrs['pop_sizes'] = [len(r) for r in self.reports]
-        g.attrs['fevals'] = [r.fevals for r in self.reports]
-        g['x'] = np.concatenate([r.x for r in self.reports], axis=0)
-        g['f'] = np.concatenate([r.f for r in self.reports], axis=0)
-        g['g'] = np.concatenate([r.g for r in self.reports], axis=0)
+        g.attrs['fevals'] = [r.fevals for r in self.reports]        
+        if self.reports:
+            g['x'] = np.concatenate([r.x for r in self.reports], axis=0)
+            g['f'] = np.concatenate([r.f for r in self.reports], axis=0)
+            g['g'] = np.concatenate([r.g for r in self.reports], axis=0)
+        else:
+            g['x'] = np.empty(())
+            g['f'] = np.empty(())
+            g['g'] = np.empty(())
         
         # Save names
         if self.reports and self.reports[0].names_x is not None:
