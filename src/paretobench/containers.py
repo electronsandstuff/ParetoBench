@@ -84,14 +84,14 @@ class Population(BaseModel):
     
     @field_validator('x', 'f', 'g')
     @classmethod
-    def validate_numpy_arrays(cls, value: np.ndarray, field: Any) -> np.ndarray:
+    def validate_numpy_arrays(cls, value: np.ndarray, info) -> np.ndarray:
         """
         Double checks that the arrays have the right numbe of dimensions and datatype.
         """
         if value.dtype != np.float64:
-            raise TypeError(f"Expected array of type { np.float64} for field '{field.name}', got {value.dtype}")
+            raise TypeError(f"Expected array of type { np.float64} for field '{info.field_name}', got {value.dtype}")
         if value.ndim != 2:
-            raise ValueError(f"Expected array with 2 dimensions for field '{field.name}', got {value.ndim}")
+            raise ValueError(f"Expected array with 2 dimensions for field '{info.field_name}', got {value.ndim}")
         
         return value
 
