@@ -34,6 +34,24 @@ def test_experiment_save_load(generate_names):
         assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
 
 
+def test_empty_history():
+    """
+    Confirms save/load methods work correctly whan an empty history object is saved.
+    """
+    # Create an Experiment object
+    experiment = Experiment(name='', runs=[History(reports=[], problem='')])
+    
+    # Use a temporary directory to save the file
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Define the file path
+        file_path = os.path.join(tmpdir, 'test.h5')
+        experiment.save(file_path)
+        
+        # Load the experiment from the file and compare with original
+        loaded_experiment = Experiment.load(file_path)
+        assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
+
+
 def test_generate_population():
     pop = Population(
         f=np.random.random((128, 3)),
@@ -190,3 +208,18 @@ def test_history_validation():
             problem="Test Problem",
             metadata={"description": "An invalid test case with inconsistent names"}
         )
+
+
+def test_population_invalid_dimensions():
+    batch_size = 5
+    num_variables = 3
+
+    # Invalid dimension (3D instead of 2D)
+    x = np.random.rand(batch_size, num_variables, 2)
+    f = np.random.rand(batch_size, 2)
+    g = np.random.rand(batch_size, 1)
+
+    # Expect ValueError for incorrect number of dimensions
+    with pytest.raises(ValueError, match="Expected array with 2 dimensions for field 'x'"):
+        Population(x=x, f=f, g=g, fevals=5)
+    
