@@ -381,10 +381,15 @@ class History(BaseModel):
         
         # Save data from each population into one bigger dataset to reduce API calls to HDF5 file reader
         g.attrs['pop_sizes'] = [len(r) for r in self.reports]
-        g.attrs['fevals'] = [r.fevals for r in self.reports]
-        g['x'] = np.concatenate([r.x for r in self.reports], axis=0)
-        g['f'] = np.concatenate([r.f for r in self.reports], axis=0)
-        g['g'] = np.concatenate([r.g for r in self.reports], axis=0)
+        g.attrs['fevals'] = [r.fevals for r in self.reports]        
+        if self.reports:
+            g['x'] = np.concatenate([r.x for r in self.reports], axis=0)
+            g['f'] = np.concatenate([r.f for r in self.reports], axis=0)
+            g['g'] = np.concatenate([r.g for r in self.reports], axis=0)
+        else:
+            g['x'] = np.empty(())
+            g['f'] = np.empty(())
+            g['g'] = np.empty(())
         
         # Save names
         if self.reports and self.reports[0].names_x is not None:
