@@ -208,3 +208,18 @@ def test_history_validation():
             problem="Test Problem",
             metadata={"description": "An invalid test case with inconsistent names"}
         )
+
+
+def test_population_invalid_dimensions():
+    batch_size = 5
+    num_variables = 3
+
+    # Invalid dimension (3D instead of 2D)
+    x = np.random.rand(batch_size, num_variables, 2)
+    f = np.random.rand(batch_size, 2)
+    g = np.random.rand(batch_size, 1)
+
+    # Expect ValueError for incorrect number of dimensions
+    with pytest.raises(ValueError, match="Expected array with 2 dimensions for field 'x'"):
+        Population(x=x, f=f, g=g, fevals=5)
+    
