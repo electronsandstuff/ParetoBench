@@ -36,9 +36,9 @@ def test_experiment_save_load(generate_names):
 
 def test_empty_history():
     """
-    Make a randomized experiment, save it to disk, load it, and then confirm everything matches.
+    Confirms save/load methods work correctly whan an empty history object is saved.
     """
-    # Create a randomized Experiment object
+    # Create an Experiment object
     experiment = Experiment(name='', runs=[History(reports=[], problem='')])
     
     # Use a temporary directory to save the file
