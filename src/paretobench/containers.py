@@ -24,7 +24,7 @@ class Population(BaseModel):
     f: np.ndarray
     g: np.ndarray
     fevals: int
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
 
     # Optional lists of names for decision variables, objectives, and constraints
     names_x: Optional[List[str]] = None
