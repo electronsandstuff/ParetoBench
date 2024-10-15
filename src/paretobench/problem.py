@@ -62,7 +62,6 @@ class Problem(BaseModel):
             raise ValueError(f"Incompatible shape of input array x: {x.shape}")
         
         # Set the decision variables
-
         return pop
     
     def _call(self, x: np.ndarray) -> Population:
