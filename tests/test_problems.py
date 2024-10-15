@@ -101,3 +101,13 @@ def test_pareto_front(problem_name, npoints=1000):
     # Make sure the right size array is returned and it doesn't give bad values
     assert p.n_objs == f.shape[1]
     assert not np.isnan(f).any()
+
+
+def test_unbatched_problem_evaluation():
+    """
+    Confirms that the population object is correctly formated on unbatched calls to problem
+    """
+    prob = pb.WFG1()
+    x = np.random.random((prob.n))
+    pop = prob(x)
+    assert len(pop.x.shape) == 2
