@@ -45,6 +45,7 @@ class Problem(BaseModel):
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
             pop = self._call(x[None, :])
+            pop.x = np.reshape(x, (1, -1))
         
         # If batched input is used
         elif len(x.shape) == 2:
@@ -54,13 +55,14 @@ class Problem(BaseModel):
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
             pop = self._call(x)
+            pop.x = x
         
         # If user provided something not usable
         else:
             raise ValueError(f"Incompatible shape of input array x: {x.shape}")
         
         # Set the decision variables
-        pop.x = x
+
         return pop
     
     def _call(self, x: np.ndarray) -> Population:
