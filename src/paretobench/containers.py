@@ -7,6 +7,7 @@ import numpy as np
 import random
 import re
 import string
+import matplotlib.pyplot as plt
 
 
 class Population(BaseModel):
@@ -260,6 +261,50 @@ class Population(BaseModel):
     
     def __len__(self):
         return self.x.shape[0]
+
+    def plot_objectives(self, fig=None, ax=None):
+        if fig is None and ax is None:
+            fig, ax = plt.subplots()
+            
+        # For 2D problems
+        if self.f.shape[1] == 2:
+            # Make axis if not supplied
+            if ax is None:
+                ax = fig.add_subplot(111)
+            
+            # Plot the data
+            ax.scatter(self.f[:, 0], self.f[:, 1])
+            
+            # Handle the axis labels
+            if self.names_f:
+                ax.set_xlabel(self.names_f[0])
+                ax.set_ylabel(self.names_f[1])
+            else:
+                ax.set_xlabel(r"$f_1$")
+                ax.set_ylabel(r"$f_2$")
+
+        # For 3D problems
+        elif self.f.shape[1] == 3:
+            # Get an axis if not supplied
+            if ax is None:
+                ax = fig.add_subplot(111, projection='3d')
+            
+            # Plot in 3D!
+            ax.scatter(self.f[:, 0], self.f[:, 1], self.f[:, 2])
+            
+            # Handle the axis labels
+            if self.names_f:
+                ax.set_xlabel(self.names_f[0])
+                ax.set_ylabel(self.names_f[1])
+                ax.set_zlabel(self.names_f[2])
+            else:
+                ax.set_xlabel(r"$f_1$")
+                ax.set_ylabel(r"$f_2$")
+                ax.set_zlabel(r"$f_3$")
+        
+        # We can't plot in 4D :(
+        else:
+            raise ValueError(f'Cannot plot more than three objectives at the same time: n_objs={self.f.shape[1]}')
 
 
 class History(BaseModel):
