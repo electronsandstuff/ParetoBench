@@ -262,10 +262,15 @@ class Population(BaseModel):
     def __len__(self):
         return self.x.shape[0]
 
-    def plot_objectives(self, fig=None, ax=None):
+    def plot_objectives(self, fig=None, ax=None, plot_dominated=True):
         if fig is None and ax is None:
             fig, ax = plt.subplots()
-            
+        
+        # Break the objectives into those which are non-dominated and those which are not
+        nd_inds = self.get_nondominated_indices()
+        nd_objs = self.f[nd_inds, :]
+        dom_objs = self.f[~nd_inds, :]
+
         # For 2D problems
         if self.f.shape[1] == 2:
             # Make axis if not supplied
@@ -273,8 +278,10 @@ class Population(BaseModel):
                 ax = fig.add_subplot(111)
             
             # Plot the data
-            ax.scatter(self.f[:, 0], self.f[:, 1])
-            
+            ax.scatter(nd_objs[:, 0], nd_objs[:, 1])
+            if plot_dominated:
+                ax.scatter(dom_objs[:, 0], dom_objs[:, 1])
+
             # Handle the axis labels
             if self.names_f:
                 ax.set_xlabel(self.names_f[0])
@@ -290,8 +297,10 @@ class Population(BaseModel):
                 ax = fig.add_subplot(111, projection='3d')
             
             # Plot in 3D!
-            ax.scatter(self.f[:, 0], self.f[:, 1], self.f[:, 2])
-            
+            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2])
+            if plot_dominated:
+                ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2])
+
             # Handle the axis labels
             if self.names_f:
                 ax.set_xlabel(self.names_f[0])
