@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 
+from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
 
 class Population(BaseModel):
     '''
@@ -264,7 +265,23 @@ class Population(BaseModel):
     def __len__(self):
         return self.x.shape[0]
 
-    def plot_objectives(self, fig=None, ax=None, plot_dominated=True):
+    def plot_objectives(self, fig=None, ax=None, plot_dominated=True, problem=None, n_pf=1000):
+        """
+        Plot the objectives in 2D and 3D. Optionally add in the Pareto front if problem is known.
+
+        Parameters
+        ----------
+        fig : matplotlib figure, optional
+            Figure to plot on, by default None
+        ax : matplotlib axis, optional
+            Axis to plot on, by default None
+        plot_dominated : bool, optional
+            Include the dominated individuals, by default True
+        problem : str, optional
+            Name of the problem for Pareto front plotting, by default None
+        n_pf : int, optional
+            The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+        """
         if fig is None and ax is None:
             fig, ax = plt.subplots()
         
@@ -273,6 +290,18 @@ class Population(BaseModel):
         nd_objs = self.f[nd_inds, :]
         dom_objs = self.f[~nd_inds, :]
 
+        # Get the Pareto front
+        if problem is not None:
+            prob = Problem.from_line_fmt(problem)
+            if isinstance(prob, ProblemWithPF):
+                pf = prob.get_pareto_front(n_pf)
+            if isinstance(prob, ProblemWithFixedPF):
+                pf = prob.get_pareto_front()
+            else:
+                ValueError(f'Cannot get Pareto front from object of problem: {problem}')
+        else:
+            pf = None
+
         # For 2D problems
         if self.f.shape[1] == 2:
             # Make axis if not supplied
@@ -280,9 +309,14 @@ class Population(BaseModel):
                 ax = fig.add_subplot(111)
             
             # Plot the data
-            ax.scatter(nd_objs[:, 0], nd_objs[:, 1])
+            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], alpha=0.5, s=3)
             if plot_dominated:
-                ax.scatter(dom_objs[:, 0], dom_objs[:, 1])
+                ax.scatter(dom_objs[:, 0], dom_objs[:, 1], alpha=0.5, s=3)
+            
+            # Add in Pareto front
+            if pf is not None:
+                ax.scatter(pf[:, 0], pf[:, 1], c='k', s=3, label='PF')
+                plt.legend()
 
             # Handle the axis labels
             if self.names_f:
@@ -302,6 +336,10 @@ class Population(BaseModel):
             ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2])
             if plot_dominated:
                 ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2])
+
+            # Add in Pareto front
+            if pf is not None:
+                ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c='k', label='PF')
 
             # Handle the axis labels
             if self.names_f:
