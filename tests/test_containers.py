@@ -223,3 +223,45 @@ def test_population_invalid_dimensions():
     with pytest.raises(ValueError, match="Expected array with 2 dimensions for field 'x'"):
         Population(x=x, f=f, g=g, fevals=5)
     
+
+def test_count_unique_individuals():    
+    # Test empty population
+    pop_empty = Population(
+        x=np.empty((0, 2)),
+        f=np.empty((0, 1)),
+        g=np.empty((0, 1))
+    )
+    assert pop_empty.get_num_unique() == 0
+    
+    # Test all identical individuals
+    pop_identical = Population(
+        x=np.array([[1.0, 2.0], [1.0, 2.0], [1.0, 2.0]]),
+        f=np.array([[3.0], [3.0], [3.0]]),
+        g=np.array([[4.0], [4.0], [4.0]])
+    )
+    assert pop_identical.get_num_unique() == 1
+    
+    # Test all unique individuals
+    pop_unique = Population(
+        x=np.array([[1.0, 2.0], [2.0, 3.0], [3.0, 4.0]]),
+        f=np.array([[3.0], [4.0], [5.0]]),
+        g=np.array([[4.0], [5.0], [6.0]])
+    )
+    assert pop_unique.get_num_unique() == 3
+    
+    # Test floating point tolerance
+    pop_tolerance = Population(
+        x=np.array([[1.0, 2.0], [1.0 + 1e-7, 2.0 - 1e-7], [1.5, 2.5]]),
+        f=np.array([[3.0], [3.0 + 1e-7], [3.5]]),
+        g=np.array([[4.0], [4.0 - 1e-7], [4.5]])
+    )
+    assert pop_tolerance.get_num_unique(decimals=4) == 2
+    assert pop_tolerance.get_num_unique() == 3
+    
+    # Test with empty dimensions
+    pop_empty_dims = Population(
+        x=np.empty((3, 0)),
+        f=np.array([[1.0], [2.0], [1.0]]),
+        g=np.array([[3.0], [4.0], [3.0]])
+    )
+    assert pop_empty_dims.get_num_unique() == 2
