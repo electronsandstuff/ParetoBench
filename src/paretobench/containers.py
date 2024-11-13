@@ -261,6 +261,23 @@ class Population(BaseModel):
     def __len__(self):
         return self.x.shape[0]
 
+    def get_num_unique(self, decimals=13):
+        """
+        Calculates the number of unique individuals in the population. Uses `np.round` to avoid floating point accuracy issues.
+
+        Parameters
+        ----------
+        decimals : int, optional
+            _description_, by default 13
+
+        Returns
+        -------
+        int
+            The number of unique individuals
+        """
+        features = np.concatenate((self.x, self.f, self.g), axis=1)
+        return np.unique(features.round(decimals=decimals), axis=0).shape[0]
+
 
 class History(BaseModel):
     """
