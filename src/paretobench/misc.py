@@ -60,17 +60,13 @@ class FON(Problem):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
 
+        term1 = -((x[0] - 1 / np.sqrt(3)) ** 2) - (x[1] - 1 / np.sqrt(3)) ** 2 - (x[2] - 1 / np.sqrt(3)) ** 2
+        term2 = -((x[0] + 1 / np.sqrt(3)) ** 2) - (x[1] + 1 / np.sqrt(3)) ** 2 - (x[2] + 1 / np.sqrt(3)) ** 2
         return Population(
             f=np.array(
                 [
-                    1
-                    - np.exp(
-                        -((x[0] - 1 / np.sqrt(3)) ** 2) - (x[1] - 1 / np.sqrt(3)) ** 2 - (x[2] - 1 / np.sqrt(3)) ** 2
-                    ),
-                    1
-                    - np.exp(
-                        -((x[0] + 1 / np.sqrt(3)) ** 2) - (x[1] + 1 / np.sqrt(3)) ** 2 - (x[2] + 1 / np.sqrt(3)) ** 2
-                    ),
+                    1 - np.exp(term1),
+                    1 - np.exp(term2),
                 ]
             ).T
         )
