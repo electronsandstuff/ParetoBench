@@ -260,6 +260,10 @@ def construct_metric_comparison_table(
         mean_fmt_kwargs = {'precision': 3, 'exp_digits': 1}
     if std_fmt_kwargs is None:
         std_fmt_kwargs = {'precision': 3, 'exp_digits': 1}
+
+    # Set unique to False by default to keep all digits
+    for kwargs in [mean_fmt_kwargs, std_fmt_kwargs]:
+        kwargs['unique'] = kwargs.get('unique', False)
         
     # Deal with default metric
     if metric is None:
