@@ -17,7 +17,7 @@ class Problem(BaseModel):
      * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Population` object
     """
 
-    def __call__(self, x: np.ndarray, check_bounds=True) -> Population:
+    def __call__(self, x: np.ndarray, check_bounds=True):
         """
         Returns the values of the objective functions and constraints at the decision variables `x`.
         The input can be either batched or a single value.
@@ -66,7 +66,7 @@ class Problem(BaseModel):
         pop.x = x
         return pop
 
-    def _call(self, x: np.ndarray) -> Population:
+    def _call(self, x: np.ndarray):
         """
         This method is implemented by the child classes of `Problem` and should operate on a batched array of inputs.
         """

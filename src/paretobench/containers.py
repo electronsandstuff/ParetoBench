@@ -13,6 +13,7 @@ from matplotlib.ticker import MaxNLocator
 
 from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
 
+
 class Population(BaseModel):
     """
     Stores the individuals in a population for one reporting interval in a genetic algorithm. Conventional names are used for
@@ -328,7 +329,7 @@ class Population(BaseModel):
         """
         if fig is None and ax is None:
             fig, ax = plt.subplots()
-        
+
         # Break the objectives into those which are non-dominated and those which are not
         nd_inds = self.get_nondominated_indices()
         nd_objs = self.f[nd_inds, :]
@@ -342,7 +343,7 @@ class Population(BaseModel):
             if isinstance(prob, ProblemWithFixedPF):
                 pf = prob.get_pareto_front()
             else:
-                ValueError(f'Cannot get Pareto front from object of problem: {problem}')
+                ValueError(f"Cannot get Pareto front from object of problem: {problem}")
         else:
             pf = None
 
@@ -351,15 +352,15 @@ class Population(BaseModel):
             # Make axis if not supplied
             if ax is None:
                 ax = fig.add_subplot(111)
-            
+
             # Plot the data
             ax.scatter(nd_objs[:, 0], nd_objs[:, 1], alpha=0.5, s=3)
             if plot_dominated:
                 ax.scatter(dom_objs[:, 0], dom_objs[:, 1], alpha=0.5, s=3)
-            
+
             # Add in Pareto front
             if pf is not None:
-                ax.scatter(pf[:, 0], pf[:, 1], c='k', s=3, label='PF')
+                ax.scatter(pf[:, 0], pf[:, 1], c="k", s=3, label="PF")
                 plt.legend()
 
             # Handle the axis labels
@@ -374,8 +375,8 @@ class Population(BaseModel):
         elif self.f.shape[1] == 3:
             # Get an axis if not supplied
             if ax is None:
-                ax = fig.add_subplot(111, projection='3d')
-            
+                ax = fig.add_subplot(111, projection="3d")
+
             # Plot in 3D!
             ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2])
             if plot_dominated:
@@ -383,7 +384,7 @@ class Population(BaseModel):
 
             # Add in Pareto front
             if pf is not None:
-                ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c='k', label='PF')
+                ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", label="PF")
 
             # Handle the axis labels
             if self.names_f:
@@ -394,16 +395,16 @@ class Population(BaseModel):
                 ax.set_xlabel(r"$f_1$")
                 ax.set_ylabel(r"$f_2$")
                 ax.set_zlabel(r"$f_3$")
-        
+
         # We can't plot in 4D :(
         else:
-            raise ValueError(f'Cannot plot more than three objectives at the same time: n_objs={self.f.shape[1]}')
+            raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={self.f.shape[1]}")
 
     def plot_decision_var_pairs(self, fig=None, hist_bins=20, include_names=True, lower_bounds=None, upper_bounds=None):
         """
         Creates a pairs plot (scatter matrix) showing correlations between decision variables
         and their distributions.
-        
+
         Parameters
         ----------
         fig : matplotlib.figure.Figure, optional
@@ -416,70 +417,73 @@ class Population(BaseModel):
             Lower bounds for each decision variable
         upper_bounds : array-like, optional
             Upper bounds for each decision variable
-            
+
         Returns
         -------
         matplotlib.figure.Figure
             The figure containing the pairs plot
-        
+
         Examples
         --------
-        >>> pop = Population.from_random(n_objectives=2, n_decision_vars=4, 
+        >>> pop = Population.from_random(n_objectives=2, n_decision_vars=4,
                                     n_constraints=0, pop_size=100)
         >>> lb = [0, 0, 0, 0]
         >>> ub = [1, 1, 1, 1]
         >>> fig = pop.plot_pairs(lower_bounds=lb, upper_bounds=ub)
         """
         n_vars = self.x.shape[1]
-        
+
         # Validate and convert bounds to numpy arrays if provided
         if lower_bounds is not None:
             lower_bounds = np.asarray(lower_bounds)
             if len(lower_bounds) != n_vars:
-                raise ValueError(f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({n_vars})")
-        
+                raise ValueError(
+                    f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({n_vars})"
+                )
+
         if upper_bounds is not None:
             upper_bounds = np.asarray(upper_bounds)
             if len(upper_bounds) != n_vars:
-                raise ValueError(f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({n_vars})")
-        
+                raise ValueError(
+                    f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({n_vars})"
+                )
+
         # Create figure if not provided
         if fig is None:
-            fig = plt.figure(figsize=(2*n_vars, 2*n_vars))
-        
+            fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars))
+
         # Create gridspec for the layout
         gs = gridspec.GridSpec(n_vars, n_vars)
         gs.update(wspace=0.3, hspace=0.3)
-        
+
         # Get variable names or create default ones
         if self.names_x and include_names:
             var_names = self.names_x
         else:
             var_names = [f"x{i+1}" for i in range(n_vars)]
-        
+
         # Define bound line properties
-        bound_props = dict(color='red', linestyle='--', alpha=0.5, linewidth=1)
-        
+        bound_props = dict(color="red", linestyle="--", alpha=0.5, linewidth=1)
+
         # Create all subplots
         for i in range(n_vars):
             for j in range(n_vars):
                 ax = fig.add_subplot(gs[i, j])
-                
+
                 # Diagonal plots (histograms)
                 if i == j:
-                    ax.hist(self.x[:, i], bins=hist_bins, density=True,
-                        alpha=0.7, color='gray')
+                    ax.hist(self.x[:, i], bins=hist_bins, density=True, alpha=0.7, color="gray")
                     if i == n_vars - 1:
                         ax.set_xlabel(var_names[i])
                     if j == 0:
-                        ax.set_ylabel('Density')
-                        
+                        ax.set_ylabel("Density")
+
                     # Add vertical bound lines to histograms
                     if lower_bounds is not None:
                         ax.axvline(lower_bounds[i], **bound_props)
                     if upper_bounds is not None:
                         ax.axvline(upper_bounds[i], **bound_props)
-                
+
                 # Off-diagonal plots (scatter plots)
                 else:
                     ax.scatter(self.x[:, j], self.x[:, i], alpha=0.5, s=20)
@@ -487,7 +491,7 @@ class Population(BaseModel):
                         ax.set_xlabel(var_names[j])
                     if j == 0:
                         ax.set_ylabel(var_names[i])
-                    
+
                     # Add bound lines to scatter plots
                     if lower_bounds is not None:
                         ax.axvline(lower_bounds[j], **bound_props)  # x-axis bound
@@ -495,19 +499,19 @@ class Population(BaseModel):
                     if upper_bounds is not None:
                         ax.axvline(upper_bounds[j], **bound_props)  # x-axis bound
                         ax.axhline(upper_bounds[i], **bound_props)  # y-axis bound
-                
+
                 # Remove top and right spines for cleaner look
-                ax.spines['top'].set_visible(False)
-                ax.spines['right'].set_visible(False)
-                
+                ax.spines["top"].set_visible(False)
+                ax.spines["right"].set_visible(False)
+
                 # Use fewer ticks for cleaner appearance
                 ax.xaxis.set_major_locator(MaxNLocator(5))
                 ax.yaxis.set_major_locator(MaxNLocator(5))
-                
+
                 # Only show ticks on bottom and left
-                ax.xaxis.set_ticks_position('bottom')
-                ax.yaxis.set_ticks_position('left')
-        
+                ax.xaxis.set_ticks_position("bottom")
+                ax.yaxis.set_ticks_position("left")
+
         return fig
 
 
