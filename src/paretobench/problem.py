@@ -181,7 +181,13 @@ class Problem(BaseModel):
         # We are called from a child class; load parameters and create
         else:
             return cls(**loads(s))
-            
+    
+    def __repr__(self):
+        return self.to_line_fmt()
+    
+    def __str__(self):
+        return self.__repr__()
+
 
 class ProblemWithPF:
     """
