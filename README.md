@@ -12,7 +12,7 @@ ParetoBench is a Python library that provides a collection of tools for the benc
 ## Installation
 Please install our package from pip.
 ```
-pip install .
+pip install paretobench
 ```
 
 ## Installation for Developers
