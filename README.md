@@ -1,5 +1,9 @@
+[![](https://img.shields.io/pypi/v/paretobench.svg)](https://pypi.org/pypi/paretobench/)
+[![](https://img.shields.io/pypi/pyversions/paretobench.svg)](https://pypi.org/pypi/paretobench/)
+[![](https://img.shields.io/pypi/l/paretobench.svg)](https://pypi.org/pypi/paretobench/)
+
 # Installation
-To install the package for general use, navigate to the base of this repo in a terminal and run the following.
+Please install our package from pip.
 ```
 pip install .
 ```
