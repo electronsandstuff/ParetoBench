@@ -150,16 +150,16 @@ class WFG2(WFGx):
         t2 = np.empty((self.k + (self.n - self.k) // 2, t1.shape[1]))
         t2[: self.k] = t1[: self.k]
         for i in range(self.k + 1, self.k + (self.n - self.k) // 2 + 1):
+            # Calculate indices
+            idx1 = self.k + 2 * (i - self.k) - 2
+            idx2 = self.k + 2 * (i - self.k) - 1
+
+            # Stack the transformed values
+            values = np.vstack((t1[idx1], t1[idx2]))
+
+            # Apply transformation and clipping
             t2[i - 1] = np.clip(
-                transform_reduction_non_separable(
-                    np.vstack(
-                        (
-                            t1[self.k + 2 * (i - self.k) - 2],
-                            t1[self.k + 2 * (i - self.k) - 1],
-                        )
-                    ),
-                    2,
-                ),
+                transform_reduction_non_separable(values, 2),
                 0.0,
                 1.0,
             )
@@ -248,16 +248,16 @@ class WFG3(WFGx):
         t2 = np.empty((self.k + (self.n - self.k) // 2, t1.shape[1]))
         t2[: self.k] = t1[: self.k]
         for i in range(self.k + 1, self.k + (self.n - self.k) // 2 + 1):
+            # Calculate indices
+            idx1 = self.k + 2 * (i - self.k) - 2
+            idx2 = self.k + 2 * (i - self.k) - 1
+
+            # Stack the transformed values
+            values = np.vstack((t1[idx1], t1[idx2]))
+
+            # Apply transformation and clipping
             t2[i - 1] = np.clip(
-                transform_reduction_non_separable(
-                    np.vstack(
-                        (
-                            t1[self.k + 2 * (i - self.k) - 2],
-                            t1[self.k + 2 * (i - self.k) - 1],
-                        )
-                    ),
-                    2,
-                ),
+                transform_reduction_non_separable(values, 2),
                 0.0,
                 1.0,
             )
@@ -413,16 +413,9 @@ class WFG7(WFGx):
         # Transition 1
         t1 = np.copy(y)
         for i in range(1, self.k + 1):
+            weighted_sum = transform_reduction_weighted_sum(y[i:, :])
             t1[i - 1] = np.clip(
-                transform_bias_parameter_dependent(
-                    y[i - 1],
-                    transform_reduction_weighted_sum(y[i:, :]),
-                    0.98 / 49.98,
-                    0.02,
-                    50,
-                ),
-                0.0,
-                1.0,
+                transform_bias_parameter_dependent(y[i - 1], weighted_sum, 0.98 / 49.98, 0.02, 50), 0.0, 1.0
             )
 
         # Transition 2
@@ -467,14 +460,9 @@ class WFG8(WFGx):
         # Transition 1
         t1 = np.copy(y)
         for i in range(self.k + 1, self.n + 1):
+            weighted_sum = transform_reduction_weighted_sum(y[: i - 1])
             t1[i - 1] = np.clip(
-                transform_bias_parameter_dependent(
-                    y[i - 1][None, :],
-                    transform_reduction_weighted_sum(y[: i - 1]),
-                    0.98 / 49.98,
-                    0.02,
-                    50,
-                ),
+                transform_bias_parameter_dependent(y[i - 1][None, :], weighted_sum, 0.98 / 49.98, 0.02, 50),
                 0.0,
                 1.0,
             )
@@ -521,14 +509,9 @@ class WFG9(WFGx):
         # Transition 1
         t1 = np.copy(y)
         for i in range(1, self.n):
+            weighted_sum = transform_reduction_weighted_sum(y[i:])
             t1[i - 1] = np.clip(
-                transform_bias_parameter_dependent(
-                    y[i - 1][None, :],
-                    transform_reduction_weighted_sum(y[i:]),
-                    0.98 / 49.98,
-                    0.02,
-                    50,
-                ),
+                transform_bias_parameter_dependent(y[i - 1][None, :], weighted_sum, 0.98 / 49.98, 0.02, 50),
                 0.0,
                 1.0,
             )
