@@ -42,11 +42,7 @@ class Population(BaseModel):
         """
         # Determine the batch size from the first non-None array
         batch_size = next(
-            (
-                arr.shape[0]
-                for arr in [values.get("x"), values.get("f"), values.get("g")]
-                if arr is not None
-            ),
+            (arr.shape[0] for arr in [values.get("x"), values.get("f"), values.get("g")] if arr is not None),
             None,
         )
         if batch_size is None:
@@ -73,9 +69,7 @@ class Population(BaseModel):
         # Validate batch dimensions
         x_size, f_size, g_size = self.x.shape[0], self.f.shape[0], self.g.shape[0]
         if len(set([x_size, f_size, g_size])) != 1:
-            raise ValueError(
-                f"Batch dimensions do not match (len(x)={x_size}, len(f)={f_size}, len(g)={g_size})"
-            )
+            raise ValueError(f"Batch dimensions do not match (len(x)={x_size}, len(f)={f_size}, len(g)={g_size})")
         return self
 
     @model_validator(mode="after")
@@ -85,17 +79,11 @@ class Population(BaseModel):
         constraints.
         """
         if self.names_x and len(self.names_x) != self.x.shape[1]:
-            raise ValueError(
-                "Length of names_x must match the number of decision variables in x."
-            )
+            raise ValueError("Length of names_x must match the number of decision variables in x.")
         if self.names_f and len(self.names_f) != self.f.shape[1]:
-            raise ValueError(
-                "Length of names_f must match the number of objectives in f."
-            )
+            raise ValueError("Length of names_f must match the number of objectives in f.")
         if self.names_g and len(self.names_g) != self.g.shape[1]:
-            raise ValueError(
-                "Length of names_g must match the number of constraints in g."
-            )
+            raise ValueError("Length of names_g must match the number of constraints in g.")
         return self
 
     @field_validator("x", "f", "g")
@@ -105,13 +93,9 @@ class Population(BaseModel):
         Double checks that the arrays have the right numbe of dimensions and datatype.
         """
         if value.dtype != np.float64:
-            raise TypeError(
-                f"Expected array of type { np.float64} for field '{info.field_name}', got {value.dtype}"
-            )
+            raise TypeError(f"Expected array of type { np.float64} for field '{info.field_name}', got {value.dtype}")
         if value.ndim != 2:
-            raise ValueError(
-                f"Expected array with 2 dimensions for field '{info.field_name}', got {value.ndim}"
-            )
+            raise ValueError(f"Expected array with 2 dimensions for field '{info.field_name}', got {value.ndim}")
 
         return value
 
@@ -157,9 +141,7 @@ class Population(BaseModel):
         new_g = np.concatenate((self.g, other.g), axis=0)
 
         # Unique the arrays
-        _, indices = np.unique(
-            np.concatenate([new_x, new_f, new_g], axis=1), return_index=True, axis=0
-        )
+        _, indices = np.unique(np.concatenate([new_x, new_f, new_g], axis=1), return_index=True, axis=0)
         new_x = new_x[indices, :]
         new_f = new_f[indices, :]
         new_g = new_g[indices, :]
@@ -280,16 +262,10 @@ class Population(BaseModel):
         """
         x = np.random.rand(pop_size, n_decision_vars)
         f = np.random.rand(pop_size, n_objectives)
-        g = (
-            np.random.rand(pop_size, n_constraints)
-            if n_constraints > 0
-            else np.empty((pop_size, 0))
-        )
+        g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
 
         # Optionally generate names if include_names is True
-        names_x = (
-            [f"x{i+1}" for i in range(n_decision_vars)] if generate_names else None
-        )
+        names_x = [f"x{i+1}" for i in range(n_decision_vars)] if generate_names else None
         names_f = [f"f{i+1}" for i in range(n_objectives)] if generate_names else None
         names_g = [f"g{i+1}" for i in range(n_constraints)] if generate_names else None
 
@@ -354,51 +330,31 @@ class History(BaseModel):
         n_constraints = [x.g.shape[1] for x in self.reports]
 
         if n_decision_vars and len(set(n_decision_vars)) != 1:
-            raise ValueError(
-                f"Inconsistent number of decision variables in reports: {n_decision_vars}"
-            )
+            raise ValueError(f"Inconsistent number of decision variables in reports: {n_decision_vars}")
         if n_objectives and len(set(n_objectives)) != 1:
-            raise ValueError(
-                f"Inconsistent number of objectives in reports: {n_objectives}"
-            )
+            raise ValueError(f"Inconsistent number of objectives in reports: {n_objectives}")
         if n_constraints and len(set(n_constraints)) != 1:
-            raise ValueError(
-                f"Inconsistent number of constraints in reports: {n_constraints}"
-            )
+            raise ValueError(f"Inconsistent number of constraints in reports: {n_constraints}")
 
         # Validate consistency of names across populations
-        names_x = [
-            tuple(x.names_x) if x.names_x is not None else None for x in self.reports
-        ]
-        names_f = [
-            tuple(x.names_f) if x.names_f is not None else None for x in self.reports
-        ]
-        names_g = [
-            tuple(x.names_g) if x.names_g is not None else None for x in self.reports
-        ]
+        names_x = [tuple(x.names_x) if x.names_x is not None else None for x in self.reports]
+        names_f = [tuple(x.names_f) if x.names_f is not None else None for x in self.reports]
+        names_g = [tuple(x.names_g) if x.names_g is not None else None for x in self.reports]
 
         # If names are provided, check consistency
         if names_x and len(set(names_x)) != 1:
-            raise ValueError(
-                f"Inconsistent names for decision variables in reports: {names_x}"
-            )
+            raise ValueError(f"Inconsistent names for decision variables in reports: {names_x}")
         if names_f and len(set(names_f)) != 1:
             raise ValueError(f"Inconsistent names for objectives in reports: {names_f}")
         if names_g and len(set(names_g)) != 1:
-            raise ValueError(
-                f"Inconsistent names for constraints in reports: {names_g}"
-            )
+            raise ValueError(f"Inconsistent names for constraints in reports: {names_g}")
 
         return self
 
     def __eq__(self, other):
         if not isinstance(other, History):
             return False
-        return (
-            self.reports == other.reports
-            and self.problem == other.problem
-            and self.metadata == other.metadata
-        )
+        return self.reports == other.reports and self.problem == other.problem and self.metadata == other.metadata
 
     @classmethod
     def from_random(
@@ -566,17 +522,13 @@ class History(BaseModel):
             return a + [(a[-1] + b).get_nondominated_set()]
 
         # Get the nondominated objectives
-        new_reports = reduce(
-            pf_reduce, self.reports[1:], [self.reports[0].get_nondominated_set()]
-        )
+        new_reports = reduce(pf_reduce, self.reports[1:], [self.reports[0].get_nondominated_set()])
 
         # Make sure fevals carries over
         for n, o in zip(new_reports, self.reports):
             n.fevals = o.fevals
 
-        return History(
-            reports=new_reports, problem=self.problem, metadata=self.metadata.copy()
-        )
+        return History(reports=new_reports, problem=self.problem, metadata=self.metadata.copy())
 
     def __repr__(self) -> str:
         dims = (
@@ -761,15 +713,11 @@ class Experiment(BaseModel):
             for idx_str, run_grp in f.items():
                 m = re.match(r"run_(\d+)", idx_str)
                 if m:
-                    idx_runs.append(
-                        (int(m.group(1)), History._from_h5py_group(run_grp))
-                    )
+                    idx_runs.append((int(m.group(1)), History._from_h5py_group(run_grp)))
             runs = [x[1] for x in sorted(idx_runs, key=lambda x: x[0])]
 
             # Convert the creation_time back to a timezone-aware datetime object
-            creation_time = datetime.fromisoformat(f.attrs["creation_time"]).astimezone(
-                timezone.utc
-            )
+            creation_time = datetime.fromisoformat(f.attrs["creation_time"]).astimezone(timezone.utc)
 
             # Return as an experiment object
             return cls(

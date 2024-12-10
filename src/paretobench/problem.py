@@ -40,22 +40,22 @@ class Problem(BaseModel):
         # If a single input was provided
         if len(x.shape) == 1:
             if x.shape[0] != self.n_vars:
-                msg = f"Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[0]={x.shape[0]})"
+                msg = (
+                    f"Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[0]={x.shape[0]})"
+                )
                 raise InputError(msg)
-            if check_bounds and (
-                (x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()
-            ):
+            if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
             pop = self._call(x[None, :])
 
         # If batched input is used
         elif len(x.shape) == 2:
             if x.shape[1] != self.n_vars:
-                msg = f"Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[1]={x.shape[1]})"
+                msg = (
+                    f"Input does not match number of decision variables (n_vars={self.n_vars}, x.shape[1]={x.shape[1]})"
+                )
                 raise InputError(msg)
-            if check_bounds and (
-                (x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()
-            ):
+            if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
             pop = self._call(x)
 

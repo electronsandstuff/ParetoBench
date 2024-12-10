@@ -108,11 +108,7 @@ class ZDT4(ZDTx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
 
-        g = (
-            1
-            + 10 * (self.n - 1)
-            + np.sum(x[1:] ** 2 - 10 * np.cos(4 * np.pi * x[1:]), axis=0)
-        )
+        g = 1 + 10 * (self.n - 1) + np.sum(x[1:] ** 2 - 10 * np.cos(4 * np.pi * x[1:]), axis=0)
         return Population(
             f=np.array(
                 [

@@ -56,24 +56,14 @@ class CF1(CFx, ProblemWithFixedPF):
         x = x.T
 
         j = np.arange(2, self.n + 1)
-        summand = (
-            x[1:, :]
-            - np.power(x[:1], 0.5 * (1.0 + 3 * (j[:, None] - 2) / (self.n - 2)))
-        ) ** 2
+        summand = (x[1:, :] - np.power(x[:1], 0.5 * (1.0 + 3 * (j[:, None] - 2) / (self.n - 2)))) ** 2
         f = np.vstack(
             (
                 x[0] + 2 / j[1::2].size * np.sum(summand[1::2], axis=0),
                 1 - x[0] + 2 / j[::2].size * np.sum(summand[::2], axis=0),
             )
         )
-        g = np.vstack(
-            (
-                f[0]
-                + f[1]
-                - self.a * np.abs(np.sin(self.b * np.pi * (f[0] - f[1] + 1)))
-                - 1,
-            )
-        )
+        g = np.vstack((f[0] + f[1] - self.a * np.abs(np.sin(self.b * np.pi * (f[0] - f[1] + 1))) - 1,))
         return Population(f=f.T, g=g.T)
 
     @property
@@ -111,24 +101,14 @@ class CF2(CFx, ProblemWithPF):
 
         j = np.arange(2, self.n + 1)
         i = j % 2
-        summand = (
-            x[1:, :]
-            - np.cos(
-                6 * np.pi * x[:1] + j[:, None] * np.pi / self.n - np.pi / 2 * i[:, None]
-            )
-        ) ** 2
+        summand = (x[1:, :] - np.cos(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n - np.pi / 2 * i[:, None])) ** 2
         f = np.vstack(
             (
                 x[0] + 2 / j[1::2].size * np.sum(summand[1::2], axis=0),
                 1 - np.sqrt(x[0]) + 2 / j[::2].size * np.sum(summand[::2], axis=0),
             )
         )
-        t = (
-            f[1]
-            + np.sqrt(f[0])
-            - self.a * np.sin(self.b * np.pi * (np.sqrt(f[0]) - f[1] + 1))
-            - 1
-        )
+        t = f[1] + np.sqrt(f[0]) - self.a * np.sin(self.b * np.pi * (np.sqrt(f[0]) - f[1] + 1)) - 1
         g = np.vstack((t / (1 + np.exp(4 * np.abs(t))),))
         return Population(f=f.T, g=g.T)
 
@@ -141,16 +121,10 @@ class CF2(CFx, ProblemWithPF):
         return np.ones(self.n)
 
     def get_pareto_front(self, n):
-        ranges = [
-            (((2 * i - 1) / 2 / self.b) ** 2, (i / self.b) ** 2)
-            for i in range(1, self.b + 1)
-        ]
+        ranges = [(((2 * i - 1) / 2 / self.b) ** 2, (i / self.b) ** 2) for i in range(1, self.b + 1)]
         total_range = sum(stop - start for start, stop in ranges)
         f1 = np.concatenate(
-            [
-                np.linspace(start, stop, int(n * (stop - start) / total_range + 0.5))
-                for start, stop in ranges
-            ]
+            [np.linspace(start, stop, int(n * (stop - start) / total_range + 0.5)) for start, stop in ranges]
         )
         f2 = 1 - np.sqrt(f1)
         return np.vstack((f1, f2)).T
@@ -184,33 +158,13 @@ class CF3(CFx, ProblemWithPF):
 
         f = np.vstack(
             (
-                x[0]
-                + 2
-                / j[1::2].size
-                * (
-                    4 * np.sum(summand[1::2], axis=0)
-                    - 2 * np.prod(prod[1::2], axis=0)
-                    + 2
-                ),
+                x[0] + 2 / j[1::2].size * (4 * np.sum(summand[1::2], axis=0) - 2 * np.prod(prod[1::2], axis=0) + 2),
                 1
                 - x[0] ** 2
-                + 2
-                / j[::2].size
-                * (
-                    4 * np.sum(summand[::2], axis=0)
-                    - 2 * np.prod(prod[::2], axis=0)
-                    + 2
-                ),
+                + 2 / j[::2].size * (4 * np.sum(summand[::2], axis=0) - 2 * np.prod(prod[::2], axis=0) + 2),
             )
         )
-        g = np.vstack(
-            (
-                f[1]
-                + f[0] ** 2
-                - self.a * np.sin(self.b * np.pi * (f[0] ** 2 - f[1] + 1))
-                - 1,
-            )
-        )
+        g = np.vstack((f[1] + f[0] ** 2 - self.a * np.sin(self.b * np.pi * (f[0] ** 2 - f[1] + 1)) - 1,))
         return Population(f=f.T, g=g.T)
 
     @property
@@ -222,16 +176,10 @@ class CF3(CFx, ProblemWithPF):
         return np.concatenate(([1], 2 * np.ones(self.n - 1)))
 
     def get_pareto_front(self, n):
-        ranges = [
-            (np.sqrt((2 * i - 1) / 2 / self.b), np.sqrt(i / self.b))
-            for i in range(1, self.b + 1)
-        ]
+        ranges = [(np.sqrt((2 * i - 1) / 2 / self.b), np.sqrt(i / self.b)) for i in range(1, self.b + 1)]
         total_range = sum(stop - start for start, stop in ranges)
         f1 = np.concatenate(
-            [
-                np.linspace(start, stop, int(n * (stop - start) / total_range + 0.5))
-                for start, stop in ranges
-            ]
+            [np.linspace(start, stop, int(n * (stop - start) / total_range + 0.5)) for start, stop in ranges]
         )
         f2 = 1 - f1**2
         return np.vstack((f1, f2)).T
@@ -284,9 +232,7 @@ class CF4(CFx, ProblemWithPF):
         f1 = np.linspace(0, 1, n)
         f2 = np.empty_like(f1)
         f2[f1 <= 0.5] = 1 - f1[f1 <= 0.5]
-        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = (
-            -f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] / 2 + 3 / 4
-        )
+        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = -f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] / 2 + 3 / 4
         f2[f1 > 3 / 4] = 1 - f1[f1 > 3 / 4] + 1 / 8
         return np.vstack((f1, f2)).T
 
@@ -308,9 +254,7 @@ class CF5(CFx, ProblemWithPF):
 
         j = np.arange(2, self.n + 1)
         i = j % 2
-        y = x[1:, :] - 0.8 * x[:1] * np.sin(
-            6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None]
-        )
+        y = x[1:, :] - 0.8 * x[:1] * np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None])
 
         summand = 2.0 * y**2 - np.cos(4.0 * np.pi * y) + 1.0
         summand[0] = np.abs(y[0])
@@ -324,14 +268,7 @@ class CF5(CFx, ProblemWithPF):
             )
         )
 
-        g = np.vstack(
-            (
-                x[1]
-                - 0.8 * x[0] * np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n)
-                - 0.5 * x[0]
-                + 0.25,
-            )
-        )
+        g = np.vstack((x[1] - 0.8 * x[0] * np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n) - 0.5 * x[0] + 0.25,))
 
         return Population(f=f.T, g=g.T)
 
@@ -347,9 +284,7 @@ class CF5(CFx, ProblemWithPF):
         f1 = np.linspace(0, 1, n)
         f2 = np.empty_like(f1)
         f2[f1 <= 0.5] = 1 - f1[f1 <= 0.5]
-        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = (
-            -f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] / 2 + 3 / 4
-        )
+        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = -f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] / 2 + 3 / 4
         f2[f1 > 3 / 4] = 1 - f1[f1 > 3 / 4] + 1 / 8
         return np.vstack((f1, f2)).T
 
@@ -371,9 +306,7 @@ class CF6(CFx, ProblemWithPF):
 
         j = np.arange(2, self.n + 1)
         i = j % 2
-        y = x[1:, :] - 0.8 * x[:1] * np.sin(
-            6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None]
-        )
+        y = x[1:, :] - 0.8 * x[:1] * np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None])
 
         f = np.vstack(
             (
@@ -385,8 +318,7 @@ class CF6(CFx, ProblemWithPF):
         g1 = (
             x[1]
             - 0.8 * x[0] * np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n)
-            - np.sign(0.5 * (1 - x[0]) - (1 - x[0]) ** 2)
-            * np.sqrt(np.abs(0.5 * (1 - x[0]) - (1 - x[0]) ** 2))
+            - np.sign(0.5 * (1 - x[0]) - (1 - x[0]) ** 2) * np.sqrt(np.abs(0.5 * (1 - x[0]) - (1 - x[0]) ** 2))
         )
         g2 = (
             x[3]
@@ -410,9 +342,7 @@ class CF6(CFx, ProblemWithPF):
         f1 = np.linspace(0, 1, n)
         f2 = np.empty_like(f1)
         f2[f1 <= 0.5] = (1 - f1[f1 <= 0.5]) ** 2
-        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = (
-            1 - f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)]
-        ) / 2
+        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = (1 - f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)]) / 2
         f2[f1 > 3 / 4] = np.sqrt(1 - f1[f1 > 3 / 4]) / 4
         return np.vstack((f1, f2)).T
 
@@ -434,22 +364,17 @@ class CF7(CFx, ProblemWithPF):
 
         j = np.arange(2, self.n + 1)
         i = j % 2
-        y = x[1:, :] - np.sin(
-            6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None]
-        )
+        y = x[1:, :] - np.sin(6 * np.pi * x[:1] + j[:, None] * np.pi / self.n + np.pi / 2 * i[:, None])
         h = 2 * y**2 - np.cos(4 * np.pi * y) + 1
         h[0] = y[0] ** 2
         h[2] = y[2] ** 2
 
-        f = np.vstack(
-            (x[0] + np.sum(h[1::2], axis=0), (1 - x[0]) ** 2 + np.sum(h[::2], axis=0))
-        )
+        f = np.vstack((x[0] + np.sum(h[1::2], axis=0), (1 - x[0]) ** 2 + np.sum(h[::2], axis=0)))
 
         g1 = (
             x[1]
             - np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n)
-            - np.sign(0.5 * (1 - x[0]) - (1 - x[0]) ** 2)
-            * np.sqrt(np.abs(0.5 * (1 - x[0]) - (1 - x[0]) ** 2))
+            - np.sign(0.5 * (1 - x[0]) - (1 - x[0]) ** 2) * np.sqrt(np.abs(0.5 * (1 - x[0]) - (1 - x[0]) ** 2))
         )
         g2 = (
             x[3]
@@ -473,9 +398,7 @@ class CF7(CFx, ProblemWithPF):
         f1 = np.linspace(0, 1, n)
         f2 = np.empty_like(f1)
         f2[f1 <= 0.5] = (1 - f1[f1 <= 0.5]) ** 2
-        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = (
-            1 - f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)]
-        ) / 2
+        f2[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)] = (1 - f1[np.bitwise_and(f1 > 0.5, f1 <= 3 / 4)]) / 2
         f2[f1 > 3 / 4] = np.sqrt(1 - f1[f1 > 3 / 4]) / 4
         return np.vstack((f1, f2)).T
 
@@ -500,12 +423,7 @@ class CF8(CFx, ProblemWithPF):
         x = x.T
 
         j = np.arange(3, self.n + 1)
-        summand = (
-            x[2:]
-            - 2
-            * x[1][None, :]
-            * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)
-        ) ** 2
+        summand = (x[2:] - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)) ** 2
 
         f = np.vstack(
             (
@@ -513,20 +431,14 @@ class CF8(CFx, ProblemWithPF):
                 + 2 / j[1::3].size * np.sum(summand[1::3], axis=0),
                 np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi)
                 + 2 / j[2::3].size * np.sum(summand[2::3], axis=0),
-                np.sin(0.5 * x[0] * np.pi)
-                + 2 / j[::3].size * np.sum(summand[::3], axis=0),
+                np.sin(0.5 * x[0] * np.pi) + 2 / j[::3].size * np.sum(summand[::3], axis=0),
             )
         )
 
         g = np.vstack(
             (
                 (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2)
-                - self.a
-                * np.abs(
-                    np.sin(
-                        self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)
-                    )
-                )
+                - self.a * np.abs(np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)))
                 - 1,
             )
         )
@@ -544,12 +456,7 @@ class CF8(CFx, ProblemWithPF):
     def get_pareto_front(self, n):
         sub_n = n // (2 * self.b + 1)
         f3 = np.repeat(np.linspace(0, 1, sub_n), 2 * self.b + 1)
-        f1 = np.concatenate(
-            [
-                np.sqrt(i / 2 / self.b * (1 - f3[:sub_n] ** 2))
-                for i in range(2 * self.b + 1)
-            ]
-        )
+        f1 = np.concatenate([np.sqrt(i / 2 / self.b * (1 - f3[:sub_n] ** 2)) for i in range(2 * self.b + 1)])
         f2 = np.sqrt(np.maximum(0, 1 - f1**2 - f3**2))
         return np.vstack((f1, f2, f3)).T
 
@@ -574,12 +481,7 @@ class CF9(CFx, ProblemWithPF):
         x = x.T
 
         j = np.arange(3, self.n + 1)
-        summand = (
-            x[2:]
-            - 2
-            * x[1][None, :]
-            * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)
-        ) ** 2
+        summand = (x[2:] - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)) ** 2
 
         f = np.vstack(
             (
@@ -587,18 +489,14 @@ class CF9(CFx, ProblemWithPF):
                 + 2 / j[1::3].size * np.sum(summand[1::3], axis=0),
                 np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi)
                 + 2 / j[2::3].size * np.sum(summand[2::3], axis=0),
-                np.sin(0.5 * x[0] * np.pi)
-                + 2 / j[::3].size * np.sum(summand[::3], axis=0),
+                np.sin(0.5 * x[0] * np.pi) + 2 / j[::3].size * np.sum(summand[::3], axis=0),
             )
         )
 
         g = np.vstack(
             (
                 (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2)
-                - self.a
-                * np.sin(
-                    self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)
-                )
+                - self.a * np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1))
                 - 1,
             )
         )
@@ -637,9 +535,7 @@ class CF10(CFx, ProblemWithPF):
         x = x.T
 
         j = np.arange(3, self.n + 1)
-        y = x[2:] - 2 * x[1][None, :] * np.sin(
-            2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n
-        )
+        y = x[2:] - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)
         summand = 4 * y**2 - np.cos(8 * np.pi * y) + 1
 
         f = np.vstack(
@@ -648,18 +544,14 @@ class CF10(CFx, ProblemWithPF):
                 + 2 / j[1::3].size * np.sum(summand[1::3], axis=0),
                 np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi)
                 + 2 / j[1::3].size * np.sum(summand[2::3], axis=0),
-                np.sin(0.5 * x[0] * np.pi)
-                + 2 / j[::3].size * np.sum(summand[1::3], axis=0),
+                np.sin(0.5 * x[0] * np.pi) + 2 / j[::3].size * np.sum(summand[1::3], axis=0),
             )
         )
 
         g = np.vstack(
             (
                 (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2)
-                - self.a
-                * np.sin(
-                    self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)
-                )
+                - self.a * np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1))
                 - 1,
             )
         )

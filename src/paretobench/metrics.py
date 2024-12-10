@@ -37,9 +37,7 @@ class InverseGenerationalDistance(Metric):
         elif isinstance(problem, Problem):
             prob = problem
         else:
-            raise ValueError(
-                "Function must be passed problem object or description in single line format."
-            )
+            raise ValueError("Function must be passed problem object or description in single line format.")
 
         # Get the Pareto front
         if isinstance(prob, ProblemWithPF):
@@ -47,9 +45,7 @@ class InverseGenerationalDistance(Metric):
         elif isinstance(prob, ProblemWithFixedPF):
             pf = prob.get_pareto_front()
         else:
-            raise ValueError(
-                f'Could not load Pareto front from object of type "{type(prob)}"'
-            )
+            raise ValueError(f'Could not load Pareto front from object of type "{type(prob)}"')
 
         # Calculate the IGD metric
         # Compute pairwise distance between every point in the front and reference
@@ -97,9 +93,7 @@ class EvalMetricsJob:
             }
 
             # Evaluate the metrics
-            row.update(
-                {name: f(pop, self.run.problem) for name, f in self.metrics.items()}
-            )
+            row.update({name: f(pop, self.run.problem) for name, f in self.metrics.items()})
 
             # Add to the list of rows
             rows.append(row)
@@ -155,11 +149,7 @@ def eval_metrics_experiments(
         metrics = {metrics.name: metrics}
     elif callable(metrics):
         metrics = {"metric": metrics}
-    elif (
-        isinstance(metrics, tuple)
-        and isinstance(metrics[0], str)
-        and callable(metrics[1])
-    ):
+    elif isinstance(metrics, tuple) and isinstance(metrics[0], str) and callable(metrics[1]):
         metrics = {metrics[0]: metrics[1]}
     elif isinstance(metrics, list):
         d_metrics = {}
@@ -170,17 +160,13 @@ def eval_metrics_experiments(
                 val = metric
             elif isinstance(metric, tuple):
                 if not isinstance(metric[0], str):
-                    raise TypeError(
-                        f"Unrecognized type for `metrics[{idx}][0]`: {type(metric[0])}"
-                    )
+                    raise TypeError(f"Unrecognized type for `metrics[{idx}][0]`: {type(metric[0])}")
                 if not callable(metric[1]):
                     raise TypeError(f"`metrics[{idx}][1]` is not callable")
                 key = metric[0]
                 val = metric[1]
             else:
-                raise TypeError(
-                    f"Unrecognized type for `metrics[{idx}]`: {type(metric)}"
-                )
+                raise TypeError(f"Unrecognized type for `metrics[{idx}]`: {type(metric)}")
 
             # Check that we aren't overwriting another metric and add to dict
             if key in d_metrics:
@@ -205,9 +191,7 @@ def eval_metrics_experiments(
             exp = exp_in
             fname = ""
         else:
-            raise ValueError(
-                f"Incompatible experiment type: idx={exp_idx}, type={type(exp_in)}"
-            )
+            raise ValueError(f"Incompatible experiment type: idx={exp_idx}, type={type(exp_in)}")
 
         # Construct a series of "jobs" over each evaluation of the optimizer contained in the file
         jobs = []

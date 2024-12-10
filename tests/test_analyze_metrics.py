@@ -44,14 +44,8 @@ def test_aggregate_metrics_feval_budget():
     # Check the mean and std
     df["problem"] = df.apply(lambda x: normalize_problem_name(x["problem"]), axis=1)
     test_df = apply_feval_cutoff(df)
-    for index, row in (
-        test_df.groupby(["problem", "exp_idx"])
-        .agg({"test": ["mean", "std"]})
-        .iterrows()
-    ):
-        np.testing.assert_allclose(
-            row[("test", "mean")], agg.loc[index][("test", "mean")]
-        )
+    for index, row in test_df.groupby(["problem", "exp_idx"]).agg({"test": ["mean", "std"]}).iterrows():
+        np.testing.assert_allclose(row[("test", "mean")], agg.loc[index][("test", "mean")])
 
 
 def test_aggregate_metrics_stats_test():
@@ -75,9 +69,7 @@ def test_aggregate_metrics_stats_test():
     rows = []
     for exp_idx in range(4):
         for problem in run_locs:
-            for run_idx, val in enumerate(
-                np.random.normal(run_locs[problem][exp_idx], 0.1, size=64)
-            ):
+            for run_idx, val in enumerate(np.random.normal(run_locs[problem][exp_idx], 0.1, size=64)):
                 for fevals in range(10):
                     rows.append(
                         {
@@ -92,9 +84,7 @@ def test_aggregate_metrics_stats_test():
     df = pd.DataFrame(rows)
 
     # Aggregate to get stats test values
-    agg = aggregate_metrics_feval_budget(
-        df, max_feval=8, wilcoxon_idx=0, metric_direction_override={"test": "-"}
-    )
+    agg = aggregate_metrics_feval_budget(df, max_feval=8, wilcoxon_idx=0, metric_direction_override={"test": "-"})
 
     # Check each problem for the comparisons
     for prob in run_locs:
@@ -111,15 +101,10 @@ def test_aggregate_metrics_stats_test():
                 wilcoxon_comp = "="
             else:
                 wilcoxon_comp = "-"
-            assert (
-                agg.loc[prob_norm, exp_idx].iloc[0][("test", "wilcoxon_comp")]
-                == wilcoxon_comp
-            )
+            assert agg.loc[prob_norm, exp_idx].iloc[0][("test", "wilcoxon_comp")] == wilcoxon_comp
 
             # Check if we are one of the best in the row
-            assert agg.loc[prob_norm, exp_idx].iloc[0][("test", "wilcoxon_best")] == (
-                loc == min(run_locs[prob])
-            )
+            assert agg.loc[prob_norm, exp_idx].iloc[0][("test", "wilcoxon_best")] == (loc == min(run_locs[prob]))
 
 
 def test_feval_cutoff():
@@ -175,9 +160,7 @@ def test_construct_metric_comparison_table(use_names, metric, problem_params):
     dfm = construct_metric_comparison_table(df, metric, problem_params=problem_params)
 
     # Check we get the right row and column names
-    indices_act = set(
-        ("ZDT1", Problem.from_line_fmt(p.problem).n) for p in runs[0].runs
-    )
+    indices_act = set(("ZDT1", Problem.from_line_fmt(p.problem).n) for p in runs[0].runs)
     indices_tst = set(dfm.index)
     assert indices_act == indices_tst
     assert set(dfm.columns) == set(r.name for r in runs)
@@ -232,9 +215,7 @@ def test_aggregate_metrics_series():
                 test_row = agg.loc[(problem, exp_idx, run.name, fevals)]
 
                 # Compare with the "actual" value
-                np.testing.assert_allclose(
-                    actual_row[("test", "mean")], test_row[("test", "mean")]
-                )
+                np.testing.assert_allclose(actual_row[("test", "mean")], test_row[("test", "mean")])
 
 
 def test_comparison_table_to_latex():

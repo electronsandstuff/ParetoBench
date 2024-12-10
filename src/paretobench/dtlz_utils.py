@@ -16,14 +16,6 @@ def theta_5_6(x, g, m):
 
 
 def f_2_to_6(x, m, alpha=1):
-    f1 = np.vstack(
-        [
-            np.prod(np.cos(x[: x.shape[0] - i, :] ** alpha * np.pi / 2), axis=0)
-            for i in range(0, m)
-        ]
-    )
-    f2 = np.vstack(
-        [np.ones(x.shape[1])]
-        + [np.sin(x[x.shape[0] - i, :] ** alpha * np.pi / 2) for i in range(1, m)]
-    )
+    f1 = np.vstack([np.prod(np.cos(x[: x.shape[0] - i, :] ** alpha * np.pi / 2), axis=0) for i in range(0, m)])
+    f2 = np.vstack([np.ones(x.shape[1])] + [np.sin(x[x.shape[0] - i, :] ** alpha * np.pi / 2) for i in range(1, m)])
     return f1 * f2

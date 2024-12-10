@@ -14,10 +14,7 @@ def test_evaluate(problem_name, n_eval=64):
 
     # Create a set of points to evaluate the problem on
     bnd = p.var_bounds
-    x = (
-        np.random.random((n_eval, bnd.shape[1])) * (bnd[1, :] - bnd[0, :])[None, :]
-        + bnd[0, :][None, :]
-    )
+    x = np.random.random((n_eval, bnd.shape[1])) * (bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
 
     # Evaluate on batched data
     res = p(x)
@@ -76,10 +73,7 @@ def test_get_params(problem_name):
 
     # Check that if you actually call the values, you get the right sized objects (everything is consistent)
     bnd = p.var_bounds
-    x = (
-        np.random.random((1, bnd.shape[1])) * (bnd[1, :] - bnd[0, :])[None, :]
-        + bnd[0, :][None, :]
-    )
+    x = np.random.random((1, bnd.shape[1])) * (bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
     res = p(x)
     assert p.n_vars == x.shape[1]
     assert p.n_objs == res.f.shape[1]
@@ -97,9 +91,7 @@ def test_pareto_front(problem_name, npoints=1000):
 
     if not isinstance(p, (pb.ProblemWithPF, pb.ProblemWithFixedPF)):
         return
-    if isinstance(
-        p, pb.ProblemWithPF
-    ):  # If we can choose number of points, check at lesat that many are returned
+    if isinstance(p, pb.ProblemWithPF):  # If we can choose number of points, check at lesat that many are returned
         f = p.get_pareto_front(npoints)
         assert f.shape[0] >= npoints
     else:  # If it's the fixed PF case
