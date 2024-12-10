@@ -261,6 +261,12 @@ class Population(BaseModel):
     def __len__(self):
         return self.x.shape[0]
 
+    def __repr__(self) -> str:
+        return f"Population(size={len(self)}, vars={self.x.shape[1]}, objs={self.f.shape[1]}, cons={self.g.shape[1]}, fevals={self.fevals})"
+    
+    def __str__(self):
+        return self.__repr__()
+
     def count_unique_individuals(self, decimals=13):
         """
         Calculates the number of unique individuals in the population. Uses `np.round` to avoid floating point accuracy issues.
@@ -488,7 +494,15 @@ class History(BaseModel):
 
         return History(reports=new_reports, problem=self.problem, metadata=self.metadata.copy())
 
-    
+    def __repr__(self) -> str:
+        dims = (f"vars={self.reports[0].x.shape[1]}, objs={self.reports[0].f.shape[1]}, "
+            f"cons={self.reports[0].g.shape[1]}") if self.reports else "empty"
+        return f"History(problem='{self.problem}', reports={len(self.reports)}, {dims})"
+
+    def __str__(self):
+        return self.__repr__()
+
+
 class Experiment(BaseModel):
     """
     Represents on "experiment" performed on a multibojective genetic algorithm. It may contain several evaluations of the
@@ -515,8 +529,21 @@ class Experiment(BaseModel):
                 self.runs == other.runs)
 
     def __repr__(self) -> str:
-        return f"Experiment(name='{self.name}', n_runs={len(self.runs)})"
-
+        metadata = [
+            f"name='{self.name}'",
+            f"created='{self.creation_time.strftime('%Y-%m-%d')}'"
+        ]
+        if self.author:
+            metadata.append(f"author='{self.author}'")
+        if self.software:
+            version = f" {self.software_version}" if self.software_version else ""
+            metadata.append(f"software='{self.software}{version}'")
+        metadata.append(f"runs={len(self.runs)}")
+        return f"Experiment({', '.join(metadata)})"
+    
+    def __str__(self):
+        return self.__repr__()
+    
     @classmethod
     def from_random(cls, n_histories: int, n_populations: int, n_objectives: int, n_decision_vars: int, n_constraints: int,
                     pop_size: int, generate_names: bool = False) -> 'Experiment':
