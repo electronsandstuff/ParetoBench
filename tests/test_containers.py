@@ -256,7 +256,7 @@ def test_population_invalid_dimensions():
     # Expect ValueError for incorrect number of dimensions
     with pytest.raises(ValueError, match="Expected array with 2 dimensions for field 'x'"):
         Population(x=x, f=f, g=g, fevals=5)
-    
+
 
 def test_overwrite():
     # Create a randomized Experiment object
@@ -268,7 +268,7 @@ def test_overwrite():
         n_constraints=2,
         pop_size=50,
     )
-    
+
     # A second experiment
     experiment2 = Experiment.from_random(
         n_histories=32,
@@ -278,12 +278,12 @@ def test_overwrite():
         n_constraints=2,
         pop_size=50,
     )
-    
+
     with tempfile.TemporaryDirectory() as dir:
         # Overwrite the file
-        experiment1.save(os.path.join(dir, "experiment.h5"))        
+        experiment1.save(os.path.join(dir, "experiment.h5"))
         experiment2.save(os.path.join(dir, "experiment.h5"))
-        
+
         # Load the experiment from the file and compare with original
         loaded_experiment = Experiment.load(os.path.join(dir, "experiment.h5"))
         assert experiment2 == loaded_experiment, "The loaded experiment is not equal to the original experiment."
