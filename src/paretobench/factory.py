@@ -27,4 +27,4 @@ def create_problem(name: str, **kwargs):
     """
     if name not in registered_probs:
         raise UnknownProblemError(f'Could not find problem with name "{name}"')
-    return registered_probs[name](**kwargs)        
+    return registered_probs[name](**kwargs)
