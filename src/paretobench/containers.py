@@ -261,7 +261,7 @@ class Population(BaseModel):
     def __len__(self):
         return self.x.shape[0]
 
-    def get_num_unique(self, decimals=13):
+    def count_unique_individuals(self, decimals=13):
         """
         Calculates the number of unique individuals in the population. Uses `np.round` to avoid floating point accuracy issues.
 
