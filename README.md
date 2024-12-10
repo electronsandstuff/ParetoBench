@@ -2,7 +2,14 @@
 [![](https://img.shields.io/pypi/pyversions/paretobench.svg)](https://pypi.org/pypi/paretobench/)
 [![](https://img.shields.io/pypi/l/paretobench.svg)](https://pypi.org/pypi/paretobench/)
 
-# Installation
+# ParetoBench
+ParetoBench is a Python library that provides a collection of tools for the benchmarking of multi-objective optimization algorithms. It includes the following.
+- Multi-objective benchmark problems including analytical Pareto fronts when available
+- Container objects for storing and manipulating data from optimization algorithms
+- A standardized file format for saving the results of optimizations on benchmark problems
+- Tools for calculating convergence metrics on results and running statistical analyses on them to compare algorithms
+
+## Installation
 Please install our package from pip.
 ```
 pip install .
