@@ -20,10 +20,7 @@ def shape_convex(x):
     f = []
     f.append(np.prod(1 - np.cos(x[:-1] * np.pi / 2), axis=0))
     for m in range(2, x.shape[0]):
-        f.append(
-            np.prod(1 - np.cos(x[:-m] * np.pi / 2), axis=0)
-            * (1 - np.sin(x[-m] * np.pi / 2))
-        )
+        f.append(np.prod(1 - np.cos(x[:-m] * np.pi / 2), axis=0) * (1 - np.sin(x[-m] * np.pi / 2)))
     if x.shape[0] > 1:
         f.append(1 - np.sin(x[0] * np.pi / 2))
     return np.vstack(f)
@@ -33,9 +30,7 @@ def shape_concave(x):
     f = []
     f.append(np.prod(np.sin(x[:-1] * np.pi / 2), axis=0))
     for m in range(2, x.shape[0]):
-        f.append(
-            np.prod(np.sin(x[:-m] * np.pi / 2), axis=0) * (np.cos(x[-m] * np.pi / 2))
-        )
+        f.append(np.prod(np.sin(x[:-m] * np.pi / 2), axis=0) * (np.cos(x[-m] * np.pi / 2)))
     if x.shape[0] > 1:
         f.append(np.cos(x[0] * np.pi / 2))
     return np.vstack(f)
@@ -100,9 +95,7 @@ def transform_shift_deceptive(y, a, b, c):
 def transform_shift_multimodal(y, a, b, c):
     return (
         1
-        + np.cos(
-            (4 * a + 2) * np.pi * (0.5 - np.abs(y - c) / 2 / (np.floor(c - y) + c))
-        )
+        + np.cos((4 * a + 2) * np.pi * (0.5 - np.abs(y - c) / 2 / (np.floor(c - y) + c)))
         + 4 * b * (np.abs(y - c) / 2 / (np.floor(c - y) + c)) ** 2
     ) / (b + 2)
 

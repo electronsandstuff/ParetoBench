@@ -50,9 +50,7 @@ def get_index_before(xv: np.ndarray, xq: np.ndarray) -> np.ndarray:
     """
     # Check that all query values are valid (larger than at least one element in xv)
     if np.any(xq < np.min(xv)):
-        raise ValueError(
-            "At least one value in the queries (xq) is less than all values in xv. Cannot continue."
-        )
+        raise ValueError("At least one value in the queries (xq) is less than all values in xv. Cannot continue.")
 
     # Get the indices
     return np.maximum(np.searchsorted(xv, xq, side="right") - 1, 0)
@@ -217,9 +215,7 @@ def aggregate_metrics_feval_budget(
             ("pct_97.5", lambda x: np.percentile(x, 97.5, axis=0)),
             ("wilcoxon_best", lambda x: is_best(x, m)),
         ]
-        (wilcoxon_idx is None) or funs.append(
-            ("wilcoxon_comp", lambda x: get_wilcoxon_comparison(x, m))
-        )
+        (wilcoxon_idx is None) or funs.append(("wilcoxon_comp", lambda x: get_wilcoxon_comparison(x, m)))
         agg_funs[m] = funs
 
     # Apply the aggregation and return
@@ -233,9 +229,7 @@ def aggregate_metrics_feval_budget(
 def construct_metric_comparison_table(
     df: pd.DataFrame,
     metric: Union[str, None] = None,
-    problem_params: Union[
-        None, List[Union[str, Tuple[str, Callable], Tuple[str, str]]]
-    ] = None,
+    problem_params: Union[None, List[Union[str, Tuple[str, Callable], Tuple[str, str]]]] = None,
     mean_fmt_kwargs: Union[None, Dict[str, Any]] = None,
     std_fmt_kwargs: Union[None, Dict[str, Any]] = None,
 ) -> pd.DataFrame:
@@ -364,9 +358,7 @@ def construct_metric_comparison_table(
     return df
 
 
-def gather_metric_values_stepwise(
-    df: pd.DataFrame, metric: str, fevals: int
-) -> np.ndarray:
+def gather_metric_values_stepwise(df: pd.DataFrame, metric: str, fevals: int) -> np.ndarray:
     """
     Gets the latest generation values of the metric before exhausting the function evaluation budgets in the array `fevals`.
     Operates on a table containing a single optimizer evaluation.
@@ -414,11 +406,7 @@ def aggregate_metric_series_apply_fn(df: pd.DataFrame) -> pd.DataFrame:
     # Note: lambda accepts keyword arguments as a hack to prevent an error with (what I think) is different pandas
     # versions. In earlier versions of pandas apply will try to pass `include_groups` as a kwarg to the lambda. However, in
     # later versions we need to set it here to avoid a deprecation warning.
-    min_feval = max(
-        df.groupby("run_idx").apply(
-            lambda x, **kw: x["fevals"].min(), include_groups=False
-        )
-    )
+    min_feval = max(df.groupby("run_idx").apply(lambda x, **kw: x["fevals"].min(), include_groups=False))
     fevals = fevals[fevals >= min_feval]
     fevals = fevals.astype(int)
 
@@ -450,9 +438,7 @@ def aggregate_metric_series_apply_fn(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def aggregate_metric_series(
-    df: pd.DataFrame, keep_filename: bool = False
-) -> pd.DataFrame:
+def aggregate_metric_series(df: pd.DataFrame, keep_filename: bool = False) -> pd.DataFrame:
     """
     Performs aggregation of metrics calculated on a single problem and within a single experiment for all fevals. The input
     dataframe should have the schema output by `eval_metrics_experiments`. This will have the value of metrics versus the number
@@ -483,9 +469,7 @@ def aggregate_metric_series(
         by.append("exp_name")
 
     # The lambda has the parameter `kw` as a hack (see note in `aggregate_metric_series_apply_fn`)
-    return df.groupby(by).apply(
-        lambda x, **kw: aggregate_metric_series_apply_fn(x), include_groups=False
-    )
+    return df.groupby(by).apply(lambda x, **kw: aggregate_metric_series_apply_fn(x), include_groups=False)
 
 
 def comparison_table_to_latex(df: pd.DataFrame) -> str:
@@ -516,28 +500,17 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
         The latex table
     """
     # Get the latex representation
-    latex_str = df.to_latex(multirow=True, escape=False, index=True).replace(
-        "multirow[t]", "multirow"
-    )
+    latex_str = df.to_latex(multirow=True, escape=False, index=True).replace("multirow[t]", "multirow")
 
     # Count the number of each comparison for the columns and construct the summary to go at the bottom
     summary_str = r" \multicolumn{1}{c}{%d/%d/%d} "
-    comparisons = (
-        df.map(lambda x: (x[-1] if len(x) > 4 else ""))
-        .apply(pd.Series.value_counts)
-        .fillna(0)
-    )
+    comparisons = df.map(lambda x: (x[-1] if len(x) > 4 else "")).apply(pd.Series.value_counts).fillna(0)
     comparisons = comparisons.apply(
-        lambda x: summary_str
-        % (int(x.get("+", 0)), int(x.get("-", 0)), int(x.get("=", 0)))
+        lambda x: summary_str % (int(x.get("+", 0)), int(x.get("-", 0)), int(x.get("=", 0)))
     )
 
     # Construct text for the final row
-    comparison_cells = (
-        [(r" \multicolumn{%d}{c}{+/-/=} " % df.index.nlevels)]
-        + comparisons.values[:-1].tolist()
-        + [" "]
-    )
+    comparison_cells = [(r" \multicolumn{%d}{c}{+/-/=} " % df.index.nlevels)] + comparisons.values[:-1].tolist() + [" "]
     summary_line = "&".join(comparison_cells) + r"\\"
 
     # Bold and center the header
@@ -552,10 +525,7 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
         elif header:
             # Get the individual cells in the header and center/bold them
             ls = ln.replace(r"\\", "").split("&")
-            ls = [
-                r"\multicolumn{1}{c}{\textbf{" + lns + r"}}" if lns.strip() else lns
-                for lns in ls
-            ]
+            ls = [r"\multicolumn{1}{c}{\textbf{" + lns + r"}}" if lns.strip() else lns for lns in ls]
 
             # Merge into the overall set of header cells
             if not header_cells:

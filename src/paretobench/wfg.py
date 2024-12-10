@@ -102,34 +102,21 @@ class WFG1(WFGx):
         # fm = (1-sin(x0))
         # Note that: fi/f1 = (1-sin(x{n-i+1}))/(1-cos(x{n-i+1}))  /  ((1-cos(x))(1-cos(x))... for remaining terms after n-i+1
         # Use (1-sin(x))/(1-cos(x)) = y is solved by x = 2*arctan((sqrt(2y) - 1)/(2y-1))
-        r = (
-            get_hyperplane_points(self.m, n) + 1e-12
-        )  # Hack to avoid some numerical issues
+        r = get_hyperplane_points(self.m, n) + 1e-12  # Hack to avoid some numerical issues
         theta = np.zeros_like(r)
         for j in range(1, r.shape[0]):
             t = r[j] * np.prod(1 - np.cos(theta[-j:-1]), axis=0)
-            theta[-j - 1] = (
-                2 * np.arctan2((np.sqrt(2 * r[0] * t) - r[0]), (2 * t - r[0])) % (np.pi)
-            )
+            theta[-j - 1] = 2 * np.arctan2((np.sqrt(2 * r[0] * t) - r[0]), (2 * t - r[0])) % (np.pi)
         x = theta / np.pi * 2
 
         # Solve for the value of x0 which gives the correct fm/f{m-1} where fm is shape_mixed(...) and f{m-1} is from shape_convex(...)
         t = r[-1] / r[-2] * (1 - np.sin(np.pi / 2 * x[1]))
 
         def solve_fun(x):
-            return (
-                x
-                + np.cos(10 * np.pi * x + np.pi / 2) / 10 / np.pi
-                - 1
-                + t[None, :] * (1 - np.cos(np.pi / 2 * x))
-            )
+            return x + np.cos(10 * np.pi * x + np.pi / 2) / 10 / np.pi - 1 + t[None, :] * (1 - np.cos(np.pi / 2 * x))
 
         def solve_fun_der(x):
-            return (
-                1
-                - np.sin(10 * np.pi * x + np.pi / 2)
-                + np.pi / 2 * t[None, :] * np.sin(np.pi / 2 * x)
-            )
+            return 1 - np.sin(10 * np.pi * x + np.pi / 2) + np.pi / 2 * t[None, :] * np.sin(np.pi / 2 * x)
 
         # Make an initial guess
         x_guess = np.linspace(0, 1, n_solver_guess)
@@ -182,9 +169,7 @@ class WFG2(WFGx):
         for i in range(1, self.m):
             start = int((i - 1) * self.k / (self.m - 1))
             end = int(i * self.k / (self.m - 1))
-            t3.append(
-                np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0)
-            )
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
         t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k :, :]), 0.0, 1.0))
         t3 = np.vstack(t3)
 
@@ -209,26 +194,18 @@ class WFG2(WFGx):
         # fm = (1-sin(x0))
         # Note that: fi/f1 = (1-sin(x{n-i+1}))/(1-cos(x{n-i+1}))  /  ((1-cos(x))(1-cos(x))... for remaining terms after n-i+1
         # Use (1-sin(x))/(1-cos(x)) = y is solved by x = 2*arctan((sqrt(2y) - 1)/(2y-1))
-        r = (
-            get_hyperplane_points(self.m, 2 * n) + 1e-12
-        )  # Hack to avoid some numerical issues
+        r = get_hyperplane_points(self.m, 2 * n) + 1e-12  # Hack to avoid some numerical issues
         theta = np.zeros_like(r)
         for j in range(1, r.shape[0]):
             t = r[j] * np.prod(1 - np.cos(theta[-j:-1]), axis=0)
-            theta[-j - 1] = (
-                2 * np.arctan2((np.sqrt(2 * r[0] * t) - r[0]), (2 * t - r[0])) % (np.pi)
-            )
+            theta[-j - 1] = 2 * np.arctan2((np.sqrt(2 * r[0] * t) - r[0]), (2 * t - r[0])) % (np.pi)
         x = theta / np.pi * 2
 
         # Solve for the value of x0 which gives the correct fm/f{m-1} where fm is shape_mixed(...) and f{m-1} is from shape_convex(...)
         t = r[-1] / r[-2] * (1 - np.sin(np.pi / 2 * x[1]))
 
         def solve_fun(x):
-            return (
-                x * np.cos(5 * np.pi * x) ** 2
-                - 1
-                + t[None, :] * (1 - np.cos(np.pi / 2 * x))
-            )
+            return x * np.cos(5 * np.pi * x) ** 2 - 1 + t[None, :] * (1 - np.cos(np.pi / 2 * x))
 
         def solve_fun_der(x):
             return (
@@ -239,9 +216,7 @@ class WFG2(WFGx):
 
         # Make an initial guess (biased toward small x)
         x_guess = np.linspace(0, 1, n_solver_guess)
-        x[0] = x_guess[
-            np.min(np.argsort(np.abs(solve_fun(x_guess[:, None])), axis=0)[:8], axis=0)
-        ]
+        x[0] = x_guess[np.min(np.argsort(np.abs(solve_fun(x_guess[:, None])), axis=0)[:8], axis=0)]
 
         # Newton Raphson iterations
         for _ in range(n_solver_iter):
@@ -292,9 +267,7 @@ class WFG3(WFGx):
         for i in range(1, self.m):
             start = int((i - 1) * self.k / (self.m - 1))
             end = int(i * self.k / (self.m - 1))
-            t3.append(
-                np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0)
-            )
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
         t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k :, :]), 0.0, 1.0))
         t3 = np.vstack(t3)
 
@@ -311,9 +284,7 @@ class WFG3(WFGx):
         return Population(f=obj.T)
 
     def get_pareto_front(self, n):
-        f = np.vstack(
-            (np.linspace(0, 1, n), np.full((self.m - 2, n), 1 / 2), np.zeros((1, n)))
-        )
+        f = np.vstack((np.linspace(0, 1, n), np.full((self.m - 2, n), 1 / 2), np.zeros((1, n))))
         f = shape_linear(f)
         return (f * 2 * np.arange(1, self.m + 1)[:, None]).T
 
@@ -335,9 +306,7 @@ class WFG4(WFGx):
         for i in range(1, self.m):
             start = int((i - 1) * self.k / (self.m - 1))
             end = int(i * self.k / (self.m - 1))
-            t2.append(
-                np.clip(transform_reduction_weighted_sum(t1[start:end, :]), 0.0, 1.0)
-            )
+            t2.append(np.clip(transform_reduction_weighted_sum(t1[start:end, :]), 0.0, 1.0))
         t2.append(np.clip(transform_reduction_weighted_sum(t1[self.k :, :]), 0.0, 1.0))
         t2 = np.vstack(t2)
 
@@ -355,9 +324,7 @@ class WFG4(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return (
-            f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]
-        ).T
+        return (f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]).T
 
 
 class WFG5(WFGx):
@@ -377,9 +344,7 @@ class WFG5(WFGx):
         for i in range(1, self.m):
             start = int((i - 1) * self.k / (self.m - 1))
             end = int(i * self.k / (self.m - 1))
-            t2.append(
-                np.clip(transform_reduction_weighted_sum(t1[start:end, :]), 0.0, 1.0)
-            )
+            t2.append(np.clip(transform_reduction_weighted_sum(t1[start:end, :]), 0.0, 1.0))
         t2.append(np.clip(transform_reduction_weighted_sum(t1[self.k :, :]), 0.0, 1.0))
         t2 = np.vstack(t2)
 
@@ -397,9 +362,7 @@ class WFG5(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return (
-            f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]
-        ).T
+        return (f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]).T
 
 
 class WFG6(WFGx):
@@ -417,10 +380,7 @@ class WFG6(WFGx):
 
         # Transition 2
         gap = self.k // (self.m - 1)
-        t2 = [
-            transform_reduction_non_separable(t1[(m - 1) * gap : (m * gap), :], gap)
-            for m in range(1, self.m)
-        ]
+        t2 = [transform_reduction_non_separable(t1[(m - 1) * gap : (m * gap), :], gap) for m in range(1, self.m)]
         t2.append(transform_reduction_non_separable(t1[self.k :, :], self.n - self.k))
         t2 = np.vstack(t2)
 
@@ -438,9 +398,7 @@ class WFG6(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return (
-            f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]
-        ).T
+        return (f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]).T
 
 
 class WFG7(WFGx):
@@ -476,9 +434,7 @@ class WFG7(WFGx):
         for i in range(1, self.m):
             start = int((i - 1) * self.k / (self.m - 1))
             end = int(i * self.k / (self.m - 1))
-            t3.append(
-                np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0)
-            )
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
         t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k :, :]), 0.0, 1.0))
         t3 = np.vstack(t3)
 
@@ -496,9 +452,7 @@ class WFG7(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return (
-            f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]
-        ).T
+        return (f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]).T
 
 
 class WFG8(WFGx):
@@ -534,9 +488,7 @@ class WFG8(WFGx):
         for i in range(1, self.m):
             start = int((i - 1) * self.k / (self.m - 1))
             end = int(i * self.k / (self.m - 1))
-            t3.append(
-                np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0)
-            )
+            t3.append(np.clip(transform_reduction_weighted_sum(t2[start:end, :]), 0.0, 1.0))
         t3.append(np.clip(transform_reduction_weighted_sum(t2[self.k :, :]), 0.0, 1.0))
         t3 = np.vstack(t3)
 
@@ -554,9 +506,7 @@ class WFG8(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return (
-            f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]
-        ).T
+        return (f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]).T
 
 
 class WFG9(WFGx):
@@ -585,19 +535,12 @@ class WFG9(WFGx):
 
         # Transition 2
         t2 = np.empty_like(t1)
-        t2[: self.k] = np.clip(
-            transform_shift_deceptive(t1[: self.k], 0.35, 0.001, 0.05), 0.0, 1.0
-        )
-        t2[self.k :] = np.clip(
-            transform_shift_multimodal(t1[self.k :], 30, 95, 0.35), 0.0, 1.0
-        )
+        t2[: self.k] = np.clip(transform_shift_deceptive(t1[: self.k], 0.35, 0.001, 0.05), 0.0, 1.0)
+        t2[self.k :] = np.clip(transform_shift_multimodal(t1[self.k :], 30, 95, 0.35), 0.0, 1.0)
 
         # Transition 3
         gap = self.k // (self.m - 1)
-        t3 = [
-            transform_reduction_non_separable(t2[(m - 1) * gap : (m * gap), :], gap)
-            for m in range(1, self.m)
-        ]
+        t3 = [transform_reduction_non_separable(t2[(m - 1) * gap : (m * gap), :], gap) for m in range(1, self.m)]
         t3.append(transform_reduction_non_separable(t2[self.k :, :], self.n - self.k))
         t3 = np.vstack(t3)
 
@@ -615,6 +558,4 @@ class WFG9(WFGx):
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
-        return (
-            f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]
-        ).T
+        return (f / np.sqrt(np.sum(f**2, axis=0)) * 2 * np.arange(1, self.m + 1)[:, None]).T

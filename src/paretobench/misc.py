@@ -65,15 +65,11 @@ class FON(Problem):
                 [
                     1
                     - np.exp(
-                        -((x[0] - 1 / np.sqrt(3)) ** 2)
-                        - (x[1] - 1 / np.sqrt(3)) ** 2
-                        - (x[2] - 1 / np.sqrt(3)) ** 2
+                        -((x[0] - 1 / np.sqrt(3)) ** 2) - (x[1] - 1 / np.sqrt(3)) ** 2 - (x[2] - 1 / np.sqrt(3)) ** 2
                     ),
                     1
                     - np.exp(
-                        -((x[0] + 1 / np.sqrt(3)) ** 2)
-                        - (x[1] + 1 / np.sqrt(3)) ** 2
-                        - (x[2] + 1 / np.sqrt(3)) ** 2
+                        -((x[0] + 1 / np.sqrt(3)) ** 2) - (x[1] + 1 / np.sqrt(3)) ** 2 - (x[2] + 1 / np.sqrt(3)) ** 2
                     ),
                 ]
             ).T
@@ -163,9 +159,7 @@ class KUR(Problem):
         return Population(
             f=np.array(
                 [
-                    np.sum(
-                        -10 * np.exp(-0.2 * np.sqrt(x[:-1] ** 2 + x[1:] ** 2)), axis=0
-                    ),
+                    np.sum(-10 * np.exp(-0.2 * np.sqrt(x[:-1] ** 2 + x[1:] ** 2)), axis=0),
                     np.sum(np.abs(x) ** 0.8 + 5 * np.sin(x**3), axis=0),
                 ]
             ).T
@@ -241,9 +235,7 @@ class SRN(Problem):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
 
-        f = np.array(
-            [(x[0] - 2) ** 2 + (x[1] - 1) ** 2 + 2, 9 * x[0] - (x[1] - 1) ** 2]
-        )
+        f = np.array([(x[0] - 2) ** 2 + (x[1] - 1) ** 2 + 2, 9 * x[0] - (x[1] - 1) ** 2])
         g = np.array([225 - (x[0] ** 2 + x[1] ** 2), -10 - (x[0] - 3 * x[1])])
         return Population(f=f.T, g=g.T)
 
@@ -283,12 +275,7 @@ class TNK(Problem):
         f = np.array([x[0], x[1]])
         g = np.array(
             [
-                -(
-                    -(x[0] ** 2)
-                    - x[1] ** 2
-                    + 1
-                    + 0.1 * np.cos(16 * np.arctan(x[0] / x[1]))
-                ),
+                -(-(x[0] ** 2) - x[1] ** 2 + 1 + 0.1 * np.cos(16 * np.arctan(x[0] / x[1]))),
                 0.5 - ((x[0] - 0.5) ** 2 + (x[1] - 0.5) ** 2),
             ]
         )

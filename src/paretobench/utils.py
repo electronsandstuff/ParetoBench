@@ -9,9 +9,7 @@ def get_betas(m, p):
     Generating the Pareto Surface in Nonlinear Multicriteria Optimization Problems.” SIAM
     Journal on Optimization 8, no. 3 (August 1998): 631–57. https://doi.org/10.1137/S1052623496307510.
     """
-    beta = np.fromiter(
-        chain.from_iterable(combinations(range(1, p + m), m - 1)), np.float64
-    )
+    beta = np.fromiter(chain.from_iterable(combinations(range(1, p + m), m - 1)), np.float64)
     beta = beta.reshape(beta.shape[0] // (m - 1), m - 1).T
     beta = beta - np.arange(0, m - 1)[:, None] - 1
     beta1 = np.concatenate((beta, np.full((1, beta.shape[1]), p)), axis=0)
@@ -96,9 +94,7 @@ def triangle_grid_count(n):
 
 def triangle_grid(n):
     # skewed points to help compensate for
-    x = np.concatenate(
-        [np.linspace(0, 1 - np.sqrt(i / (n - 1)), n - i) for i in range(n)]
-    )
+    x = np.concatenate([np.linspace(0, 1 - np.sqrt(i / (n - 1)), n - i) for i in range(n)])
     y = np.concatenate([np.ones(n - i) * np.sqrt(i / (n - 1)) for i in range(n)])
     return np.vstack((x, y))
 

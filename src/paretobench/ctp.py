@@ -111,13 +111,7 @@ class CTP2_7(CTPx):
             self._a
             * np.abs(
                 np.sin(
-                    self._b
-                    * np.pi
-                    * (
-                        np.sin(self._theta) * (f[1] - self._e)
-                        + np.cos(self._theta) * f[0]
-                    )
-                    ** self._c
+                    self._b * np.pi * (np.sin(self._theta) * (f[1] - self._e) + np.cos(self._theta) * f[0]) ** self._c
                 )
             )
             ** self._d

@@ -31,9 +31,7 @@ def test_experiment_save_load(generate_names):
 
         # Load the experiment from the file and compare with original
         loaded_experiment = Experiment.load(file_path)
-        assert (
-            experiment == loaded_experiment
-        ), "The loaded experiment is not equal to the original experiment."
+        assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
 
 
 def test_empty_history():
@@ -51,9 +49,7 @@ def test_empty_history():
 
         # Load the experiment from the file and compare with original
         loaded_experiment = Experiment.load(file_path)
-        assert (
-            experiment == loaded_experiment
-        ), "The loaded experiment is not equal to the original experiment."
+        assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
 
 
 def test_generate_population():
@@ -104,9 +100,7 @@ def test_to_nondominated():
 
     for report_idx, report_nd in enumerate(hist_nd.reports):
         # Calculate the nondominated individuals ourself
-        ref_nd = sum(
-            hist.reports[1 : report_idx + 1], hist.reports[0]
-        ).get_nondominated_set()
+        ref_nd = sum(hist.reports[1 : report_idx + 1], hist.reports[0]).get_nondominated_set()
 
         # Sort test and reference set so they are comparable
         ref_idx = np.lexsort(np.concatenate((ref_nd.x, ref_nd.f), axis=1).T)
@@ -137,9 +131,7 @@ def test_population_batch_dimension():
     try:
         Population(x=valid_x, f=valid_f, g=valid_g, fevals=1)
     except ValidationError:
-        pytest.fail(
-            "Population creation with valid batch dimensions raised ValidationError unexpectedly!"
-        )
+        pytest.fail("Population creation with valid batch dimensions raised ValidationError unexpectedly!")
 
     # Test that creating an invalid Population instance raises a ValidationError
     with pytest.raises(
@@ -180,44 +172,30 @@ def test_history_validation():
             metadata={"description": "A valid test case"},
         )
     except ValidationError:
-        pytest.fail(
-            "History creation with consistent populations raised ValidationError unexpectedly!"
-        )
+        pytest.fail("History creation with consistent populations raised ValidationError unexpectedly!")
 
     # Test that creating an invalid History instance raises a ValidationError due to inconsistent decision variables
-    with pytest.raises(
-        ValidationError, match="Inconsistent number of decision variables in reports"
-    ):
+    with pytest.raises(ValidationError, match="Inconsistent number of decision variables in reports"):
         History(
             reports=[valid_population_1, invalid_population_decision_vars],
             problem="Test Problem",
-            metadata={
-                "description": "An invalid test case with inconsistent decision variables"
-            },
+            metadata={"description": "An invalid test case with inconsistent decision variables"},
         )
 
     # Test that creating an invalid History instance raises a ValidationError due to inconsistent objectives
-    with pytest.raises(
-        ValidationError, match="Inconsistent number of objectives in reports"
-    ):
+    with pytest.raises(ValidationError, match="Inconsistent number of objectives in reports"):
         History(
             reports=[valid_population_1, invalid_population_objectives],
             problem="Test Problem",
-            metadata={
-                "description": "An invalid test case with inconsistent objectives"
-            },
+            metadata={"description": "An invalid test case with inconsistent objectives"},
         )
 
     # Test that creating an invalid History instance raises a ValidationError due to inconsistent constraints
-    with pytest.raises(
-        ValidationError, match="Inconsistent number of constraints in reports"
-    ):
+    with pytest.raises(ValidationError, match="Inconsistent number of constraints in reports"):
         History(
             reports=[valid_population_1, invalid_population_constraints],
             problem="Test Problem",
-            metadata={
-                "description": "An invalid test case with inconsistent constraints"
-            },
+            metadata={"description": "An invalid test case with inconsistent constraints"},
         )
 
     # Test for inconsistent names - case where some have names and others don't
@@ -239,9 +217,7 @@ def test_history_validation():
         fevals=7,
     )
 
-    with pytest.raises(
-        ValidationError, match="Inconsistent names for decision variables in reports"
-    ):
+    with pytest.raises(ValidationError, match="Inconsistent names for decision variables in reports"):
         History(
             reports=[population_with_names, population_without_names],
             problem="Test Problem",
@@ -260,9 +236,7 @@ def test_history_validation():
     population_with_different_names.names_f = ["obj1", "obj2", "obj3"]
     population_with_different_names.names_g = ["con1", "con2"]
 
-    with pytest.raises(
-        ValidationError, match="Inconsistent names for decision variables in reports"
-    ):
+    with pytest.raises(ValidationError, match="Inconsistent names for decision variables in reports"):
         History(
             reports=[population_with_names, population_with_different_names],
             problem="Test Problem",
@@ -280,9 +254,7 @@ def test_population_invalid_dimensions():
     g = np.random.rand(batch_size, 1)
 
     # Expect ValueError for incorrect number of dimensions
-    with pytest.raises(
-        ValueError, match="Expected array with 2 dimensions for field 'x'"
-    ):
+    with pytest.raises(ValueError, match="Expected array with 2 dimensions for field 'x'"):
         Population(x=x, f=f, g=g, fevals=5)
 
 

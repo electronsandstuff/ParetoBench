@@ -24,15 +24,11 @@ def dumps(data: dict):
     for k, v in data.items():
         # Check for illegal characters in the keys
         if not k.replace("_", "").isalnum():
-            raise SerializationError(
-                f'Keys must only contain alphanumeric characters. Found key named "{k}"'
-            )
+            raise SerializationError(f'Keys must only contain alphanumeric characters. Found key named "{k}"')
 
         # Check for illegal datatypes
         if type(v) not in [int, float, bool, str]:
-            raise SerializationError(
-                f'Cannot serialize object of type {type(v)} at key "{k}"'
-            )
+            raise SerializationError(f'Cannot serialize object of type {type(v)} at key "{k}"')
 
     # Perform the conversion
     items = []
@@ -87,9 +83,7 @@ def split_unquoted(s: str, split_char=",", quote_char='"', escape_char="\\"):
         elif c == escape_char:
             last_escape_char = idx
             if not in_quotes:
-                raise DeserializationError(
-                    "Detected escaped character outside of a string. Possible corrupted data."
-                )
+                raise DeserializationError("Detected escaped character outside of a string. Possible corrupted data.")
 
     # If we didn't end on a split_char, add remaining values
     if chunk_start < len(s):
@@ -97,9 +91,7 @@ def split_unquoted(s: str, split_char=",", quote_char='"', escape_char="\\"):
 
     # Check that we ended with a quote
     if in_quotes:
-        raise DeserializationError(
-            "Unterminated quotations marks. Possible corrupted data."
-        )
+        raise DeserializationError("Unterminated quotations marks. Possible corrupted data.")
 
     return chunks
 

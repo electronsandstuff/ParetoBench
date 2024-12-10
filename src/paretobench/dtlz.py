@@ -36,12 +36,8 @@ class DTLZ1(DTLZx):
         x = x.T
 
         g = g_1_3(x[self.m - 1 :, :], self.n - self.m + 1)
-        f1 = np.vstack(
-            [np.prod(x[: self.m - 1 - i, :], axis=0) for i in range(0, self.m)]
-        )
-        f2 = np.vstack(
-            [np.ones(x.shape[1])] + [1 - x[self.m - 1 - i, :] for i in range(1, self.m)]
-        )
+        f1 = np.vstack([np.prod(x[: self.m - 1 - i, :], axis=0) for i in range(0, self.m)])
+        f2 = np.vstack([np.ones(x.shape[1])] + [1 - x[self.m - 1 - i, :] for i in range(1, self.m)])
         return Population(f=((1 + g) * f1 * f2 / 2).T)
 
     def get_pareto_front(self, n):
@@ -53,11 +49,7 @@ class DTLZ2(DTLZx):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
 
-        return Population(
-            f=(
-                (1 + g_2_4_5(x[self.m - 1 :, :])) * f_2_to_6(x[: self.m - 1, :], self.m)
-            ).T
-        )
+        return Population(f=((1 + g_2_4_5(x[self.m - 1 :, :])) * f_2_to_6(x[: self.m - 1, :], self.m)).T)
 
     def get_pareto_front(self, n):
         f = get_hyperplane_points(self.m, n)
@@ -70,10 +62,7 @@ class DTLZ3(DTLZx):
         x = x.T
 
         return Population(
-            f=(
-                (1 + g_1_3(x[self.m - 1 :, :], self.n - self.m + 1))
-                * f_2_to_6(x[: self.m - 1, :], self.m)
-            ).T
+            f=((1 + g_1_3(x[self.m - 1 :, :], self.n - self.m + 1)) * f_2_to_6(x[: self.m - 1, :], self.m)).T
         )
 
     def get_pareto_front(self, n):
@@ -89,10 +78,7 @@ class DTLZ4(DTLZx):
         x = x.T
 
         return Population(
-            f=(
-                (1 + g_2_4_5(x[self.m - 1 :, :]))
-                * f_2_to_6(x[: self.m - 1, :], self.m, alpha=self.alpha)
-            ).T
+            f=((1 + g_2_4_5(x[self.m - 1 :, :])) * f_2_to_6(x[: self.m - 1, :], self.m, alpha=self.alpha)).T
         )
 
     def get_pareto_front(self, n):
@@ -149,31 +135,22 @@ class DTLZ7(DTLZx):
 
         f1 = np.copy(x[: self.m - 1, :])
         f2 = 2 + 9 * np.sum(x[self.m - 1 :, :], axis=0) / (self.n - self.m + 1)
-        f2 *= self.m - np.sum(
-            (1 + np.sin(3 * np.pi * f1)) * f1 / (1 + f2[None, :]), axis=0
-        )
+        f2 *= self.m - np.sum((1 + np.sin(3 * np.pi * f1)) * f1 / (1 + f2[None, :]), axis=0)
         return Population(f=np.vstack([f1, f2]).T)
 
     def get_pareto_front(self, n):
         # Break first m-1 dimensions into non-dominated chunks
         regs = [(0.0, 0.25141183661715344), (0.6316265267192559, 0.8594008516924949)]
-        mid = (regs[0][1] - regs[0][0]) / (
-            regs[1][1] - regs[1][0] + regs[0][1] - regs[0][0]
-        )
+        mid = (regs[0][1] - regs[0][0]) / (regs[1][1] - regs[1][0] + regs[0][1] - regs[0][0])
         x = uniform_grid(n, self.m - 1)
         x[x <= mid] = x[x <= mid] * (regs[0][1] - regs[0][0]) / mid + regs[0][0]
-        x[x > mid] = (x[x > mid] - mid) * (regs[1][1] - regs[1][0]) / (1 - mid) + regs[
-            1
-        ][0]
+        x[x > mid] = (x[x > mid] - mid) * (regs[1][1] - regs[1][0]) / (1 - mid) + regs[1][0]
 
         # Compute final objective
         return np.concatenate(
             (
                 x,
-                2
-                * (self.m - np.sum(x / 2 * (1 + np.sin(3 * np.pi * x)), axis=0))[
-                    None, :
-                ],
+                2 * (self.m - np.sum(x / 2 * (1 + np.sin(3 * np.pi * x)), axis=0))[None, :],
             ),
             axis=0,
         ).T
@@ -191,11 +168,7 @@ class DTLZ8(DTLZx):
         f = np.vstack(
             [
                 np.mean(
-                    x[
-                        np.floor(j * self.n / self.m).astype(int) : np.floor(
-                            (j + 1) * self.n / self.m
-                        ).astype(int)
-                    ],
+                    x[np.floor(j * self.n / self.m).astype(int) : np.floor((j + 1) * self.n / self.m).astype(int)],
                     axis=0,
                 )
                 for j in range(self.m)
@@ -239,10 +212,7 @@ class DTLZ8(DTLZx):
             f = np.concatenate(
                 (
                     f,
-                    np.vstack(
-                        [temp[1] if i == j else temp[0] for j in range(self.m - 1)]
-                        + [temp[2]]
-                    ),
+                    np.vstack([temp[1] if i == j else temp[0] for j in range(self.m - 1)] + [temp[2]]),
                 ),
                 axis=1,
             )
@@ -266,11 +236,7 @@ class DTLZ9(DTLZx):
         f = np.vstack(
             [
                 np.sum(
-                    x[
-                        np.floor(j * self.n / self.m).astype(int) : np.floor(
-                            (j + 1) * self.n / self.m
-                        ).astype(int)
-                    ]
+                    x[np.floor(j * self.n / self.m).astype(int) : np.floor((j + 1) * self.n / self.m).astype(int)]
                     ** 0.1,
                     axis=0,
                 )
