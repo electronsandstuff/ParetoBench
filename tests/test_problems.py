@@ -1,22 +1,21 @@
 import pytest
 import numpy as np
-import pytest
 
 import paretobench as pb
 
 
 @pytest.mark.parametrize("problem_name", pb.get_problem_names())
-def test_evaluate(problem_name, n_eval = 64):
+def test_evaluate(problem_name, n_eval=64):
     """
     Try creating each registered problem w/ default parameters and then call it.
     """
     # Create the problem object (default parameters)
     p = pb.create_problem(problem_name)
-    
+
     # Create a set of points to evaluate the problem on
     bnd = p.var_bounds
-    x = np.random.random((n_eval, bnd.shape[1]))*(bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
-    
+    x = np.random.random((n_eval, bnd.shape[1])) * (bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
+
     # Evaluate on batched data
     res = p(x)
     assert isinstance(res, pb.Population)
@@ -43,7 +42,7 @@ def test_evaluate(problem_name, n_eval = 64):
     assert len(res.g.shape) == 2
     assert not np.isnan(res.f).any()
     assert not np.isnan(res.g).any()
-    
+
     # Check that an exception is triggered on invalid input
     with pytest.raises(pb.InputError):
         p(x[:, 1:])
@@ -53,16 +52,16 @@ def test_evaluate(problem_name, n_eval = 64):
         p(x + (p.var_upper_bounds - p.var_lower_bounds + 1))
     with pytest.raises(pb.InputError):
         p(x[0] + (p.var_upper_bounds - p.var_lower_bounds + 1))
-        
+
 
 @pytest.mark.parametrize("problem_name", pb.get_problem_names())
 def test_get_params(problem_name):
     """
-    Checks all parameters like number of decision variables, objectives, and constraints are set w/ right type and that when you 
+    Checks all parameters like number of decision variables, objectives, and constraints are set w/ right type and that when you
     call the problem, those values are consistant with what comes out.
     """
     p = pb.create_problem(problem_name)
-    
+
     # Check the properties themselves for the right type
     assert isinstance(p.n_vars, int)
     assert isinstance(p.n, int)
@@ -74,7 +73,7 @@ def test_get_params(problem_name):
 
     # Check that if you actually call the values, you get the right sized objects (everything is consistent)
     bnd = p.var_bounds
-    x = np.random.random((1, bnd.shape[1]))*(bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
+    x = np.random.random((1, bnd.shape[1])) * (bnd[1, :] - bnd[0, :])[None, :] + bnd[0, :][None, :]
     res = p(x)
     assert p.n_vars == x.shape[1]
     assert p.n_objs == res.f.shape[1]
