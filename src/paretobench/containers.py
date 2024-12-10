@@ -262,7 +262,7 @@ class Population(BaseModel):
         return self.x.shape[0]
 
     def __repr__(self) -> str:
-        return f"Population(size={len(self)}, vars={self.x.shape[1]} objs={self.f.shape[1]} cons={self.g.shape[1]}, fevals={self.fevals})"
+        return f"Population(size={len(self)}, vars={self.x.shape[1]}, objs={self.f.shape[1]}, cons={self.g.shape[1]}, fevals={self.fevals})"
     
     def __str__(self):
         return self.__repr__()
@@ -478,7 +478,7 @@ class History(BaseModel):
         return History(reports=new_reports, problem=self.problem, metadata=self.metadata.copy())
 
     def __repr__(self) -> str:
-        dims = (f"vars={self.reports[0].x.shape[1]} objs={self.reports[0].f.shape[1]} "
+        dims = (f"vars={self.reports[0].x.shape[1]}, objs={self.reports[0].f.shape[1]}, "
             f"cons={self.reports[0].g.shape[1]}") if self.reports else "empty"
         return f"History(problem='{self.problem}', reports={len(self.reports)}, {dims})"
 
