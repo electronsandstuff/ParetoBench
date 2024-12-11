@@ -214,3 +214,12 @@ class ProblemWithFixedPF:
         Returns all of the points on the Pareto front.
         """
         raise NotImplementedError()
+
+
+def get_problem_from_obj_or_str(obj_or_str):
+    if isinstance(obj_or_str, Problem):
+        return obj_or_str
+    elif isinstance(obj_or_str, str):
+        return Problem.from_line_fmt(obj_or_str)
+    else:
+        raise ValueError(f"Unrecognized input type: {type(obj_or_str)}")

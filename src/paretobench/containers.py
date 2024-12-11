@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 
-from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
+from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 
 
 class Population(BaseModel):
@@ -310,7 +310,7 @@ class Population(BaseModel):
         features = np.concatenate((self.x, self.f, self.g), axis=1)
         return np.unique(features.round(decimals=decimals), axis=0).shape[0]
 
-    def plot_objectives(self, fig=None, ax=None, plot_dominated=True, problem=None, n_pf=1000):
+    def plot_objectives(self, fig=None, ax=None, plot_dominated=True, prob=None, n_pf=1000):
         """
         Plot the objectives in 2D and 3D. Optionally add in the Pareto front if problem is known.
 
@@ -336,14 +336,18 @@ class Population(BaseModel):
         dom_objs = self.f[~nd_inds, :]
 
         # Get the Pareto front
-        if problem is not None:
-            prob = Problem.from_line_fmt(problem)
+        if prob is not None:
+            prob = get_problem_from_obj_or_str(prob)
+            if prob.m != self.f.shape[1]:
+                raise ValueError(
+                    f"Number of objectives in problem must match number in population. Got {prob.m} in problem and{self.f.shape[1]} in population."
+                )
             if isinstance(prob, ProblemWithPF):
                 pf = prob.get_pareto_front(n_pf)
             if isinstance(prob, ProblemWithFixedPF):
                 pf = prob.get_pareto_front()
             else:
-                ValueError(f"Cannot get Pareto front from object of problem: {problem}")
+                ValueError(f"Cannot get Pareto front from object of problem: {prob}")
         else:
             pf = None
 
@@ -400,7 +404,9 @@ class Population(BaseModel):
         else:
             raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={self.f.shape[1]}")
 
-    def plot_decision_var_pairs(self, fig=None, hist_bins=20, include_names=True, lower_bounds=None, upper_bounds=None):
+    def plot_decision_var_pairs(
+        self, fig=None, hist_bins=20, include_names=True, prob=None, lower_bounds=None, upper_bounds=None
+    ):
         """
         Creates a pairs plot (scatter matrix) showing correlations between decision variables
         and their distributions.
@@ -413,6 +419,8 @@ class Population(BaseModel):
             Number of bins for histograms on the diagonal, default is 20
         include_names : bool, optional
             Whether to include variable names on the axes if they exist, default is True
+        prob : str/Problem, optional
+            The problem for plotting decision variable bounds
         lower_bounds : array-like, optional
             Lower bounds for each decision variable
         upper_bounds : array-like, optional
@@ -432,6 +440,18 @@ class Population(BaseModel):
         >>> fig = pop.plot_pairs(lower_bounds=lb, upper_bounds=ub)
         """
         n_vars = self.x.shape[1]
+
+        # Handle user specified problem
+        if prob is not None:
+            if (lower_bounds is not None) or (upper_bounds is not None):
+                raise ValueError("Only specify one of problem or the upper/lower bounds")
+            prob = get_problem_from_obj_or_str(prob)
+            if prob.n != n_vars:
+                raise ValueError(
+                    f"Number of decision vars in problem must match number in population. Got {prob.n} in problem and {n_vars} in population"
+                )
+            lower_bounds = prob.var_lower_bounds
+            upper_bounds = prob.var_upper_bounds
 
         # Validate and convert bounds to numpy arrays if provided
         if lower_bounds is not None:
