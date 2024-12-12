@@ -392,14 +392,17 @@ class Population(BaseModel):
             if ax is None:
                 ax = fig.add_subplot(111)
 
-            # Plot the data
-            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], alpha=0.5, s=3)
-            if plot_dominated:
-                ax.scatter(dom_objs[:, 0], dom_objs[:, 1], alpha=0.5, s=3)
+            # Plot dominated solutions with low alpha if requested
+            if plot_dominated and len(dom_objs) > 0:
+                ax.scatter(dom_objs[:, 0], dom_objs[:, 1], color='C0', alpha=0.25, s=15)
+            
+            # Plot non-dominated solutions with high alpha
+            if len(nd_objs) > 0:
+                ax.scatter(nd_objs[:, 0], nd_objs[:, 1], color='C0', alpha=0.9, s=15)
 
             # Add in Pareto front
             if pf is not None:
-                ax.scatter(pf[:, 0], pf[:, 1], c="k", s=3, label="PF")
+                ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF")
                 plt.legend()
 
             # Handle the axis labels
@@ -416,14 +419,20 @@ class Population(BaseModel):
             if ax is None:
                 ax = fig.add_subplot(111, projection="3d")
 
-            # Plot in 3D!
-            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2])
-            if plot_dominated:
-                ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2])
+            # Plot dominated solutions with low alpha if requested
+            if plot_dominated and len(dom_objs) > 0:
+                ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2], 
+                        color='tab:blue', alpha=0.1, s=30)
+            
+            # Plot non-dominated solutions with high alpha
+            if len(nd_objs) > 0:
+                ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2], 
+                        color='tab:blue', alpha=0.8, s=30)
 
             # Add in Pareto front
             if pf is not None:
-                ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", label="PF")
+                ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF")
+                plt.legend()
 
             # Handle the axis labels
             if self.names_f:
