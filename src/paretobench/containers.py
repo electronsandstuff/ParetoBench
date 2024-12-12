@@ -977,6 +977,101 @@ class History(BaseModel):
         
         return anim
 
+    def animate_decision_vars(
+        self,
+        interval: int = 200,
+        hist_bins: int = 20,
+        include_names: bool = True,
+        prob: Optional[str] = None,
+        lower_bounds: Optional[np.ndarray] = None,
+        upper_bounds: Optional[np.ndarray] = None
+    ) -> animation.Animation:
+        """
+        Creates an animated visualization of how the decision variables evolve across generations.
+        
+        Parameters
+        ----------
+        interval : int, optional
+            Delay between frames in milliseconds, by default 200
+        hist_bins : int, optional
+            Number of bins for histograms on the diagonal, default is 20
+        include_names : bool, optional
+            Whether to include variable names on the axes if they exist, default is True
+        prob : str/Problem, optional
+            The problem for plotting decision variable bounds
+        lower_bounds : array-like, optional
+            Lower bounds for each decision variable
+        upper_bounds : array-like, optional
+            Upper bounds for each decision variable
+            
+        Returns
+        -------
+        animation.Animation
+            The animation object that can be displayed in notebooks or saved to file
+            
+        Raises
+        ------
+        ValueError
+            If there are no reports in the history
+            If both problem and bounds are specified
+            If bounds dimensions don't match
+            
+        Notes
+        -----
+        This method creates an animation showing how the decision variables evolve over time.
+        For each frame:
+        - Scatter plots show relationships between pairs of variables
+        - Histograms on the diagonal show distribution of each variable
+        - Red dashed lines show variable bounds if provided
+        
+        The animation can be displayed in Jupyter notebooks using:
+        >>> from IPython.display import HTML
+        >>> HTML(anim.to_jshtml())
+        """
+        if not self.reports:
+            raise ValueError("No populations in history to animate")
+            
+        if prob is None:
+            prob = self.problem
+        
+        # Get dimensions from first population
+        n_vars = self.reports[0].x.shape[1]
+        
+        # Create figure with appropriate size
+        fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars))
+        
+        # Function to update frame for animation
+        def update(frame_idx):
+            fig.clear()
+            population = self.reports[frame_idx]
+            
+            # Use the population's plotting method
+            population.plot_decision_var_pairs(
+                fig=fig,
+                hist_bins=hist_bins,
+                include_names=include_names,
+                prob=prob,
+                lower_bounds=lower_bounds,
+                upper_bounds=upper_bounds
+            )
+            
+            # Add generation counter
+            generation = frame_idx + 1
+            fevals = population.fevals
+            fig.suptitle(f'Generation {generation} (Fevals: {fevals})')
+            
+            return fig,
+        
+        # Create and return the animation
+        anim = animation.FuncAnimation(
+            fig=fig,
+            func=update,
+            frames=len(self.reports),
+            interval=interval,
+            blit=False
+        )
+        
+        return anim
 
 class Experiment(BaseModel):
     """
