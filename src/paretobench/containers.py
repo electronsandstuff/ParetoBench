@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from functools import reduce
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Tuple
 import h5py
 import numpy as np
 import random
@@ -10,6 +10,7 @@ import string
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
+from matplotlib import animation
 
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 
@@ -772,6 +773,109 @@ class History(BaseModel):
 
     def __str__(self):
         return self.__repr__()
+
+    def animate_pareto_front(
+        self,
+        interval: int = 200,
+        prob: Optional[str] = None,
+        n_pf: int = 1000,
+        figsize: Tuple[int, int] = (8, 6)
+    ) -> animation.Animation:
+        """
+        Creates an animated visualization of how the Pareto front evolves across generations.
+        
+        Parameters
+        ----------
+        interval : int, optional
+            Delay between frames in milliseconds, by default 200
+        prob : str, optional
+            Name of the problem for true Pareto front plotting, by default None
+        n_pf : int, optional
+            Number of points for Pareto front plotting when applicable, by default 1000
+        figsize : Tuple[int, int], optional
+            Figure size in inches (width, height), by default (8, 6)
+            
+        Returns
+        -------
+        animation.Animation
+            The animation object that can be displayed in notebooks or saved to file
+            
+        Raises
+        ------
+        ValueError
+            If the population has more than 3 objectives (cannot be visualized)
+            If there are no reports in the history
+            
+        Notes
+        -----
+        This method creates an animation showing how the Pareto front evolves over time.
+        For each frame:
+        - Red points show the current population's non-dominated solutions
+        - Gray points show dominated solutions
+        - Black points show the true Pareto front (if problem is provided)
+        
+        The animation can be displayed in Jupyter notebooks using:
+        >>> from IPython.display import HTML
+        >>> HTML(anim.to_jshtml())
+        
+        Or saved to file using:
+        >>> anim.save('filename.gif', writer='pillow')
+        """
+        if not self.reports:
+            raise ValueError("No populations in history to animate")
+        
+        if prob is None:
+            prob = self.problem
+            
+        # Get dimensions from first population
+        n_objectives = self.reports[0].f.shape[1]
+        if n_objectives > 3:
+            raise ValueError(f"Cannot animate more than three objectives: n_objs={n_objectives}")
+        
+        # Set up the figure based on dimensionality
+        fig = plt.figure(figsize=figsize)
+        if n_objectives == 3:
+            ax = fig.add_subplot(111, projection='3d')
+        else:
+            ax = fig.add_subplot(111)
+            
+        # Function to update frame for animation
+        def update(frame_idx):
+            ax.clear()
+            population = self.reports[frame_idx]
+            
+            # Plot the current population
+            population.plot_objectives(
+                fig=fig,
+                ax=ax,
+                plot_dominated=True,
+                prob=prob,
+                n_pf=n_pf
+            )
+            
+            # Add generation counter
+            generation = frame_idx + 1
+            fevals = population.fevals
+            ax.set_title(f'Generation {generation} (Fevals: {fevals})')
+            
+            # Ensure consistent axis limits across frames
+            if n_objectives == 2:
+                all_f = np.vstack([pop.f for pop in self.reports])
+                ax.set_xlim(np.min(all_f[:, 0]) * 0.9, np.max(all_f[:, 0]) * 1.1)
+                ax.set_ylim(np.min(all_f[:, 1]) * 0.9, np.max(all_f[:, 1]) * 1.1)
+            
+            return ax,
+        
+        # Create and return the animation
+        anim = animation.FuncAnimation(
+            fig=fig,
+            func=update,
+            frames=len(self.reports),
+            interval=interval,
+            blit=False
+        )
+        
+        return anim
 
 
 class Experiment(BaseModel):
