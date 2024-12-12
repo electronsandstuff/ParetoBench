@@ -14,6 +14,46 @@ from matplotlib import animation
 
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 
+def compute_attainment_surface(points):
+    """
+    Compute the attainment surface for a set of non-dominated points in 2D.
+    The surface consists of horizontal and vertical lines connecting the points,
+    forming a staircase-like pattern.
+    
+    Parameters
+    ----------
+    points : np.ndarray
+        2D array of non-dominated points, shape (n_points, 2)
+        
+    Returns
+    -------
+    np.ndarray
+        Array of points defining the attainment surface, shape (n_segments, 2)
+        Each consecutive pair of points defines a line segment of the surface
+    """
+    if points.shape[1] != 2:
+        raise ValueError("Attainment surface can only be computed for 2D points")
+        
+    # Sort points by x coordinate (first objective)
+    sorted_indices = np.argsort(points[:, 0])
+    sorted_points = points[sorted_indices]
+    
+    # Initialize the surface points list with the first point
+    surface = []
+    surface.append(sorted_points[0])
+    
+    # Generate horizontal-then-vertical segments between each pair of points
+    for i in range(len(sorted_points) - 1):
+        current = sorted_points[i]
+        next_point = sorted_points[i + 1]
+        
+        # Add horizontal line point
+        surface.append([next_point[0], current[1]])
+        # Add the next point
+        surface.append(next_point)
+    
+    return np.array(surface)
+
 
 class Population(BaseModel):
     """
@@ -318,7 +358,8 @@ class Population(BaseModel):
         plot_dominated=True,
         prob=None,
         n_pf=1000,
-        pf_objectives=None
+        pf_objectives=None,
+        plot_attainment=False
     ):
         """
         Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
@@ -339,6 +380,8 @@ class Population(BaseModel):
         pf_objectives : array-like, optional
             User-specified Pareto front objectives. Should be a 2D array where each row represents a point
             on the Pareto front and each column represents an objective value.
+        plot_attainment : bool, optional
+            Whether to plot the attainment surface (2D only), by default False
 
         Raises
         ------
@@ -347,6 +390,7 @@ class Population(BaseModel):
             If neither prob nor pf_objectives are specified when trying to plot a Pareto front
             If pf_objectives dimensions don't match the population's objectives
             If attempting to plot more than three objectives
+            If attempting to plot attainment surface for 3D problem
         """
         # Input validation for Pareto front specification
         pf_sources_specified = sum(x is not None for x in [prob, pf_objectives])
@@ -400,6 +444,13 @@ class Population(BaseModel):
             if len(nd_objs) > 0:
                 ax.scatter(nd_objs[:, 0], nd_objs[:, 1], color='C0', alpha=0.9, s=15)
 
+            # Plot attainment surface if requested
+            if plot_attainment and len(nd_objs) > 0:
+                surface_points = compute_attainment_surface(nd_objs)
+                ax.plot(surface_points[:, 0], surface_points[:, 1], 
+                    'C0', alpha=0.5, label='Attainment Surface')
+                plt.legend()
+
             # Add in Pareto front
             if pf is not None:
                 ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF")
@@ -415,6 +466,9 @@ class Population(BaseModel):
 
         # For 3D problems
         elif self.f.shape[1] == 3:
+            if plot_attainment:
+                raise ValueError("Attainment surface plotting is only supported for 2D problems")
+                
             # Get an axis if not supplied
             if ax is None:
                 ax = fig.add_subplot(111, projection="3d")
@@ -422,12 +476,12 @@ class Population(BaseModel):
             # Plot dominated solutions with low alpha if requested
             if plot_dominated and len(dom_objs) > 0:
                 ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2], 
-                        color='tab:blue', alpha=0.1, s=30)
+                        color='C0', alpha=0.25, s=15)
             
             # Plot non-dominated solutions with high alpha
             if len(nd_objs) > 0:
                 ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2], 
-                        color='tab:blue', alpha=0.8, s=30)
+                        color='C0', alpha=0.9, s=15)
 
             # Add in Pareto front
             if pf is not None:
@@ -824,7 +878,7 @@ class History(BaseModel):
         interval: int = 200,
         prob: Optional[str] = None,
         n_pf: int = 1000,
-        figsize: Tuple[int, int] = (8, 6)
+        plot_attainment=False
     ) -> animation.Animation:
         """
         Creates an animated visualization of how the Pareto front evolves across generations.
@@ -878,7 +932,7 @@ class History(BaseModel):
             raise ValueError(f"Cannot animate more than three objectives: n_objs={n_objectives}")
         
         # Set up the figure based on dimensionality
-        fig = plt.figure(figsize=figsize)
+        fig = plt.figure()
         if n_objectives == 3:
             ax = fig.add_subplot(111, projection='3d')
         else:
@@ -895,7 +949,8 @@ class History(BaseModel):
                 ax=ax,
                 plot_dominated=True,
                 prob=prob,
-                n_pf=n_pf
+                n_pf=n_pf,
+                plot_attainment=plot_attainment
             )
             
             # Add generation counter
