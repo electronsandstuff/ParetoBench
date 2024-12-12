@@ -311,9 +311,18 @@ class Population(BaseModel):
         features = np.concatenate((self.x, self.f, self.g), axis=1)
         return np.unique(features.round(decimals=decimals), axis=0).shape[0]
 
-    def plot_objectives(self, fig=None, ax=None, plot_dominated=True, prob=None, n_pf=1000):
+    def plot_objectives(
+        self,
+        fig=None,
+        ax=None,
+        plot_dominated=True,
+        prob=None,
+        n_pf=1000,
+        pf_objectives=None
+    ):
         """
-        Plot the objectives in 2D and 3D. Optionally add in the Pareto front if problem is known.
+        Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
+        or from user-specified objectives. User must specify only one of 'prob' or 'pf_objectives'.
 
         Parameters
         ----------
@@ -323,11 +332,29 @@ class Population(BaseModel):
             Axis to plot on, by default None
         plot_dominated : bool, optional
             Include the dominated individuals, by default True
-        problem : str, optional
+        prob : str, optional
             Name of the problem for Pareto front plotting, by default None
         n_pf : int, optional
             The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+        pf_objectives : array-like, optional
+            User-specified Pareto front objectives. Should be a 2D array where each row represents a point
+            on the Pareto front and each column represents an objective value.
+
+        Raises
+        ------
+        ValueError
+            If both prob and pf_objectives are specified
+            If neither prob nor pf_objectives are specified when trying to plot a Pareto front
+            If pf_objectives dimensions don't match the population's objectives
+            If attempting to plot more than three objectives
         """
+        # Input validation for Pareto front specification
+        pf_sources_specified = sum(x is not None for x in [prob, pf_objectives])
+        if pf_sources_specified > 1:
+            raise ValueError(
+                "Multiple Pareto front sources specified. Use only one of: 'prob' or 'pf_objectives'"
+            )
+
         if fig is None and ax is None:
             fig, ax = plt.subplots()
 
@@ -337,20 +364,27 @@ class Population(BaseModel):
         dom_objs = self.f[~nd_inds, :]
 
         # Get the Pareto front
+        pf = None
         if prob is not None:
             prob = get_problem_from_obj_or_str(prob)
             if prob.m != self.f.shape[1]:
                 raise ValueError(
-                    f"Number of objectives in problem must match number in population. Got {prob.m} in problem and{self.f.shape[1]} in population."
+                    f"Number of objectives in problem must match number in population. Got {prob.m} in problem and {self.f.shape[1]} in population."
                 )
             if isinstance(prob, ProblemWithPF):
                 pf = prob.get_pareto_front(n_pf)
-            if isinstance(prob, ProblemWithFixedPF):
+            elif isinstance(prob, ProblemWithFixedPF):
                 pf = prob.get_pareto_front()
             else:
-                ValueError(f"Cannot get Pareto front from object of problem: {prob}")
-        else:
-            pf = None
+                raise ValueError(f"Cannot get Pareto front from object of problem: {prob}")
+        elif pf_objectives is not None:
+            pf = np.asarray(pf_objectives)
+            if pf.ndim != 2:
+                raise ValueError("pf_objectives must be a 2D array")
+            if pf.shape[1] != self.f.shape[1]:
+                raise ValueError(
+                    f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives and {self.f.shape[1]} in population"
+                )
 
         # For 2D problems
         if self.f.shape[1] == 2:
@@ -404,6 +438,8 @@ class Population(BaseModel):
         # We can't plot in 4D :(
         else:
             raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={self.f.shape[1]}")
+
+        return fig, ax
 
     def plot_decision_var_pairs(
         self, fig=None, hist_bins=20, include_names=True, prob=None, lower_bounds=None, upper_bounds=None
