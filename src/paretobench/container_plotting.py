@@ -8,6 +8,11 @@ import numpy as np
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 
 
+# TODO: standardize prob -> problem
+# TODO: Add ability to fill in the dominated region
+# TODO: Settings for objectives plots can be refactored into pydantic / dataclass and passed around more easily
+# TODO: Add better error when no decision vars in population and no individuals
+
 def compute_attainment_surface(points):
     """
     Compute the attainment surface for a set of non-dominated points in 2D.
