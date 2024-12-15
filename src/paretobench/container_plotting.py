@@ -9,9 +9,9 @@ from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_
 
 
 # TODO: standardize prob -> problem
-# TODO: Add ability to fill in the dominated region
 # TODO: Settings for objectives plots can be refactored into pydantic / dataclass and passed around more easily
 # TODO: Add better error when no decision vars in population and no individuals
+# TODO: 3D attainment surface (should 3D and 2D plotting be broken up since they can have different features?)
 
 def compute_attainment_surface(points):
     """
@@ -62,7 +62,9 @@ def plot_objectives(
     prob=None,
     n_pf=1000,
     pf_objectives=None,
-    plot_attainment=False
+    plot_attainment=False,
+    plot_dominated_area=False,
+    ref_point='auto',
 ):
     """
     Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
@@ -153,6 +155,29 @@ def plot_objectives(
             ax.plot(surface_points[:, 0], surface_points[:, 1], 
                 'C0', alpha=0.5, label='Attainment Surface')
             plt.legend()
+
+        if plot_dominated_area:
+            if ref_point == 'auto':
+                if plot_dominated:
+                    x_lb, x_ub = np.min(self.f[:, 0]), np.max(self.f[:, 0])
+                    y_lb, y_ub = np.min(self.f[:, 1]), np.max(self.f[:, 1])
+                    ref_point = (x_ub + (x_ub - x_lb)*0.05, y_ub + (y_ub - y_lb)*0.05)
+                else:
+                    x_lb, x_ub = np.min(nd_objs[:, 0]), np.max(nd_objs[:, 0])
+                    y_lb, y_ub = np.min(nd_objs[:, 1]), np.max(nd_objs[:, 1])
+                    ref_point = (x_ub + (x_ub - x_lb)*0.1, y_ub + (y_ub - y_lb)*0.1)
+
+            attainment = compute_attainment_surface(nd_objs)
+            if (ref_point[0] < attainment[:, 0]).any() or (ref_point[1] < attainment[:, 1]).any():
+                raise ValueError(f"Reference point coordinates must exceed all points in non-dominated set "
+                                f"(ref_point={ref_point}, max_pf=({np.max(attainment[:, 0])}, {np.max(attainment[:, 1])}))")
+
+            plt.fill_between(
+                np.concatenate((attainment[:, 0], [ref_point[0]])), 
+                np.concatenate((attainment[:, 1], [attainment[-1, 1]])), 
+                ref_point[1]*np.ones(attainment.shape[0]+1),
+                alpha=0.5
+            )
 
         # Add in Pareto front
         if pf is not None:
