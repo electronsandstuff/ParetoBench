@@ -9,7 +9,7 @@ from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 
 
-# TODO: standardize prob -> problem
+# TODO: standardize problem -> problem
 # TODO: Settings for objectives plots can be refactored into pydantic / dataclass and passed around more easily
 # TODO: Add better error when no decision vars in population and no individuals
 # TODO: 3D attainment surface (should 3D and 2D plotting be broken up since they can have different features?)
@@ -60,7 +60,7 @@ def plot_objectives(
     fig=None,
     ax=None,
     plot_dominated=True,
-    prob=None,
+    problem=None,
     n_pf=1000,
     pf_objectives=None,
     plot_attainment=False,
@@ -69,17 +69,19 @@ def plot_objectives(
 ):
     """
     Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
-    or from user-specified objectives. User must specify only one of 'prob' or 'pf_objectives'.
+    or from user-specified objectives. User must specify only one of 'problem' or 'pf_objectives'.
 
     Parameters
     ----------
+    population : paretobench Population
+        The population containing data to plot
     fig : matplotlib figure, optional
         Figure to plot on, by default None
     ax : matplotlib axis, optional
         Axis to plot on, by default None
     plot_dominated : bool, optional
         Include the dominated individuals, by default True
-    prob : str, optional
+    problem : str, optional
         Name of the problem for Pareto front plotting, by default None
     n_pf : int, optional
         The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
@@ -92,17 +94,17 @@ def plot_objectives(
     Raises
     ------
     ValueError
-        If both prob and pf_objectives are specified
-        If neither prob nor pf_objectives are specified when trying to plot a Pareto front
+        If both problem and pf_objectives are specified
+        If neither problem nor pf_objectives are specified when trying to plot a Pareto front
         If pf_objectives dimensions don't match the population's objectives
         If attempting to plot more than three objectives
         If attempting to plot attainment surface for 3D problem
     """
     # Input validation for Pareto front specification
-    pf_sources_specified = sum(x is not None for x in [prob, pf_objectives])
+    pf_sources_specified = sum(x is not None for x in [problem, pf_objectives])
     if pf_sources_specified > 1:
         raise ValueError(
-            "Multiple Pareto front sources specified. Use only one of: 'prob' or 'pf_objectives'"
+            "Multiple Pareto front sources specified. Use only one of: 'problem' or 'pf_objectives'"
         )
 
     if fig is None and ax is None:
@@ -115,18 +117,18 @@ def plot_objectives(
 
     # Get the Pareto front
     pf = None
-    if prob is not None:
-        prob = get_problem_from_obj_or_str(prob)
-        if prob.m != population.f.shape[1]:
+    if problem is not None:
+        problem = get_problem_from_obj_or_str(problem)
+        if problem.m != population.f.shape[1]:
             raise ValueError(
-                f"Number of objectives in problem must match number in population. Got {prob.m} in problem and {population.f.shape[1]} in population."
+                f"Number of objectives in problem must match number in population. Got {problem.m} in problem and {population.f.shape[1]} in population."
             )
-        if isinstance(prob, ProblemWithPF):
-            pf = prob.get_pareto_front(n_pf)
-        elif isinstance(prob, ProblemWithFixedPF):
-            pf = prob.get_pareto_front()
+        if isinstance(problem, ProblemWithPF):
+            pf = problem.get_pareto_front(n_pf)
+        elif isinstance(problem, ProblemWithFixedPF):
+            pf = problem.get_pareto_front()
         else:
-            raise ValueError(f"Cannot get Pareto front from object of problem: {prob}")
+            raise ValueError(f"Cannot get Pareto front from object of problem: {problem}")
     elif pf_objectives is not None:
         pf = np.asarray(pf_objectives)
         if pf.ndim != 2:
@@ -234,7 +236,7 @@ def plot_objectives(
     return fig, ax
 
 def plot_decision_var_pairs(
-    population: Population, fig=None, hist_bins=20, include_names=True, prob=None, lower_bounds=None, upper_bounds=None
+    population: Population, fig=None, hist_bins=20, include_names=True, problem=None, lower_bounds=None, upper_bounds=None
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -242,13 +244,15 @@ def plot_decision_var_pairs(
 
     Parameters
     ----------
+    population : paretobench Population
+        The population containing data to plot
     fig : matplotlib.figure.Figure, optional
         Figure to plot on. If None, creates a new figure.
     hist_bins : int, optional
         Number of bins for histograms on the diagonal, default is 20
     include_names : bool, optional
         Whether to include variable names on the axes if they exist, default is True
-    prob : str/Problem, optional
+    problem : str/Problem, optional
         The problem for plotting decision variable bounds
     lower_bounds : array-like, optional
         Lower bounds for each decision variable
@@ -271,16 +275,16 @@ def plot_decision_var_pairs(
     n_vars = population.x.shape[1]
 
     # Handle user specified problem
-    if prob is not None:
+    if problem is not None:
         if (lower_bounds is not None) or (upper_bounds is not None):
             raise ValueError("Only specify one of problem or the upper/lower bounds")
-        prob = get_problem_from_obj_or_str(prob)
-        if prob.n != n_vars:
+        problem = get_problem_from_obj_or_str(problem)
+        if problem.n != n_vars:
             raise ValueError(
-                f"Number of decision vars in problem must match number in population. Got {prob.n} in problem and {n_vars} in population"
+                f"Number of decision vars in problem must match number in population. Got {problem.n} in problem and {n_vars} in population"
             )
-        lower_bounds = prob.var_lower_bounds
-        upper_bounds = prob.var_upper_bounds
+        lower_bounds = problem.var_lower_bounds
+        upper_bounds = problem.var_upper_bounds
 
     # Validate and convert bounds to numpy arrays if provided
     if lower_bounds is not None:
@@ -367,7 +371,7 @@ def plot_decision_var_pairs(
 def animate_pareto_front(
     history: History,
     interval: int = 200,
-    prob: Optional[str] = None,
+    problem: Optional[str] = None,
     n_pf: int = 1000,
     plot_attainment=False
 ) -> animation.Animation:
@@ -376,9 +380,11 @@ def animate_pareto_front(
     
     Parameters
     ----------
+    history : paretobench History
+        The history object containing populations with data to plot
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    prob : str, optional
+    problem : str, optional
         Name of the problem for true Pareto front plotting, by default None
     n_pf : int, optional
         Number of points for Pareto front plotting when applicable, by default 1000
@@ -414,8 +420,8 @@ def animate_pareto_front(
     if not history.reports:
         raise ValueError("No populations in history to animate")
     
-    if prob is None:
-        prob = history.problem
+    if problem is None:
+        problem = history.problem
         
     # Get dimensions from first population
     n_objectives = history.reports[0].f.shape[1]
@@ -440,7 +446,7 @@ def animate_pareto_front(
             fig=fig,
             ax=ax,
             plot_dominated=True,
-            prob=prob,
+            problem=problem,
             n_pf=n_pf,
             plot_attainment=plot_attainment
         )
@@ -475,7 +481,7 @@ def animate_decision_vars(
     interval: int = 200,
     hist_bins: int = 20,
     include_names: bool = True,
-    prob: Optional[str] = None,
+    problem: Optional[str] = None,
     lower_bounds: Optional[np.ndarray] = None,
     upper_bounds: Optional[np.ndarray] = None
 ) -> animation.Animation:
@@ -484,13 +490,15 @@ def animate_decision_vars(
     
     Parameters
     ----------
+    history : paretobench History
+        The history object containing populations with data to plot
     interval : int, optional
         Delay between frames in milliseconds, by default 200
     hist_bins : int, optional
         Number of bins for histograms on the diagonal, default is 20
     include_names : bool, optional
         Whether to include variable names on the axes if they exist, default is True
-    prob : str/Problem, optional
+    problem : str/Problem, optional
         The problem for plotting decision variable bounds
     lower_bounds : array-like, optional
         Lower bounds for each decision variable
@@ -524,8 +532,8 @@ def animate_decision_vars(
     if not history.reports:
         raise ValueError("No populations in history to animate")
         
-    if prob is None:
-        prob = history.problem
+    if problem is None:
+        problem = history.problem
     
     # Get dimensions from first population
     n_vars = history.reports[0].x.shape[1]
@@ -544,7 +552,7 @@ def animate_decision_vars(
             fig=fig,
             hist_bins=hist_bins,
             include_names=include_names,
-            prob=prob,
+            problem=problem,
             lower_bounds=lower_bounds,
             upper_bounds=upper_bounds
         )
