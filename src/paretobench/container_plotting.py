@@ -5,6 +5,7 @@ from matplotlib import animation
 from typing import List, Dict, Union, Optional, Tuple
 import numpy as np
 
+from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 
 
@@ -55,7 +56,7 @@ def compute_attainment_surface(points):
 
 
 def plot_objectives(
-    self,
+    population: Population,
     fig=None,
     ax=None,
     plot_dominated=True,
@@ -108,17 +109,17 @@ def plot_objectives(
         fig, ax = plt.subplots()
 
     # Break the objectives into those which are non-dominated and those which are not
-    nd_inds = self.get_nondominated_indices()
-    nd_objs = self.f[nd_inds, :]
-    dom_objs = self.f[~nd_inds, :]
+    nd_inds = population.get_nondominated_indices()
+    nd_objs = population.f[nd_inds, :]
+    dom_objs = population.f[~nd_inds, :]
 
     # Get the Pareto front
     pf = None
     if prob is not None:
         prob = get_problem_from_obj_or_str(prob)
-        if prob.m != self.f.shape[1]:
+        if prob.m != population.f.shape[1]:
             raise ValueError(
-                f"Number of objectives in problem must match number in population. Got {prob.m} in problem and {self.f.shape[1]} in population."
+                f"Number of objectives in problem must match number in population. Got {prob.m} in problem and {population.f.shape[1]} in population."
             )
         if isinstance(prob, ProblemWithPF):
             pf = prob.get_pareto_front(n_pf)
@@ -130,13 +131,13 @@ def plot_objectives(
         pf = np.asarray(pf_objectives)
         if pf.ndim != 2:
             raise ValueError("pf_objectives must be a 2D array")
-        if pf.shape[1] != self.f.shape[1]:
+        if pf.shape[1] != population.f.shape[1]:
             raise ValueError(
-                f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives and {self.f.shape[1]} in population"
+                f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives and {population.f.shape[1]} in population"
             )
 
     # For 2D problems
-    if self.f.shape[1] == 2:
+    if population.f.shape[1] == 2:
         # Make axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111)
@@ -159,8 +160,8 @@ def plot_objectives(
         if plot_dominated_area:
             if ref_point == 'auto':
                 if plot_dominated:
-                    x_lb, x_ub = np.min(self.f[:, 0]), np.max(self.f[:, 0])
-                    y_lb, y_ub = np.min(self.f[:, 1]), np.max(self.f[:, 1])
+                    x_lb, x_ub = np.min(population.f[:, 0]), np.max(population.f[:, 0])
+                    y_lb, y_ub = np.min(population.f[:, 1]), np.max(population.f[:, 1])
                     ref_point = (x_ub + (x_ub - x_lb)*0.05, y_ub + (y_ub - y_lb)*0.05)
                 else:
                     x_lb, x_ub = np.min(nd_objs[:, 0]), np.max(nd_objs[:, 0])
@@ -185,15 +186,15 @@ def plot_objectives(
             plt.legend()
 
         # Handle the axis labels
-        if self.names_f:
-            ax.set_xlabel(self.names_f[0])
-            ax.set_ylabel(self.names_f[1])
+        if population.names_f:
+            ax.set_xlabel(population.names_f[0])
+            ax.set_ylabel(population.names_f[1])
         else:
             ax.set_xlabel(r"$f_1$")
             ax.set_ylabel(r"$f_2$")
 
     # For 3D problems
-    elif self.f.shape[1] == 3:
+    elif population.f.shape[1] == 3:
         if plot_attainment:
             raise ValueError("Attainment surface plotting is only supported for 2D problems")
             
@@ -217,10 +218,10 @@ def plot_objectives(
             plt.legend()
 
         # Handle the axis labels
-        if self.names_f:
-            ax.set_xlabel(self.names_f[0])
-            ax.set_ylabel(self.names_f[1])
-            ax.set_zlabel(self.names_f[2])
+        if population.names_f:
+            ax.set_xlabel(population.names_f[0])
+            ax.set_ylabel(population.names_f[1])
+            ax.set_zlabel(population.names_f[2])
         else:
             ax.set_xlabel(r"$f_1$")
             ax.set_ylabel(r"$f_2$")
@@ -228,12 +229,12 @@ def plot_objectives(
 
     # We can't plot in 4D :(
     else:
-        raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={self.f.shape[1]}")
+        raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={population.f.shape[1]}")
 
     return fig, ax
 
 def plot_decision_var_pairs(
-    self, fig=None, hist_bins=20, include_names=True, prob=None, lower_bounds=None, upper_bounds=None
+    population: Population, fig=None, hist_bins=20, include_names=True, prob=None, lower_bounds=None, upper_bounds=None
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -267,7 +268,7 @@ def plot_decision_var_pairs(
     >>> ub = [1, 1, 1, 1]
     >>> fig = pop.plot_pairs(lower_bounds=lb, upper_bounds=ub)
     """
-    n_vars = self.x.shape[1]
+    n_vars = population.x.shape[1]
 
     # Handle user specified problem
     if prob is not None:
@@ -305,8 +306,8 @@ def plot_decision_var_pairs(
     gs.update(wspace=0.3, hspace=0.3)
 
     # Get variable names or create default ones
-    if self.names_x and include_names:
-        var_names = self.names_x
+    if population.names_x and include_names:
+        var_names = population.names_x
     else:
         var_names = [f"x{i+1}" for i in range(n_vars)]
 
@@ -320,7 +321,7 @@ def plot_decision_var_pairs(
 
             # Diagonal plots (histograms)
             if i == j:
-                ax.hist(self.x[:, i], bins=hist_bins, density=True, alpha=0.7, color="gray")
+                ax.hist(population.x[:, i], bins=hist_bins, density=True, alpha=0.7, color="gray")
                 if i == n_vars - 1:
                     ax.set_xlabel(var_names[i])
                 if j == 0:
@@ -334,7 +335,7 @@ def plot_decision_var_pairs(
 
             # Off-diagonal plots (scatter plots)
             else:
-                ax.scatter(self.x[:, j], self.x[:, i], alpha=0.5, s=20)
+                ax.scatter(population.x[:, j], population.x[:, i], alpha=0.5, s=20)
                 if i == n_vars - 1:
                     ax.set_xlabel(var_names[j])
                 if j == 0:
@@ -364,7 +365,7 @@ def plot_decision_var_pairs(
 
 
 def animate_pareto_front(
-    self,
+    history: History,
     interval: int = 200,
     prob: Optional[str] = None,
     n_pf: int = 1000,
@@ -410,14 +411,14 @@ def animate_pareto_front(
     Or saved to file using:
     >>> anim.save('filename.gif', writer='pillow')
     """
-    if not self.reports:
+    if not history.reports:
         raise ValueError("No populations in history to animate")
     
     if prob is None:
-        prob = self.problem
+        prob = history.problem
         
     # Get dimensions from first population
-    n_objectives = self.reports[0].f.shape[1]
+    n_objectives = history.reports[0].f.shape[1]
     if n_objectives > 3:
         raise ValueError(f"Cannot animate more than three objectives: n_objs={n_objectives}")
     
@@ -431,7 +432,7 @@ def animate_pareto_front(
     # Function to update frame for animation
     def update(frame_idx):
         ax.clear()
-        population = self.reports[frame_idx]
+        population = history.reports[frame_idx]
         
         # Plot the current population
         plot_objectives(
@@ -451,7 +452,7 @@ def animate_pareto_front(
         
         # Ensure consistent axis limits across frames
         if n_objectives == 2:
-            all_f = np.vstack([pop.f for pop in self.reports])
+            all_f = np.vstack([pop.f for pop in history.reports])
             ax.set_xlim(np.min(all_f[:, 0]) * 0.9, np.max(all_f[:, 0]) * 1.1)
             ax.set_ylim(np.min(all_f[:, 1]) * 0.9, np.max(all_f[:, 1]) * 1.1)
         
@@ -461,7 +462,7 @@ def animate_pareto_front(
     anim = animation.FuncAnimation(
         fig=fig,
         func=update,
-        frames=len(self.reports),
+        frames=len(history.reports),
         interval=interval,
         blit=False
     )
@@ -470,7 +471,7 @@ def animate_pareto_front(
 
 
 def animate_decision_vars(
-    self,
+    history: History,
     interval: int = 200,
     hist_bins: int = 20,
     include_names: bool = True,
@@ -520,14 +521,14 @@ def animate_decision_vars(
     >>> from IPython.display import HTML
     >>> HTML(anim.to_jshtml())
     """
-    if not self.reports:
+    if not history.reports:
         raise ValueError("No populations in history to animate")
         
     if prob is None:
-        prob = self.problem
+        prob = history.problem
     
     # Get dimensions from first population
-    n_vars = self.reports[0].x.shape[1]
+    n_vars = history.reports[0].x.shape[1]
     
     # Create figure with appropriate size
     fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars))
@@ -535,7 +536,7 @@ def animate_decision_vars(
     # Function to update frame for animation
     def update(frame_idx):
         fig.clear()
-        population = self.reports[frame_idx]
+        population = history.reports[frame_idx]
         
         # Use the population's plotting method
         plot_decision_var_pairs(
@@ -559,7 +560,7 @@ def animate_decision_vars(
     anim = animation.FuncAnimation(
         fig=fig,
         func=update,
-        frames=len(self.reports),
+        frames=len(history.reports),
         interval=interval,
         blit=False
     )
