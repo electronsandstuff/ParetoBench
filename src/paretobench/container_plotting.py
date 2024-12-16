@@ -191,14 +191,16 @@ def plot_objectives(
             inds = np.bitwise_and(~nd_inds, ~feas_inds)
             ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.25, s=15, marker='x')
 
-        # Plot attainment surface if requested
-        if settings.plot_attainment and len(nd_objs) > 0:
-            surface_points = compute_attainment_surface(nd_objs)
-            ax.plot(surface_points[:, 0], surface_points[:, 1], 
+        # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
+        inds = np.bitwise_and(nd_inds, feas_inds)
+        filt_f = population.f[inds, :]
+        if settings.plot_attainment and len(filt_f) > 0:
+            attainment = compute_attainment_surface(filt_f)
+            ax.plot(attainment[:, 0], attainment[:, 1], 
                 'C0', alpha=0.5, label='Attainment Surface')
             plt.legend()
 
-        if settings.plot_dominated_area:
+        if settings.plot_dominated_area and len(filt_f) > 0:
             if settings.ref_point is None:
                 padding = settings.ref_point_padding
                 if settings.plot_dominated:
@@ -212,7 +214,7 @@ def plot_objectives(
             else:
                 ref_point = settings.ref_point
 
-            attainment = compute_attainment_surface(nd_objs)
+            attainment = compute_attainment_surface(filt_f)
             if (ref_point[0] < attainment[:, 0]).any() or (ref_point[1] < attainment[:, 1]).any():
                 raise ValueError(f"Reference point coordinates must exceed all points in non-dominated set "
                                 f"(ref_point={ref_point}, max_pf=({np.max(attainment[:, 0])}, {np.max(attainment[:, 1])}))")
