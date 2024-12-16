@@ -14,12 +14,12 @@ from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVars
 
 # TODO: 3D attainment surface (should 3D and 2D plotting be broken up since they can have different features?)
 # TODO: Make sure we are compatible with plotting of multiple fronts
-# TODO: move limits calculation to start of objectives animation instead of in body
 # TODO: look into make pair plot more compact
 # TODO: Use rule of thumb for number of histogram bins
 # TODO: Some sort of plot of the constraints
 # TODO: Add options related to coloring the feasible individuals in the objectives plots
 # TODO: Add options related to coloring the feasibl individuals and non-dominated individuals in decision var plots
+# TODO: consistent location for the legend in the animated objectives plot
 
 
 def compute_attainment_surface(points):
@@ -476,7 +476,16 @@ def animate_objectives(
         ax = fig.add_subplot(111, projection='3d')
     else:
         ax = fig.add_subplot(111)
-        
+
+    # Ensure consistent axis limits across frames
+    if n_objectives == 2:
+        padding = 0.05
+        all_f = np.vstack([pop.f for pop in history.reports])
+        xlim = (np.min(all_f[:, 0]), np.max(all_f[:, 0]))
+        ylim = (np.min(all_f[:, 1]), np.max(all_f[:, 1]))
+        xlim = (xlim[0] - (xlim[1] - xlim[0])*padding, xlim[1] + (xlim[1] - xlim[0])*padding)
+        ylim = (ylim[0] - (ylim[1] - ylim[0])*padding, ylim[1] + (ylim[1] - ylim[0])*padding)
+
     # Function to update frame for animation
     def update(frame_idx):
         ax.clear()
@@ -494,13 +503,10 @@ def animate_objectives(
         generation = frame_idx + 1
         fevals = population.fevals
         ax.set_title(f'Generation {generation} (Fevals: {fevals})')
-        
-        # Ensure consistent axis limits across frames
-        if n_objectives == 2:
-            all_f = np.vstack([pop.f for pop in history.reports])
-            ax.set_xlim(np.min(all_f[:, 0]) * 0.9, np.max(all_f[:, 0]) * 1.1)
-            ax.set_ylim(np.min(all_f[:, 1]) * 0.9, np.max(all_f[:, 1]) * 1.1)
-        
+
+        # Scale the plot
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)        
         return ax,
     
     # Create and return the animation
