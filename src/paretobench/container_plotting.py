@@ -83,7 +83,9 @@ class PlotObjectivesSettings:
         Plots the dominated region towards the larger values of each decision var
     ref_point : Union[str, Tuple[float, float]], optional
         Where to stop plotting the dominated region. Must be a point to the upper right (increasing value of objectives in 3D)
-        of all plotted points.
+        of all plotted points. By default, will set to right of max of each objective plus padding.
+    ref_point_padding : float
+        Amount of padding to apply to the automatic reference point calculation.
     """
     plot_dominated: bool = True
     problem: Optional[str] = None
@@ -91,7 +93,8 @@ class PlotObjectivesSettings:
     pf_objectives: Optional[np.ndarray] = None
     plot_attainment: bool = False
     plot_dominated_area: bool = False
-    ref_point: Union[str, Tuple[float, float]] = "auto"
+    ref_point: Optional[Tuple[float, float]] = None
+    ref_point_padding: float = 0.05
 
 
 def plot_objectives(
@@ -186,15 +189,16 @@ def plot_objectives(
             plt.legend()
 
         if settings.plot_dominated_area:
-            if settings.ref_point == 'auto':
+            if settings.ref_point is None:
+                padding = settings.ref_point_padding
                 if settings.plot_dominated:
                     x_lb, x_ub = np.min(population.f[:, 0]), np.max(population.f[:, 0])
                     y_lb, y_ub = np.min(population.f[:, 1]), np.max(population.f[:, 1])
-                    ref_point = (x_ub + (x_ub - x_lb)*0.05, y_ub + (y_ub - y_lb)*0.05)
+                    ref_point = (x_ub + (x_ub - x_lb)*padding, y_ub + (y_ub - y_lb)*padding)
                 else:
                     x_lb, x_ub = np.min(nd_objs[:, 0]), np.max(nd_objs[:, 0])
                     y_lb, y_ub = np.min(nd_objs[:, 1]), np.max(nd_objs[:, 1])
-                    ref_point = (x_ub + (x_ub - x_lb)*0.1, y_ub + (y_ub - y_lb)*0.1)
+                    ref_point = (x_ub + (x_ub - x_lb)*padding, y_ub + (y_ub - y_lb)*padding)
             else:
                 ref_point = settings.ref_point
 
@@ -279,7 +283,7 @@ class PlotDecisionVarPairsSettings:
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
     """
-    hist_bins: int = 20
+    hist_bins: Optional[int] = None
     include_names: bool = True
     problem: Optional[str] = None
     lower_bounds: Optional[np.ndarray] = None
