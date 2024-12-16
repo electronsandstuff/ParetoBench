@@ -4,15 +4,31 @@ from matplotlib.ticker import MaxNLocator
 from matplotlib import animation
 from typing import List, Dict, Union, Optional, Tuple
 import numpy as np
+from dataclasses import dataclass
+from copy import copy
 
 from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 
 
-# TODO: standardize problem -> problem
 # TODO: Settings for objectives plots can be refactored into pydantic / dataclass and passed around more easily
 # TODO: Add better error when no decision vars in population and no individuals
 # TODO: 3D attainment surface (should 3D and 2D plotting be broken up since they can have different features?)
+# TODO: Make sure we are compatible with plotting of multiple fronts
+# TODO: standardize plot name "pareto front" vs "objective functions"
+# TODO: move limits calculation to start of objectives animation instead of in body
+# TODO: look into make pair plot more compact
+
+@dataclass
+class PlotObjectivesSettings:
+    plot_dominated: bool = True
+    problem: Optional[str] = None
+    n_pf: int = 1000
+    pf_objectives: Optional[np.ndarray] = None
+    plot_attainment: bool = False
+    plot_dominated_area: bool = False
+    ref_point: Union[str, Tuple[float, float]] = "auto"
+
 
 def compute_attainment_surface(points):
     """
@@ -59,13 +75,7 @@ def plot_objectives(
     population: Population,
     fig=None,
     ax=None,
-    plot_dominated=True,
-    problem=None,
-    n_pf=1000,
-    pf_objectives=None,
-    plot_attainment=False,
-    plot_dominated_area=False,
-    ref_point='auto',
+    settings: PlotObjectivesSettings = PlotObjectivesSettings(),
 ):
     """
     Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
@@ -101,7 +111,7 @@ def plot_objectives(
         If attempting to plot attainment surface for 3D problem
     """
     # Input validation for Pareto front specification
-    pf_sources_specified = sum(x is not None for x in [problem, pf_objectives])
+    pf_sources_specified = sum(x is not None for x in [settings.problem, settings.pf_objectives])
     if pf_sources_specified > 1:
         raise ValueError(
             "Multiple Pareto front sources specified. Use only one of: 'problem' or 'pf_objectives'"
@@ -117,20 +127,20 @@ def plot_objectives(
 
     # Get the Pareto front
     pf = None
-    if problem is not None:
-        problem = get_problem_from_obj_or_str(problem)
+    if settings.problem is not None:
+        problem = get_problem_from_obj_or_str(settings.problem)
         if problem.m != population.f.shape[1]:
             raise ValueError(
                 f"Number of objectives in problem must match number in population. Got {problem.m} in problem and {population.f.shape[1]} in population."
             )
         if isinstance(problem, ProblemWithPF):
-            pf = problem.get_pareto_front(n_pf)
+            pf = problem.get_pareto_front(settings.n_pf)
         elif isinstance(problem, ProblemWithFixedPF):
             pf = problem.get_pareto_front()
         else:
             raise ValueError(f"Cannot get Pareto front from object of problem: {problem}")
-    elif pf_objectives is not None:
-        pf = np.asarray(pf_objectives)
+    elif settings.pf_objectives is not None:
+        pf = np.asarray(settings.pf_objectives)
         if pf.ndim != 2:
             raise ValueError("pf_objectives must be a 2D array")
         if pf.shape[1] != population.f.shape[1]:
@@ -145,7 +155,7 @@ def plot_objectives(
             ax = fig.add_subplot(111)
 
         # Plot dominated solutions with low alpha if requested
-        if plot_dominated and len(dom_objs) > 0:
+        if settings.plot_dominated and len(dom_objs) > 0:
             ax.scatter(dom_objs[:, 0], dom_objs[:, 1], color='C0', alpha=0.25, s=15)
         
         # Plot non-dominated solutions with high alpha
@@ -153,15 +163,15 @@ def plot_objectives(
             ax.scatter(nd_objs[:, 0], nd_objs[:, 1], color='C0', alpha=0.9, s=15)
 
         # Plot attainment surface if requested
-        if plot_attainment and len(nd_objs) > 0:
+        if settings.plot_attainment and len(nd_objs) > 0:
             surface_points = compute_attainment_surface(nd_objs)
             ax.plot(surface_points[:, 0], surface_points[:, 1], 
                 'C0', alpha=0.5, label='Attainment Surface')
             plt.legend()
 
-        if plot_dominated_area:
-            if ref_point == 'auto':
-                if plot_dominated:
+        if settings.plot_dominated_area:
+            if settings.ref_point == 'auto':
+                if settings.plot_dominated:
                     x_lb, x_ub = np.min(population.f[:, 0]), np.max(population.f[:, 0])
                     y_lb, y_ub = np.min(population.f[:, 1]), np.max(population.f[:, 1])
                     ref_point = (x_ub + (x_ub - x_lb)*0.05, y_ub + (y_ub - y_lb)*0.05)
@@ -169,6 +179,8 @@ def plot_objectives(
                     x_lb, x_ub = np.min(nd_objs[:, 0]), np.max(nd_objs[:, 0])
                     y_lb, y_ub = np.min(nd_objs[:, 1]), np.max(nd_objs[:, 1])
                     ref_point = (x_ub + (x_ub - x_lb)*0.1, y_ub + (y_ub - y_lb)*0.1)
+            else:
+                ref_point = settings.ref_point
 
             attainment = compute_attainment_surface(nd_objs)
             if (ref_point[0] < attainment[:, 0]).any() or (ref_point[1] < attainment[:, 1]).any():
@@ -197,22 +209,21 @@ def plot_objectives(
 
     # For 3D problems
     elif population.f.shape[1] == 3:
-        if plot_attainment:
-            raise ValueError("Attainment surface plotting is only supported for 2D problems")
+        if settings.plot_attainment or settings.plot_dominated_area:
+            raise ValueError("Attainment surface and dominated area plotting is only supported for 2D problems")
             
         # Get an axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111, projection="3d")
 
         # Plot dominated solutions with low alpha if requested
-        if plot_dominated and len(dom_objs) > 0:
+        if settings.plot_dominated and len(dom_objs) > 0:
             ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2], 
                     color='C0', alpha=0.25, s=15)
         
         # Plot non-dominated solutions with high alpha
         if len(nd_objs) > 0:
-            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2], 
-                    color='C0', alpha=0.9, s=15)
+            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2], color='C0', alpha=0.9, s=15)
 
         # Add in Pareto front
         if pf is not None:
@@ -371,9 +382,7 @@ def plot_decision_var_pairs(
 def animate_pareto_front(
     history: History,
     interval: int = 200,
-    problem: Optional[str] = None,
-    n_pf: int = 1000,
-    plot_attainment=False
+    objectives_plot_settings: PlotObjectivesSettings = PlotObjectivesSettings()
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the Pareto front evolves across generations.
@@ -420,7 +429,8 @@ def animate_pareto_front(
     if not history.reports:
         raise ValueError("No populations in history to animate")
     
-    if problem is None:
+    settings = copy(objectives_plot_settings)
+    if settings.problem is None:
         problem = history.problem
         
     # Get dimensions from first population
@@ -445,10 +455,7 @@ def animate_pareto_front(
             population,
             fig=fig,
             ax=ax,
-            plot_dominated=True,
-            problem=problem,
-            n_pf=n_pf,
-            plot_attainment=plot_attainment
+            settings=settings
         )
         
         # Add generation counter
