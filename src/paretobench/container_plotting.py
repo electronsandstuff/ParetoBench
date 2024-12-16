@@ -16,7 +16,7 @@ from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVars
 # TODO: Make sure we are compatible with plotting of multiple fronts
 # TODO: look into make pair plot more compact
 # TODO: Some sort of plot of the constraints
-# TODO: Add options related to coloring the feasibl individuals and non-dominated individuals in decision var plots
+# TODO: Add example for plot_dominated in the decision var pairs plot
 # TODO: consistent location for the legend in the animated objectives plot
 # TODO: plotting options related to feasibility (whether to plot infeasible solutions or not)
 
@@ -294,12 +294,15 @@ class PlotDecisionVarPairsSettings:
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
+    plot_dominated : bool
+        Should we plot the dominated individuals?
     """
     hist_bins: Optional[int] = None
     include_names: bool = True
     problem: Optional[str] = None
     lower_bounds: Optional[np.ndarray] = None
     upper_bounds: Optional[np.ndarray] = None
+    plot_dominated: bool = True
 
 
 def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDecisionVarPairsSettings=PlotDecisionVarPairsSettings()):
@@ -377,6 +380,10 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
     # Define bound line properties
     bound_props = dict(color="red", linestyle="--", alpha=0.5, linewidth=1)
 
+    # Get non-dominated and feasible individuals
+    nd_inds = population.get_nondominated_indices()
+    feas_inds = population.get_feasible_indices()
+
     # Create all subplots
     for i in range(n_vars):
         for j in range(n_vars):
@@ -384,7 +391,10 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
 
             # Diagonal plots (histograms)
             if i == j:
-                ax.hist(population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color="gray")
+                if settings.plot_dominated:
+                    ax.hist(population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color="gray")
+                else:
+                    ax.hist(population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color="gray")
                 if i == n_vars - 1:
                     ax.set_xlabel(var_names[i])
                 if j == 0:
@@ -398,7 +408,24 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
 
             # Off-diagonal plots (scatter plots)
             else:
-                ax.scatter(population.x[:, j], population.x[:, i], alpha=0.5, s=20)
+                # Non-dominated feasible individuals
+                inds = np.bitwise_and(nd_inds, feas_inds)
+                ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.9, s=15)
+
+                # Dominated feasible individuals
+                if settings.plot_dominated:
+                    inds = np.bitwise_and(~nd_inds, feas_inds)
+                    ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.25, s=15)
+
+                # Non-dominated infeasible individuals
+                inds = np.bitwise_and(nd_inds, ~feas_inds)
+                ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.9, s=15, marker='x')
+
+                # Dominated infeasible individuals
+                if settings.plot_dominated:
+                    inds = np.bitwise_and(~nd_inds, ~feas_inds)
+                    ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.25, s=15, marker='x')
+
                 if i == n_vars - 1:
                     ax.set_xlabel(var_names[j])
                 if j == 0:
