@@ -18,6 +18,7 @@ from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_
 # TODO: standardize plot name "pareto front" vs "objective functions"
 # TODO: move limits calculation to start of objectives animation instead of in body
 # TODO: look into make pair plot more compact
+# TODO: Use rule of thumb for number of histogram bins
 
 
 def compute_attainment_surface(points):
@@ -248,9 +249,16 @@ def plot_objectives(
     return fig, ax
 
 
-def plot_decision_var_pairs(
-    population: Population, fig=None, hist_bins=20, include_names=True, problem=None, lower_bounds=None, upper_bounds=None
-):
+@dataclass
+class PlotDecisionVarPairsSettings:
+    hist_bins: int = 20
+    include_names: bool = True
+    problem: Optional[str] = None
+    lower_bounds: Optional[np.ndarray] = None
+    upper_bounds: Optional[np.ndarray] = None
+
+
+def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDecisionVarPairsSettings=PlotDecisionVarPairsSettings()):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
     and their distributions.
@@ -287,11 +295,15 @@ def plot_decision_var_pairs(
     """
     n_vars = population.x.shape[1]
 
+    # Default, don't show bounds
+    lower_bounds = None
+    upper_bounds = None
+    
     # Handle user specified problem
-    if problem is not None:
-        if (lower_bounds is not None) or (upper_bounds is not None):
+    if settings.problem is not None:
+        if (settings.lower_bounds is not None) or (settings.upper_bounds is not None):
             raise ValueError("Only specify one of problem or the upper/lower bounds")
-        problem = get_problem_from_obj_or_str(problem)
+        problem = get_problem_from_obj_or_str(settings.problem)
         if problem.n != n_vars:
             raise ValueError(
                 f"Number of decision vars in problem must match number in population. Got {problem.n} in problem and {n_vars} in population"
@@ -300,15 +312,15 @@ def plot_decision_var_pairs(
         upper_bounds = problem.var_upper_bounds
 
     # Validate and convert bounds to numpy arrays if provided
-    if lower_bounds is not None:
-        lower_bounds = np.asarray(lower_bounds)
+    if settings.lower_bounds is not None:
+        lower_bounds = np.asarray(settings.lower_bounds)
         if len(lower_bounds) != n_vars:
             raise ValueError(
                 f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({n_vars})"
             )
 
-    if upper_bounds is not None:
-        upper_bounds = np.asarray(upper_bounds)
+    if settings.upper_bounds is not None:
+        upper_bounds = np.asarray(settings.upper_bounds)
         if len(upper_bounds) != n_vars:
             raise ValueError(
                 f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({n_vars})"
@@ -323,7 +335,7 @@ def plot_decision_var_pairs(
     gs.update(wspace=0.3, hspace=0.3)
 
     # Get variable names or create default ones
-    if population.names_x and include_names:
+    if population.names_x and settings.include_names:
         var_names = population.names_x
     else:
         var_names = [f"x{i+1}" for i in range(n_vars)]
@@ -338,7 +350,7 @@ def plot_decision_var_pairs(
 
             # Diagonal plots (histograms)
             if i == j:
-                ax.hist(population.x[:, i], bins=hist_bins, density=True, alpha=0.7, color="gray")
+                ax.hist(population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color="gray")
                 if i == n_vars - 1:
                     ax.set_xlabel(var_names[i])
                 if j == 0:
@@ -433,7 +445,7 @@ def animate_pareto_front(
     
     settings = copy(objectives_plot_settings)
     if settings.problem is None:
-        problem = history.problem
+        settings.problem = history.problem
         
     # Get dimensions from first population
     n_objectives = history.reports[0].f.shape[1]
@@ -488,11 +500,7 @@ def animate_pareto_front(
 def animate_decision_vars(
     history: History,
     interval: int = 200,
-    hist_bins: int = 20,
-    include_names: bool = True,
-    problem: Optional[str] = None,
-    lower_bounds: Optional[np.ndarray] = None,
-    upper_bounds: Optional[np.ndarray] = None
+    decision_var_plot_settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the decision variables evolve across generations.
@@ -540,9 +548,10 @@ def animate_decision_vars(
     """
     if not history.reports:
         raise ValueError("No populations in history to animate")
-        
-    if problem is None:
-        problem = history.problem
+
+    settings = copy(decision_var_plot_settings) 
+    if settings.problem is None:
+        settings.problem = history.problem
     
     # Get dimensions from first population
     n_vars = history.reports[0].x.shape[1]
@@ -559,11 +568,7 @@ def animate_decision_vars(
         plot_decision_var_pairs(
             population,
             fig=fig,
-            hist_bins=hist_bins,
-            include_names=include_names,
-            problem=problem,
-            lower_bounds=lower_bounds,
-            upper_bounds=upper_bounds
+            settings=settings
         )
         
         # Add generation counter
