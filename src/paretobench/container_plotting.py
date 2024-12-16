@@ -19,16 +19,6 @@ from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_
 # TODO: move limits calculation to start of objectives animation instead of in body
 # TODO: look into make pair plot more compact
 
-@dataclass
-class PlotObjectivesSettings:
-    plot_dominated: bool = True
-    problem: Optional[str] = None
-    n_pf: int = 1000
-    pf_objectives: Optional[np.ndarray] = None
-    plot_attainment: bool = False
-    plot_dominated_area: bool = False
-    ref_point: Union[str, Tuple[float, float]] = "auto"
-
 
 def compute_attainment_surface(points):
     """
@@ -69,6 +59,17 @@ def compute_attainment_surface(points):
         surface.append(next_point)
     
     return np.array(surface)
+
+
+@dataclass
+class PlotObjectivesSettings:
+    plot_dominated: bool = True
+    problem: Optional[str] = None
+    n_pf: int = 1000
+    pf_objectives: Optional[np.ndarray] = None
+    plot_attainment: bool = False
+    plot_dominated_area: bool = False
+    ref_point: Union[str, Tuple[float, float]] = "auto"
 
 
 def plot_objectives(
@@ -245,6 +246,7 @@ def plot_objectives(
         raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={population.f.shape[1]}")
 
     return fig, ax
+
 
 def plot_decision_var_pairs(
     population: Population, fig=None, hist_bins=20, include_names=True, problem=None, lower_bounds=None, upper_bounds=None
