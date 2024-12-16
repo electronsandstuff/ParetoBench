@@ -15,7 +15,6 @@ from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVars
 # TODO: 3D attainment surface (should 3D and 2D plotting be broken up since they can have different features?)
 # TODO: Make sure we are compatible with plotting of multiple fronts
 # TODO: look into make pair plot more compact
-# TODO: Use rule of thumb for number of histogram bins
 # TODO: Some sort of plot of the constraints
 # TODO: Add options related to coloring the feasible individuals in the objectives plots
 # TODO: Add options related to coloring the feasibl individuals and non-dominated individuals in decision var plots
