@@ -9,9 +9,9 @@ from copy import copy
 
 from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
+from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVarsError
 
 
-# TODO: Settings for objectives plots can be refactored into pydantic / dataclass and passed around more easily
 # TODO: Add better error when no decision vars in population and no individuals
 # TODO: 3D attainment surface (should 3D and 2D plotting be broken up since they can have different features?)
 # TODO: Make sure we are compatible with plotting of multiple fronts
@@ -112,6 +112,12 @@ def plot_objectives(
         If attempting to plot more than three objectives
         If attempting to plot attainment surface for 3D problem
     """
+    # Make sure we have been given data to plot
+    if not len(population):
+        raise EmptyPopulationError()
+    if not population.m:
+        raise NoObjectivesError()
+
     # Input validation for Pareto front specification
     pf_sources_specified = sum(x is not None for x in [settings.problem, settings.pf_objectives])
     if pf_sources_specified > 1:
@@ -293,12 +299,18 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
     >>> ub = [1, 1, 1, 1]
     >>> fig = pop.plot_pairs(lower_bounds=lb, upper_bounds=ub)
     """
-    n_vars = population.x.shape[1]
+    # Make sure we have been given data to plot
+    if not len(population):
+        raise EmptyPopulationError()
+    if not population.n:
+        raise NoDecisionVarsError()
+
+    n_vars = population.n
 
     # Default, don't show bounds
     lower_bounds = None
     upper_bounds = None
-    
+
     # Handle user specified problem
     if settings.problem is not None:
         if (settings.lower_bounds is not None) or (settings.upper_bounds is not None):

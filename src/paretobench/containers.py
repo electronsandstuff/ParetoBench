@@ -305,6 +305,27 @@ class Population(BaseModel):
         features = np.concatenate((self.x, self.f, self.g), axis=1)
         return np.unique(features.round(decimals=decimals), axis=0).shape[0]
 
+    @property
+    def n(self):
+        """
+        The number of decision variables.
+        """
+        return self.x.shape[1]
+
+    @property
+    def m(self):
+        """
+        The number of objectives.
+        """
+        return self.f.shape[1]
+    
+    @property
+    def n_constraints(self):
+        """
+        The number of constraints.
+        """
+        return self.g.shape[1]
+
 
 class History(BaseModel):
     """

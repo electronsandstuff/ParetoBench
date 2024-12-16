@@ -28,3 +28,36 @@ class InputError(Exception):
     """
 
     pass
+
+
+
+class EmptyPopulationError(Exception):
+    """
+    The supplied Population object was empty.
+    """
+
+    pass
+
+
+class NoDecisionVarsError(Exception):
+    """
+    No decision variables were detected in the population.
+    """
+
+    pass
+
+
+class NoObjectivesError(Exception):
+    """
+    No objectives were detected in the population.
+    """
+
+    pass
+
+
+class NoConstraintsError(Exception):
+    """
+    No contraints were detected in the population.
+    """
+
+    pass
