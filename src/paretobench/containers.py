@@ -211,6 +211,11 @@ class Population(BaseModel):
         nondominated = np.sum(dom, axis=0) == 0
         return nondominated
 
+    def get_feasible_indices(self):
+        if self.g.shape[1] == 0:
+            return np.ones((len(self)), dtype=bool)
+        return np.all(self.g >= 0.0, axis=1)
+
     def get_nondominated_set(self):
         return self[self.get_nondominated_indices()]
 

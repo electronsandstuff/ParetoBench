@@ -16,9 +16,9 @@ from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVars
 # TODO: Make sure we are compatible with plotting of multiple fronts
 # TODO: look into make pair plot more compact
 # TODO: Some sort of plot of the constraints
-# TODO: Add options related to coloring the feasible individuals in the objectives plots
 # TODO: Add options related to coloring the feasibl individuals and non-dominated individuals in decision var plots
 # TODO: consistent location for the legend in the animated objectives plot
+# TODO: plotting options related to feasibility (whether to plot infeasible solutions or not)
 
 
 def compute_attainment_surface(points):
@@ -138,11 +138,6 @@ def plot_objectives(
     if fig is None and ax is None:
         fig, ax = plt.subplots()
 
-    # Break the objectives into those which are non-dominated and those which are not
-    nd_inds = population.get_nondominated_indices()
-    nd_objs = population.f[nd_inds, :]
-    dom_objs = population.f[~nd_inds, :]
-
     # Get the Pareto front
     pf = None
     if settings.problem is not None:
@@ -166,19 +161,35 @@ def plot_objectives(
                 f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives and {population.f.shape[1]} in population"
             )
 
+    # Break the objectives into those which are non-dominated and those which are not
+    nd_inds = population.get_nondominated_indices()
+    feas_inds = population.get_feasible_indices()
+    nd_objs = population.f[nd_inds, :]
+    dom_objs = population.f[~nd_inds, :]
+
     # For 2D problems
     if population.f.shape[1] == 2:
         # Make axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111)
 
-        # Plot dominated solutions with low alpha if requested
-        if settings.plot_dominated and len(dom_objs) > 0:
-            ax.scatter(dom_objs[:, 0], dom_objs[:, 1], color='C0', alpha=0.25, s=15)
-        
-        # Plot non-dominated solutions with high alpha
-        if len(nd_objs) > 0:
-            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], color='C0', alpha=0.9, s=15)
+        # Non-dominated feasible individuals
+        inds = np.bitwise_and(nd_inds, feas_inds)
+        ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.9, s=15)
+
+        # Dominated feasible individuals
+        if settings.plot_dominated:
+            inds = np.bitwise_and(~nd_inds, feas_inds)
+            ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.25, s=15)
+
+        # Non-dominated infeasible individuals
+        inds = np.bitwise_and(nd_inds, ~feas_inds)
+        ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.9, s=15, marker='x')
+
+        # Dominated infeasible individuals
+        if settings.plot_dominated:
+            inds = np.bitwise_and(~nd_inds, ~feas_inds)
+            ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.25, s=15, marker='x')
 
         # Plot attainment surface if requested
         if settings.plot_attainment and len(nd_objs) > 0:
