@@ -21,6 +21,7 @@ from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVars
 # TODO: Add options related to coloring the feasible individuals in the objectives plots
 # TODO: Add options related to coloring the feasibl individuals and non-dominated individuals in decision var plots
 
+
 def compute_attainment_surface(points):
     """
     Compute the attainment surface for a set of non-dominated points in 2D.
@@ -64,6 +65,26 @@ def compute_attainment_surface(points):
 
 @dataclass
 class PlotObjectivesSettings:
+    """
+    Settings for plotting the objective functions from `Population`.
+
+    plot_dominated : bool, optional
+        Include the dominated individuals, by default True
+    problem : str, optional
+        Name of the problem for Pareto front plotting, by default None
+    n_pf : int, optional
+        The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+    pf_objectives : array-like, optional
+        User-specified Pareto front objectives. Should be a 2D array where each row represents a point
+        on the Pareto front and each column represents an objective value.
+    plot_attainment : bool, optional
+        Whether to plot the attainment surface (2D only), by default False
+    plot_dominated_area : bool, optional
+        Plots the dominated region towards the larger values of each decision var
+    ref_point : Union[str, Tuple[float, float]], optional
+        Where to stop plotting the dominated region. Must be a point to the upper right (increasing value of objectives in 3D)
+        of all plotted points.
+    """
     plot_dominated: bool = True
     problem: Optional[str] = None
     n_pf: int = 1000
@@ -91,26 +112,13 @@ def plot_objectives(
         Figure to plot on, by default None
     ax : matplotlib axis, optional
         Axis to plot on, by default None
-    plot_dominated : bool, optional
-        Include the dominated individuals, by default True
-    problem : str, optional
-        Name of the problem for Pareto front plotting, by default None
-    n_pf : int, optional
-        The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
-    pf_objectives : array-like, optional
-        User-specified Pareto front objectives. Should be a 2D array where each row represents a point
-        on the Pareto front and each column represents an objective value.
-    plot_attainment : bool, optional
-        Whether to plot the attainment surface (2D only), by default False
-
-    Raises
-    ------
-    ValueError
-        If both problem and pf_objectives are specified
-        If neither problem nor pf_objectives are specified when trying to plot a Pareto front
-        If pf_objectives dimensions don't match the population's objectives
-        If attempting to plot more than three objectives
-        If attempting to plot attainment surface for 3D problem
+    settings : PlotObjectivesSettings
+        Settings for the plot
+    
+    Returns
+    -------
+    matplotlib figure and matplotlib axis
+        The figure and axis containing the objectives plot
     """
     # Make sure we have been given data to plot
     if not len(population):
@@ -257,6 +265,20 @@ def plot_objectives(
 
 @dataclass
 class PlotDecisionVarPairsSettings:
+    """
+    Settings related to plotting decision variables from `Population`.
+
+    hist_bins : int, optional
+        Number of bins for histograms on the diagonal, default is 20
+    include_names : bool, optional
+        Whether to include variable names on the axes if they exist, default is True
+    problem : str/Problem, optional
+        The problem for plotting decision variable bounds
+    lower_bounds : array-like, optional
+        Lower bounds for each decision variable
+    upper_bounds : array-like, optional
+        Upper bounds for each decision variable
+    """
     hist_bins: int = 20
     include_names: bool = True
     problem: Optional[str] = None
@@ -275,29 +297,13 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
         The population containing data to plot
     fig : matplotlib.figure.Figure, optional
         Figure to plot on. If None, creates a new figure.
-    hist_bins : int, optional
-        Number of bins for histograms on the diagonal, default is 20
-    include_names : bool, optional
-        Whether to include variable names on the axes if they exist, default is True
-    problem : str/Problem, optional
-        The problem for plotting decision variable bounds
-    lower_bounds : array-like, optional
-        Lower bounds for each decision variable
-    upper_bounds : array-like, optional
-        Upper bounds for each decision variable
+    settings : PlotDecisionVarPairsSettings
+        Settings related to plotting the decision variables
 
     Returns
     -------
     matplotlib.figure.Figure
         The figure containing the pairs plot
-
-    Examples
-    --------
-    >>> pop = Population.from_random(n_objectives=2, n_decision_vars=4,
-                                n_constraints=0, pop_size=100)
-    >>> lb = [0, 0, 0, 0]
-    >>> ub = [1, 1, 1, 1]
-    >>> fig = pop.plot_pairs(lower_bounds=lb, upper_bounds=ub)
     """
     # Make sure we have been given data to plot
     if not len(population):
