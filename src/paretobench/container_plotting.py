@@ -166,21 +166,22 @@ def plot_objectives(
 
         # Non-dominated feasible individuals
         inds = np.bitwise_and(nd_inds, feas_inds)
-        ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.9, s=15)
+        scatter = ax.scatter(population.f[inds, 0], population.f[inds, 1], alpha=0.9, s=15)
+        base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
         # Dominated feasible individuals
         if settings.plot_dominated:
             inds = np.bitwise_and(~nd_inds, feas_inds)
-            ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.25, s=15)
+            ax.scatter(population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=0.25, s=15)
 
         # Non-dominated infeasible individuals
         inds = np.bitwise_and(nd_inds, ~feas_inds)
-        ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.9, s=15, marker='x')
+        ax.scatter(population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=0.9, s=15, marker='x')
 
         # Dominated infeasible individuals
         if settings.plot_dominated:
             inds = np.bitwise_and(~nd_inds, ~feas_inds)
-            ax.scatter(population.f[inds, 0], population.f[inds, 1], color='C0', alpha=0.25, s=15, marker='x')
+            ax.scatter(population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=0.25, s=15, marker='x')
 
         # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
         inds = np.bitwise_and(nd_inds, feas_inds)
@@ -188,7 +189,7 @@ def plot_objectives(
         if settings.plot_attainment and len(filt_f) > 0:
             attainment = compute_attainment_surface(filt_f)
             ax.plot(attainment[:, 0], attainment[:, 1], 
-                'C0', alpha=0.5, label='Attainment Surface')
+                color=base_color, alpha=0.5, label='Attainment Surface')
             plt.legend()
 
         if settings.plot_dominated_area and len(filt_f) > 0:
@@ -214,6 +215,7 @@ def plot_objectives(
                 np.concatenate((attainment[:, 0], [ref_point[0]])), 
                 np.concatenate((attainment[:, 1], [attainment[-1, 1]])), 
                 ref_point[1]*np.ones(attainment.shape[0]+1),
+                color=base_color,
                 alpha=0.5
             )
 
