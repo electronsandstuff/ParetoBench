@@ -2,21 +2,22 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from matplotlib import animation
 from matplotlib.colors import to_rgb
-from typing import List, Dict, Union, Optional, Tuple
+from typing import Optional, Tuple
 import numpy as np
 from dataclasses import dataclass
 from copy import copy
 
 from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
-from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVarsError, NoObjectivesError
+from .exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
 from .utils import fast_dominated_argsort
+
 
 def alpha_scatter(ax, x, y, color=None, alpha=None, **kwargs):
     # If color is None, get next color from current axes color cycle
     if color is None:
         color = ax._get_lines.get_next_color()
-    
+
     if alpha is None:
         alpha = 1.0
     r, g, b = to_rgb(color)
@@ -24,7 +25,7 @@ def alpha_scatter(ax, x, y, color=None, alpha=None, **kwargs):
         color = (r, g, b, alpha)
     else:
         color = [(r, g, b, alpha) for alpha in alpha]
-    
+
     return ax.scatter(x, y, c=color, **kwargs)
 
 
@@ -33,12 +34,12 @@ def compute_attainment_surface(points):
     Compute the attainment surface for a set of non-dominated points in 2D.
     The surface consists of horizontal and vertical lines connecting the points,
     forming a staircase-like pattern.
-    
+
     Parameters
     ----------
     points : np.ndarray
         2D array of non-dominated points, shape (n_points, 2)
-        
+
     Returns
     -------
     np.ndarray
@@ -47,25 +48,25 @@ def compute_attainment_surface(points):
     """
     if points.shape[1] != 2:
         raise ValueError("Attainment surface can only be computed for 2D points")
-        
+
     # Sort points by x coordinate (first objective)
     sorted_indices = np.argsort(points[:, 0])
     sorted_points = points[sorted_indices]
-    
+
     # Initialize the surface points list with the first point
     surface = []
     surface.append(sorted_points[0])
-    
+
     # Generate horizontal-then-vertical segments between each pair of points
     for i in range(len(sorted_points) - 1):
         current = sorted_points[i]
         next_point = sorted_points[i + 1]
-        
+
         # Add horizontal line point
         surface.append([next_point[0], current[1]])
         # Add the next point
         surface.append(next_point)
-    
+
     return np.array(surface)
 
 
@@ -93,6 +94,7 @@ class PlotObjectivesSettings:
     ref_point_padding : float
         Amount of padding to apply to the automatic reference point calculation.
     """
+
     plot_dominated: bool = True
     problem: Optional[str] = None
     n_pf: int = 1000
@@ -123,7 +125,7 @@ def plot_objectives(
         Axis to plot on, by default None
     settings : PlotObjectivesSettings
         Settings for the plot
-    
+
     Returns
     -------
     matplotlib figure and matplotlib axis
@@ -138,9 +140,7 @@ def plot_objectives(
     # Input validation for Pareto front specification
     pf_sources_specified = sum(x is not None for x in [settings.problem, settings.pf_objectives])
     if pf_sources_specified > 1:
-        raise ValueError(
-            "Multiple Pareto front sources specified. Use only one of: 'problem' or 'pf_objectives'"
-        )
+        raise ValueError("Multiple Pareto front sources specified. Use only one of: 'problem' or 'pf_objectives'")
 
     if fig is None and ax is None:
         fig, ax = plt.subplots()
@@ -183,7 +183,7 @@ def plot_objectives(
         alpha = np.ones(len(population))
     else:
         alpha = 0.5 - ranks / ranks.max() * 0.3
-        alpha[ranks==0] = 1.0
+        alpha[ranks == 0] = 1.0
 
     # For 2D problems
     if population.f.shape[1] == 2:
@@ -198,15 +198,16 @@ def plot_objectives(
 
         # Non-dominated infeasible individuals
         inds = np.bitwise_and(filt, ~feas_inds)
-        alpha_scatter(ax, population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=alpha[inds], s=15, marker='x')
+        alpha_scatter(
+            ax, population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=alpha[inds], s=15, marker="x"
+        )
 
         # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
         inds = np.bitwise_and(nd_inds, feas_inds)
         filt_f = population.f[inds, :]
         if settings.plot_attainment and len(filt_f) > 0:
             attainment = compute_attainment_surface(filt_f)
-            ax.plot(attainment[:, 0], attainment[:, 1], 
-                color=base_color, alpha=0.5, label='Attainment Surface')
+            ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, label="Attainment Surface")
             plt.legend()
 
         if settings.plot_dominated_area and len(filt_f) > 0:
@@ -215,25 +216,27 @@ def plot_objectives(
                 if settings.plot_dominated:
                     x_lb, x_ub = np.min(population.f[:, 0]), np.max(population.f[:, 0])
                     y_lb, y_ub = np.min(population.f[:, 1]), np.max(population.f[:, 1])
-                    ref_point = (x_ub + (x_ub - x_lb)*padding, y_ub + (y_ub - y_lb)*padding)
+                    ref_point = (x_ub + (x_ub - x_lb) * padding, y_ub + (y_ub - y_lb) * padding)
                 else:
                     x_lb, x_ub = np.min(nd_objs[:, 0]), np.max(nd_objs[:, 0])
                     y_lb, y_ub = np.min(nd_objs[:, 1]), np.max(nd_objs[:, 1])
-                    ref_point = (x_ub + (x_ub - x_lb)*padding, y_ub + (y_ub - y_lb)*padding)
+                    ref_point = (x_ub + (x_ub - x_lb) * padding, y_ub + (y_ub - y_lb) * padding)
             else:
                 ref_point = settings.ref_point
 
             attainment = compute_attainment_surface(filt_f)
             if (ref_point[0] < attainment[:, 0]).any() or (ref_point[1] < attainment[:, 1]).any():
-                raise ValueError(f"Reference point coordinates must exceed all points in non-dominated set "
-                                f"(ref_point={ref_point}, max_pf=({np.max(attainment[:, 0])}, {np.max(attainment[:, 1])}))")
+                raise ValueError(
+                    f"Reference point coordinates must exceed all points in non-dominated set "
+                    f"(ref_point={ref_point}, max_pf=({np.max(attainment[:, 0])}, {np.max(attainment[:, 1])}))"
+                )
 
             plt.fill_between(
-                np.concatenate((attainment[:, 0], [ref_point[0]])), 
-                np.concatenate((attainment[:, 1], [attainment[-1, 1]])), 
-                ref_point[1]*np.ones(attainment.shape[0]+1),
+                np.concatenate((attainment[:, 0], [ref_point[0]])),
+                np.concatenate((attainment[:, 1], [attainment[-1, 1]])),
+                ref_point[1] * np.ones(attainment.shape[0] + 1),
                 color=base_color,
-                alpha=0.5
+                alpha=0.5,
             )
 
         # Add in Pareto front
@@ -253,7 +256,7 @@ def plot_objectives(
     elif population.f.shape[1] == 3:
         if settings.plot_attainment or settings.plot_dominated_area:
             raise ValueError("Attainment surface and dominated area plotting is only supported for 2D problems")
-            
+
         # Get an axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111, projection="3d")
@@ -265,7 +268,6 @@ def plot_objectives(
         # Plot dominated solutions with low alpha if requested
         if settings.plot_dominated and len(dom_objs) > 0:
             ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2], color=base_color, alpha=0.25, s=15)
-        
 
         # Add in Pareto front
         if pf is not None:
@@ -307,6 +309,7 @@ class PlotDecisionVarPairsSettings:
     plot_dominated : bool
         Should we plot the dominated individuals?
     """
+
     hist_bins: Optional[int] = None
     include_names: bool = True
     problem: Optional[str] = None
@@ -314,7 +317,10 @@ class PlotDecisionVarPairsSettings:
     upper_bounds: Optional[np.ndarray] = None
     plot_dominated: bool = True
 
-def plot_decision_var_pairs(population: Population, fig=None, axes=None, settings: PlotDecisionVarPairsSettings=PlotDecisionVarPairsSettings()):
+
+def plot_decision_var_pairs(
+    population: Population, fig=None, axes=None, settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings()
+):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
     and their distributions.
@@ -365,24 +371,24 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
     if settings.lower_bounds is not None:
         lower_bounds = np.asarray(settings.lower_bounds)
         if len(lower_bounds) != n_vars:
-            raise ValueError(
-                f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({n_vars})"
-            )
+            raise ValueError(f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({n_vars})")
 
     if settings.upper_bounds is not None:
         upper_bounds = np.asarray(settings.upper_bounds)
         if len(upper_bounds) != n_vars:
-            raise ValueError(
-                f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({n_vars})"
-            )
+            raise ValueError(f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({n_vars})")
 
     # Handle figure and axes creation/validation
     if fig is None and axes is None:
         # Create new figure and axes
-        fig, axes = plt.subplots(n_vars, n_vars, 
-                                figsize=(2 * n_vars, 2 * n_vars),
-                                gridspec_kw={'wspace': 0.05, 'hspace': 0.05}, 
-                                layout='constrained', sharex='col')
+        fig, axes = plt.subplots(
+            n_vars,
+            n_vars,
+            figsize=(2 * n_vars, 2 * n_vars),
+            gridspec_kw={"wspace": 0.05, "hspace": 0.05},
+            layout="constrained",
+            sharex="col",
+        )
     elif (fig is None) != (axes is None):  # XOR operation
         raise ValueError("Either both fig and axes must be provided or neither must be provided")
     else:
@@ -398,7 +404,7 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
             ax.yaxis.set_major_locator(MaxNLocator(4))
             ax.xaxis.set_ticks_position("bottom")
             ax.yaxis.set_ticks_position("left")
-            
+
             # Hide x-axis labels and ticks for all rows except the bottom row
             if i != n_vars - 1:
                 plt.setp(ax.get_xticklabels(), visible=False)
@@ -428,7 +434,7 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
         alpha = np.ones(len(population))
     else:
         alpha = 0.5 - ranks / ranks.max() * 0.3
-        alpha[ranks==0] = 1.0
+        alpha[ranks == 0] = 1.0
 
     # Plot on all axes
     base_color = None
@@ -439,11 +445,15 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
             # Diagonal plots (histograms)
             if i == j:
                 if settings.plot_dominated:
-                    _, _, patches = ax.hist(population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color)
+                    _, _, patches = ax.hist(
+                        population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
+                    )
                     if base_color is None:
                         base_color = patches[0].get_facecolor()
                 else:
-                    _, _, patches = ax.hist(population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color)
+                    _, _, patches = ax.hist(
+                        population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
+                    )
                     if base_color is None:
                         base_color = patches[0].get_facecolor()
 
@@ -462,7 +472,15 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
 
                 # Non-dominated infeasible individuals
                 inds = np.bitwise_and(filt, ~feas_inds)
-                alpha_scatter(ax, population.x[inds, j], population.x[inds, i], color=base_color, alpha=alpha[inds], s=15, marker='x')
+                alpha_scatter(
+                    ax,
+                    population.x[inds, j],
+                    population.x[inds, i],
+                    color=base_color,
+                    alpha=alpha[inds],
+                    s=15,
+                    marker="x",
+                )
 
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
@@ -479,13 +497,11 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
 
 
 def animate_objectives(
-    history: History,
-    interval: int = 200,
-    objectives_plot_settings: PlotObjectivesSettings = PlotObjectivesSettings()
+    history: History, interval: int = 200, objectives_plot_settings: PlotObjectivesSettings = PlotObjectivesSettings()
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the Pareto front evolves across generations.
-    
+
     Parameters
     ----------
     history : paretobench History
@@ -498,18 +514,18 @@ def animate_objectives(
         Number of points for Pareto front plotting when applicable, by default 1000
     figsize : Tuple[int, int], optional
         Figure size in inches (width, height), by default (8, 6)
-        
+
     Returns
     -------
     animation.Animation
         The animation object that can be displayed in notebooks or saved to file
-        
+
     Raises
     ------
     ValueError
         If the population has more than 3 objectives (cannot be visualized)
         If there are no reports in the history
-        
+
     Notes
     -----
     This method creates an animation showing how the Pareto front evolves over time.
@@ -517,30 +533,30 @@ def animate_objectives(
     - Red points show the current population's non-dominated solutions
     - Gray points show dominated solutions
     - Black points show the true Pareto front (if problem is provided)
-    
+
     The animation can be displayed in Jupyter notebooks using:
     >>> from IPython.display import HTML
     >>> HTML(anim.to_jshtml())
-    
+
     Or saved to file using:
     >>> anim.save('filename.gif', writer='pillow')
     """
     if not history.reports:
         raise ValueError("No populations in history to animate")
-    
+
     settings = copy(objectives_plot_settings)
     if settings.problem is None:
         settings.problem = history.problem
-        
+
     # Get dimensions from first population
     n_objectives = history.reports[0].f.shape[1]
     if n_objectives > 3:
         raise ValueError(f"Cannot animate more than three objectives: n_objs={n_objectives}")
-    
+
     # Set up the figure based on dimensionality
     fig = plt.figure()
     if n_objectives == 3:
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection="3d")
     else:
         ax = fig.add_subplot(111)
 
@@ -550,47 +566,37 @@ def animate_objectives(
         all_f = np.vstack([pop.f for pop in history.reports])
         xlim = (np.min(all_f[:, 0]), np.max(all_f[:, 0]))
         ylim = (np.min(all_f[:, 1]), np.max(all_f[:, 1]))
-        xlim = (xlim[0] - (xlim[1] - xlim[0])*padding, xlim[1] + (xlim[1] - xlim[0])*padding)
-        ylim = (ylim[0] - (ylim[1] - ylim[0])*padding, ylim[1] + (ylim[1] - ylim[0])*padding)
+        xlim = (xlim[0] - (xlim[1] - xlim[0]) * padding, xlim[1] + (xlim[1] - xlim[0]) * padding)
+        ylim = (ylim[0] - (ylim[1] - ylim[0]) * padding, ylim[1] + (ylim[1] - ylim[0]) * padding)
 
     # Function to update frame for animation
     def update(frame_idx):
         ax.clear()
         population = history.reports[frame_idx]
-        
+
         # Plot the current population
-        plot_objectives(
-            population,
-            fig=fig,
-            ax=ax,
-            settings=settings
-        )
-        
+        plot_objectives(population, fig=fig, ax=ax, settings=settings)
+
         # Add generation counter
         generation = frame_idx + 1
         fevals = population.fevals
-        ax.set_title(f'Generation {generation} (Fevals: {fevals})')
+        ax.set_title(f"Generation {generation} (Fevals: {fevals})")
 
         # Scale the plot
         ax.set_xlim(*xlim)
-        ax.set_ylim(*ylim)        
-        return ax,
-    
+        ax.set_ylim(*ylim)
+        return (ax,)
+
     # Create and return the animation
-    anim = animation.FuncAnimation(
-        fig=fig,
-        func=update,
-        frames=len(history.reports),
-        interval=interval,
-        blit=False
-    )
-    
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=len(history.reports), interval=interval, blit=False)
+
     return anim
+
 
 def animate_decision_vars(
     history: History,
     interval: int = 200,
-    decision_var_plot_settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings()
+    decision_var_plot_settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings(),
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the decision variables evolve across generations.
@@ -624,31 +630,20 @@ def animate_decision_vars(
         # Clear all axes
         for ax in axes.flat:
             ax.clear()
-        
+
         population = history.reports[frame_idx]
-        
+
         # Use the population's plotting method with existing fig and axes
-        plot_decision_var_pairs(
-            population,
-            fig=fig,
-            axes=axes,
-            settings=settings
-        )
-        
+        plot_decision_var_pairs(population, fig=fig, axes=axes, settings=settings)
+
         # Add generation counter
         generation = frame_idx + 1
         fevals = population.fevals
-        fig.suptitle(f'Generation {generation} (Fevals: {fevals})')
-        
+        fig.suptitle(f"Generation {generation} (Fevals: {fevals})")
+
         return tuple(axes.flat)
 
     # Create and return the animation
-    anim = animation.FuncAnimation(
-        fig=fig,
-        func=update,
-        frames=len(history.reports),
-        interval=interval,
-        blit=False
-    )
+    anim = animation.FuncAnimation(fig=fig, func=update, frames=len(history.reports), interval=interval, blit=False)
 
     return anim

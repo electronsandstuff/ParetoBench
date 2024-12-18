@@ -30,7 +30,6 @@ class InputError(Exception):
     pass
 
 
-
 class EmptyPopulationError(Exception):
     """
     The supplied Population object was empty.

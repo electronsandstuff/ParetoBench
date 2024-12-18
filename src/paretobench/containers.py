@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from functools import reduce
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
-from typing import List, Dict, Union, Optional, Tuple
+from typing import List, Dict, Union, Optional
 import h5py
 import numpy as np
 import random
@@ -323,7 +323,7 @@ class Population(BaseModel):
         The number of objectives.
         """
         return self.f.shape[1]
-    
+
     @property
     def n_constraints(self):
         """
