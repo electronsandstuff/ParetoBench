@@ -38,7 +38,30 @@ def uniform_grid(n, m):
     )
 
 
-def fast_dominated_argsort(objs):
+def get_domination(objs, constraints=None):
+    # Compare all pairs of individuals based on domination
+    dom = np.bitwise_and(
+        (objs[:, None, :] <= objs[None, :, :]).all(axis=-1),
+        (objs[:, None, :] < objs[None, :, :]).any(axis=-1),
+    )
+
+    if constraints is not None:
+        # If one individual is feasible and the other isn't, set domination
+        feas = constraints >= 0.0
+        ind = np.bitwise_and(feas.all(axis=1)[:, None], ~feas.all(axis=1)[None, :])
+        dom[ind] = True
+        ind = np.bitwise_and(~feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
+        dom[ind] = False
+
+        # If both are infeasible, then the individual with the least constraint violation wins
+        constraint_violation = -np.sum(np.minimum(constraints, 0), axis=1)
+        comp = constraint_violation[:, None] < constraint_violation[None, :]
+        ind = ~np.bitwise_or(feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
+        dom[ind] = comp[ind]
+    return dom
+
+
+def fast_dominated_argsort(objs, constraints=None):
     """
     Performs a dominated sort on matrix of objective function values O.  This is a numpy implementation of the algorithm
     described in Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). IEEE Transactions on Evolutionary
@@ -50,10 +73,7 @@ def fast_dominated_argsort(objs):
     :return: List of ranks where each rank is a list of the indices to the individuals in that rank
     """
     # Compare all pairs of individuals based on domination
-    dom = np.bitwise_and(
-        (objs[:, :, None] <= objs[:, None, :]).all(axis=0),
-        (objs[:, :, None] < objs[:, None, :]).any(axis=0),
-    )
+    dom = get_domination(objs, constraints)
 
     # Create the sets of dominated individuals, domination number, and first rank
     S = [np.nonzero(row)[0].tolist() for row in dom]
@@ -77,14 +97,11 @@ def fast_dominated_argsort(objs):
     return F
 
 
-def get_nondominated(objs):
+def get_nondominated(objs, constraints=None):
     """
     Returns the indices of the nondominated individuals for the objectives O, an (m,n) array for the m objectives
     """
-    dom = np.bitwise_and(
-        (objs[:, :, None] <= objs[:, None, :]).all(axis=0),
-        (objs[:, :, None] < objs[:, None, :]).any(axis=0),
-    )
+    dom = get_domination(objs, constraints)
     return np.where(np.sum(dom, axis=0) == 0)[0].tolist()
 
 

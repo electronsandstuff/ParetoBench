@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 from matplotlib import animation
+from matplotlib.colors import to_rgb
 from typing import List, Dict, Union, Optional, Tuple
 import numpy as np
 from dataclasses import dataclass
@@ -9,7 +9,23 @@ from copy import copy
 
 from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
-from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVarsError
+from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVarsError, NoObjectivesError
+from .utils import fast_dominated_argsort
+
+def alpha_scatter(ax, x, y, color=None, alpha=None, **kwargs):
+    # If color is None, get next color from current axes color cycle
+    if color is None:
+        color = ax._get_lines.get_next_color()
+    
+    if alpha is None:
+        alpha = 1.0
+    r, g, b = to_rgb(color)
+    if isinstance(alpha, float):
+        color = (r, g, b, alpha)
+    else:
+        color = [(r, g, b, alpha) for alpha in alpha]
+    
+    return ax.scatter(x, y, c=color, **kwargs)
 
 
 def compute_attainment_surface(points):
@@ -154,9 +170,20 @@ def plot_objectives(
 
     # Break the objectives into those which are non-dominated and those which are not
     nd_inds = population.get_nondominated_indices()
+    filt = np.ones(len(population), dtype=bool) if settings.plot_dominated else nd_inds  # Filter which are shown
     feas_inds = population.get_feasible_indices()
     nd_objs = population.f[nd_inds, :]
     dom_objs = population.f[~nd_inds, :]
+
+    # Get the domination ranks and set alpha based on that
+    ranks = np.empty(len(population))
+    for rank, idx in enumerate(fast_dominated_argsort(population.f, population.g)):
+        ranks[idx] = rank
+    if np.all(rank < 1):
+        alpha = np.ones(len(population))
+    else:
+        alpha = 0.5 - ranks / ranks.max() * 0.3
+        alpha[ranks==0] = 1.0
 
     # For 2D problems
     if population.f.shape[1] == 2:
@@ -165,23 +192,13 @@ def plot_objectives(
             ax = fig.add_subplot(111)
 
         # Non-dominated feasible individuals
-        inds = np.bitwise_and(nd_inds, feas_inds)
-        scatter = ax.scatter(population.f[inds, 0], population.f[inds, 1], alpha=0.9, s=15)
+        inds = np.bitwise_and(filt, feas_inds)
+        scatter = alpha_scatter(ax, population.f[inds, 0], population.f[inds, 1], alpha=alpha[inds], s=15)
         base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
-        # Dominated feasible individuals
-        if settings.plot_dominated:
-            inds = np.bitwise_and(~nd_inds, feas_inds)
-            ax.scatter(population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=0.25, s=15)
-
         # Non-dominated infeasible individuals
-        inds = np.bitwise_and(nd_inds, ~feas_inds)
-        ax.scatter(population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=0.9, s=15, marker='x')
-
-        # Dominated infeasible individuals
-        if settings.plot_dominated:
-            inds = np.bitwise_and(~nd_inds, ~feas_inds)
-            ax.scatter(population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=0.25, s=15, marker='x')
+        inds = np.bitwise_and(filt, ~feas_inds)
+        alpha_scatter(ax, population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=alpha[inds], s=15, marker='x')
 
         # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
         inds = np.bitwise_and(nd_inds, feas_inds)
