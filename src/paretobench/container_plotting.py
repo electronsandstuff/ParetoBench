@@ -12,15 +12,6 @@ from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_
 from .exceptions import EmptyPopulationError, NoConstraintsError, NoDecisionVarsError
 
 
-# TODO: 3D attainment surface (should 3D and 2D plotting be broken up since they can have different features?)
-# TODO: Make sure we are compatible with plotting of multiple fronts
-# TODO: look into make pair plot more compact
-# TODO: Some sort of plot of the constraints
-# TODO: Add example for plot_dominated in the decision var pairs plot
-# TODO: consistent location for the legend in the animated objectives plot
-# TODO: plotting options related to feasibility (whether to plot infeasible solutions or not)
-
-
 def compute_attainment_surface(points):
     """
     Compute the attainment surface for a set of non-dominated points in 2D.
