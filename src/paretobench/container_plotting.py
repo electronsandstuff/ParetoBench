@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from matplotlib import animation
 from matplotlib.colors import to_rgb
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Literal
 import numpy as np
 from dataclasses import dataclass
 from copy import copy
@@ -77,6 +77,8 @@ class PlotObjectivesSettings:
 
     plot_dominated : bool, optional
         Include the dominated individuals, by default True
+    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+        Plot only the feasible/infeasible solutions, or all. Defaults to all
     problem : str, optional
         Name of the problem for Pareto front plotting, by default None
     n_pf : int, optional
@@ -100,6 +102,7 @@ class PlotObjectivesSettings:
     """
 
     plot_dominated: bool = True
+    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
     problem: Optional[str] = None
     n_pf: int = 1000
     pf_objectives: Optional[np.ndarray] = None
@@ -193,23 +196,35 @@ def plot_objectives(
 
     # For 2D problems
     add_legend = False
+    base_color = None
     if population.f.shape[1] == 2:
         # Make axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111)
 
-        # Non-dominated feasible individuals
-        inds = np.bitwise_and(filt, feas_inds)
-        scatter = alpha_scatter(
-            ax, population.f[inds, 0], population.f[inds, 1], alpha=alpha[inds], s=15, label=settings.label
-        )
-        base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
+        # Feasible individuals
+        if settings.plot_feasible in ["all", "feasible"]:
+            inds = np.bitwise_and(filt, feas_inds)
+            scatter = alpha_scatter(
+                ax,
+                population.f[inds, 0],
+                population.f[inds, 1],
+                alpha=alpha[inds],
+                color=base_color,
+                s=15,
+                label=settings.label,
+            )
+            if base_color is None:
+                base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
-        # Non-dominated infeasible individuals
-        inds = np.bitwise_and(filt, ~feas_inds)
-        alpha_scatter(
-            ax, population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=alpha[inds], s=15, marker="x"
-        )
+        # Infeasible individuals
+        if settings.plot_feasible in ["all", "infeasible"]:
+            inds = np.bitwise_and(filt, ~feas_inds)
+            scatter = alpha_scatter(
+                ax, population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=alpha[inds], s=15, marker="x"
+            )
+            if base_color is None:
+                base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
         # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
         inds = np.bitwise_and(nd_inds, feas_inds)
@@ -263,6 +278,7 @@ def plot_objectives(
 
     # For 3D problems
     elif population.f.shape[1] == 3:
+        raise NotImplementedError("3D plotting will be implemented in future")
         if settings.plot_attainment or settings.plot_dominated_area:
             raise ValueError("Attainment surface and dominated area plotting is only supported for 2D problems")
 
@@ -308,6 +324,10 @@ class PlotDecisionVarPairsSettings:
     """
     Settings related to plotting decision variables from `Population`.
 
+    plot_dominated : bool, optional
+        Include the dominated individuals, by default True
+    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+        Plot only the feasible/infeasible solutions, or all. Defaults to all
     hist_bins : int, optional
         Number of bins for histograms on the diagonal, default is 20
     include_names : bool, optional
@@ -318,16 +338,15 @@ class PlotDecisionVarPairsSettings:
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
-    plot_dominated : bool
-        Should we plot the dominated individuals?
     """
 
+    plot_dominated: bool = True
+    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
     hist_bins: Optional[int] = None
     include_names: bool = True
     problem: Optional[str] = None
     lower_bounds: Optional[np.ndarray] = None
     upper_bounds: Optional[np.ndarray] = None
-    plot_dominated: bool = True
 
 
 def plot_decision_var_pairs(
@@ -456,18 +475,22 @@ def plot_decision_var_pairs(
 
             # Diagonal plots (histograms)
             if i == j:
+                # Filter which individuals are shown
                 if settings.plot_dominated:
-                    _, _, patches = ax.hist(
-                        population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
-                    )
-                    if base_color is None:
-                        base_color = patches[0].get_facecolor()
+                    filt = np.ones(len(population), dtype=bool)
                 else:
-                    _, _, patches = ax.hist(
-                        population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
-                    )
-                    if base_color is None:
-                        base_color = patches[0].get_facecolor()
+                    filt = nd_inds
+                if settings.plot_feasible == "feasible":
+                    filt = np.bitwise_and(filt, feas_inds)
+                elif settings.plot_feasible == "infeasible":
+                    filt = np.bitwise_and(filt, ~feas_inds)
+
+                # Plot the histogram
+                _, _, patches = ax.hist(
+                    population.x[filt, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
+                )
+                if base_color is None:
+                    base_color = patches[0].get_facecolor()
 
                 # Add vertical bound lines to histograms
                 if lower_bounds is not None:
@@ -477,22 +500,29 @@ def plot_decision_var_pairs(
 
             # Off-diagonal plots (scatter plots)
             else:
-                # Non-dominated feasible individuals
-                inds = np.bitwise_and(filt, feas_inds)
-                scatter = alpha_scatter(ax, population.x[inds, j], population.x[inds, i], alpha=alpha[inds], s=15)
-                base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
+                # Feasible individuals
+                if settings.plot_feasible in ["all", "feasible"]:
+                    inds = np.bitwise_and(filt, feas_inds)
+                    scatter = alpha_scatter(
+                        ax, population.x[inds, j], population.x[inds, i], alpha=alpha[inds], color=base_color, s=15
+                    )
+                    if base_color is None:
+                        base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
                 # Non-dominated infeasible individuals
-                inds = np.bitwise_and(filt, ~feas_inds)
-                alpha_scatter(
-                    ax,
-                    population.x[inds, j],
-                    population.x[inds, i],
-                    color=base_color,
-                    alpha=alpha[inds],
-                    s=15,
-                    marker="x",
-                )
+                if settings.plot_feasible in ["all", "infeasible"]:
+                    inds = np.bitwise_and(filt, ~feas_inds)
+                    scatter = alpha_scatter(
+                        ax,
+                        population.x[inds, j],
+                        population.x[inds, i],
+                        color=base_color,
+                        alpha=alpha[inds],
+                        s=15,
+                        marker="x",
+                    )
+                    if base_color is None:
+                        base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
