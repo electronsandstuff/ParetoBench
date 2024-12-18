@@ -95,6 +95,8 @@ class PlotObjectivesSettings:
         Amount of padding to apply to the automatic reference point calculation.
     label : str, optional
         The label for these points, if shown in a legend
+    legend_loc : str, optional
+        Passed to `loc` argument of plt.legend
     """
 
     plot_dominated: bool = True
@@ -106,6 +108,7 @@ class PlotObjectivesSettings:
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.05
     label: Optional[str] = None
+    legend_loc: Optional[str] = None
 
 
 def plot_objectives(
@@ -189,6 +192,7 @@ def plot_objectives(
         alpha[ranks == 0] = 1.0
 
     # For 2D problems
+    add_legend = False
     if population.f.shape[1] == 2:
         # Make axis if not supplied
         if ax is None:
@@ -213,7 +217,7 @@ def plot_objectives(
         if settings.plot_attainment and len(filt_f) > 0:
             attainment = compute_attainment_surface(filt_f)
             ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, label="Attainment Surface")
-            plt.legend()
+            add_legend = True
 
         if settings.plot_dominated_area and len(filt_f) > 0:
             if settings.ref_point is None:
@@ -247,7 +251,7 @@ def plot_objectives(
         # Add in Pareto front
         if pf is not None:
             ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF")
-            plt.legend()
+            add_legend = True
 
         # Handle the axis labels
         if population.names_f:
@@ -277,7 +281,7 @@ def plot_objectives(
         # Add in Pareto front
         if pf is not None:
             ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF")
-            plt.legend()
+            add_legend = True
 
         # Handle the axis labels
         if population.names_f:
@@ -292,6 +296,9 @@ def plot_objectives(
     # We can't plot in 4D :(
     else:
         raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={population.f.shape[1]}")
+
+    if add_legend:
+        plt.legend(loc=settings.legend_loc)
 
     return fig, ax
 
@@ -552,6 +559,8 @@ def animate_objectives(
     settings = copy(objectives_plot_settings)
     if settings.problem is None:
         settings.problem = history.problem
+    if settings.legend_loc is None:
+        settings.legend_loc = "upper right"
 
     # Get dimensions from first population
     n_objectives = history.reports[0].f.shape[1]
