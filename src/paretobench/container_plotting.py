@@ -241,14 +241,14 @@ def plot_objectives(
         if ax is None:
             ax = fig.add_subplot(111, projection="3d")
 
+        # Plot non-dominated solutions with high alpha
+        scatter = ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2], alpha=0.9, s=15)
+        base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
+
         # Plot dominated solutions with low alpha if requested
         if settings.plot_dominated and len(dom_objs) > 0:
-            ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2], 
-                    color='C0', alpha=0.25, s=15)
+            ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2], color=base_color, alpha=0.25, s=15)
         
-        # Plot non-dominated solutions with high alpha
-        if len(nd_objs) > 0:
-            ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2], color='C0', alpha=0.9, s=15)
 
         # Add in Pareto front
         if pf is not None:
@@ -378,6 +378,7 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
     feas_inds = population.get_feasible_indices()
 
     # Create all subplots
+    base_color = None
     for i in range(n_vars):
         for j in range(n_vars):
             ax = fig.add_subplot(gs[i, j])
@@ -385,9 +386,13 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
             # Diagonal plots (histograms)
             if i == j:
                 if settings.plot_dominated:
-                    ax.hist(population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color="gray")
+                    _, _, patches = ax.hist(population.x[:, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color)
+                    if base_color is None:
+                        base_color = patches[0].get_facecolor()
                 else:
-                    ax.hist(population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color="gray")
+                    ax.hist(population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color)
+                    if base_color is None:
+                        base_color = patches[0].get_facecolor()
                 if i == n_vars - 1:
                     ax.set_xlabel(var_names[i])
                 if j == 0:
@@ -403,21 +408,21 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
             else:
                 # Non-dominated feasible individuals
                 inds = np.bitwise_and(nd_inds, feas_inds)
-                ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.9, s=15)
+                ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.9, s=15)
 
                 # Dominated feasible individuals
                 if settings.plot_dominated:
                     inds = np.bitwise_and(~nd_inds, feas_inds)
-                    ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.25, s=15)
+                    ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.25, s=15)
 
                 # Non-dominated infeasible individuals
                 inds = np.bitwise_and(nd_inds, ~feas_inds)
-                ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.9, s=15, marker='x')
+                ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.9, s=15, marker='x')
 
                 # Dominated infeasible individuals
                 if settings.plot_dominated:
                     inds = np.bitwise_and(~nd_inds, ~feas_inds)
-                    ax.scatter(population.x[inds, j], population.x[inds, i], color='C0', alpha=0.25, s=15, marker='x')
+                    ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.25, s=15, marker='x')
 
                 if i == n_vars - 1:
                     ax.set_xlabel(var_names[j])
