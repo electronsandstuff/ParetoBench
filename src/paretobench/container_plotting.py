@@ -93,6 +93,8 @@ class PlotObjectivesSettings:
         of all plotted points. By default, will set to right of max of each objective plus padding.
     ref_point_padding : float
         Amount of padding to apply to the automatic reference point calculation.
+    label : str, optional
+        The label for these points, if shown in a legend
     """
 
     plot_dominated: bool = True
@@ -103,6 +105,7 @@ class PlotObjectivesSettings:
     plot_dominated_area: bool = False
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.05
+    label: Optional[str] = None
 
 
 def plot_objectives(
@@ -193,7 +196,9 @@ def plot_objectives(
 
         # Non-dominated feasible individuals
         inds = np.bitwise_and(filt, feas_inds)
-        scatter = alpha_scatter(ax, population.f[inds, 0], population.f[inds, 1], alpha=alpha[inds], s=15)
+        scatter = alpha_scatter(
+            ax, population.f[inds, 0], population.f[inds, 1], alpha=alpha[inds], s=15, label=settings.label
+        )
         base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
         # Non-dominated infeasible individuals
