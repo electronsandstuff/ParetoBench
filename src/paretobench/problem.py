@@ -4,7 +4,6 @@ from pydantic import BaseModel
 from .exceptions import DeserializationError, InputError
 from .factory import create_problem
 from .simple_serialize import dumps, loads
-from .containers import Population
 
 
 class Problem(BaseModel):
@@ -18,7 +17,7 @@ class Problem(BaseModel):
      * `_call`: method, accepts `x` the decision variables (first dimension is batch), return `Population` object
     """
 
-    def __call__(self, x: np.ndarray, check_bounds=True) -> Population:
+    def __call__(self, x: np.ndarray, check_bounds=True):
         """
         Returns the values of the objective functions and constraints at the decision variables `x`.
         The input can be either batched or a single value.
@@ -67,7 +66,7 @@ class Problem(BaseModel):
         pop.x = x
         return pop
 
-    def _call(self, x: np.ndarray) -> Population:
+    def _call(self, x: np.ndarray):
         """
         This method is implemented by the child classes of `Problem` and should operate on a batched array of inputs.
         """
@@ -215,3 +214,12 @@ class ProblemWithFixedPF:
         Returns all of the points on the Pareto front.
         """
         raise NotImplementedError()
+
+
+def get_problem_from_obj_or_str(obj_or_str):
+    if isinstance(obj_or_str, Problem):
+        return obj_or_str
+    elif isinstance(obj_or_str, str):
+        return Problem.from_line_fmt(obj_or_str)
+    else:
+        raise ValueError(f"Unrecognized input type: {type(obj_or_str)}")

@@ -227,7 +227,7 @@ class WFG2(WFGx):
         # Evaluate the objective functions
         f = shape_convex(x)
         f[-1] = shape_disconnected(x, 5, 1, 1)
-        f = f[:, get_nondominated(f)]
+        f = f[:, get_nondominated(f.T)]
         return (f * 2 * np.arange(1, self.m + 1)[:, None]).T
 
 
