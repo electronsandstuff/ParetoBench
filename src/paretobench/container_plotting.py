@@ -415,9 +415,20 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
     # Define bound line properties
     bound_props = dict(color="red", linestyle="--", alpha=0.5, linewidth=1)
 
-    # Get non-dominated and feasible individuals
+    # Break the objectives into those which are non-dominated and those which are not
     nd_inds = population.get_nondominated_indices()
+    filt = np.ones(len(population), dtype=bool) if settings.plot_dominated else nd_inds  # Filter which are shown
     feas_inds = population.get_feasible_indices()
+
+    # Get the domination ranks and set alpha based on that
+    ranks = np.empty(len(population))
+    for rank, idx in enumerate(fast_dominated_argsort(population.f, population.g)):
+        ranks[idx] = rank
+    if np.all(rank < 1):
+        alpha = np.ones(len(population))
+    else:
+        alpha = 0.5 - ranks / ranks.max() * 0.3
+        alpha[ranks==0] = 1.0
 
     # Plot on all axes
     base_color = None
@@ -445,22 +456,13 @@ def plot_decision_var_pairs(population: Population, fig=None, axes=None, setting
             # Off-diagonal plots (scatter plots)
             else:
                 # Non-dominated feasible individuals
-                inds = np.bitwise_and(nd_inds, feas_inds)
-                ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.9, s=15)
-
-                # Dominated feasible individuals
-                if settings.plot_dominated:
-                    inds = np.bitwise_and(~nd_inds, feas_inds)
-                    ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.25, s=15)
+                inds = np.bitwise_and(filt, feas_inds)
+                scatter = alpha_scatter(ax, population.x[inds, j], population.x[inds, i], alpha=alpha[inds], s=15)
+                base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
                 # Non-dominated infeasible individuals
-                inds = np.bitwise_and(nd_inds, ~feas_inds)
-                ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.9, s=15, marker='x')
-
-                # Dominated infeasible individuals
-                if settings.plot_dominated:
-                    inds = np.bitwise_and(~nd_inds, ~feas_inds)
-                    ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.25, s=15, marker='x')
+                inds = np.bitwise_and(filt, ~feas_inds)
+                alpha_scatter(ax, population.x[inds, j], population.x[inds, i], color=base_color, alpha=alpha[inds], s=15, marker='x')
 
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
