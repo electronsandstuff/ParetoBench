@@ -297,8 +297,7 @@ class PlotDecisionVarPairsSettings:
     upper_bounds: Optional[np.ndarray] = None
     plot_dominated: bool = True
 
-
-def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDecisionVarPairsSettings=PlotDecisionVarPairsSettings()):
+def plot_decision_var_pairs(population: Population, fig=None, axes=None, settings: PlotDecisionVarPairsSettings=PlotDecisionVarPairsSettings()):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
     and their distributions.
@@ -308,14 +307,18 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
     population : paretobench Population
         The population containing data to plot
     fig : matplotlib.figure.Figure, optional
-        Figure to plot on. If None, creates a new figure.
+        Figure to plot on. If None and axes is None, creates a new figure.
+    axes : numpy.ndarray of matplotlib.axes.Axes, optional
+        2D array of axes to plot on. If None and fig is None, creates new axes.
+        Must be provided if fig is provided and vice versa.
     settings : PlotDecisionVarPairsSettings
         Settings related to plotting the decision variables
 
     Returns
     -------
-    matplotlib.figure.Figure
-        The figure containing the pairs plot
+    tuple
+        (matplotlib.figure.Figure, numpy.ndarray of matplotlib.axes.Axes)
+        The figure and axes containing the pairs plot
     """
     # Make sure we have been given data to plot
     if not len(population):
@@ -356,13 +359,35 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
                 f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({n_vars})"
             )
 
-    # Create figure if not provided
-    if fig is None:
-        fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars))
+    # Handle figure and axes creation/validation
+    if fig is None and axes is None:
+        # Create new figure and axes
+        fig, axes = plt.subplots(n_vars, n_vars, 
+                                figsize=(2 * n_vars, 2 * n_vars),
+                                gridspec_kw={'wspace': 0.05, 'hspace': 0.05}, 
+                                layout='constrained', sharex='col')
+    elif (fig is None) != (axes is None):  # XOR operation
+        raise ValueError("Either both fig and axes must be provided or neither must be provided")
+    else:
+        # Validate provided axes dimensions
+        if axes.shape != (n_vars, n_vars):
+            raise ValueError(f"Provided axes must have shape ({n_vars}, {n_vars}), got {axes.shape}")
 
-    # Create gridspec for the layout
-    gs = gridspec.GridSpec(n_vars, n_vars)
-    gs.update(wspace=0.3, hspace=0.3)
+    # Style all axes
+    for i in range(n_vars):
+        for j in range(n_vars):
+            ax = axes[i, j]
+            ax.xaxis.set_major_locator(MaxNLocator(4))
+            ax.yaxis.set_major_locator(MaxNLocator(4))
+            ax.xaxis.set_ticks_position("bottom")
+            ax.yaxis.set_ticks_position("left")
+            
+            # Hide x-axis labels and ticks for all rows except the bottom row
+            if i != n_vars - 1:
+                plt.setp(ax.get_xticklabels(), visible=False)
+                # Hide x-axis labels and ticks for all rows except the bottom row
+            if j != 0:
+                plt.setp(ax.get_yticklabels(), visible=False)
 
     # Get variable names or create default ones
     if population.names_x and settings.include_names:
@@ -377,11 +402,11 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
     nd_inds = population.get_nondominated_indices()
     feas_inds = population.get_feasible_indices()
 
-    # Create all subplots
+    # Plot on all axes
     base_color = None
     for i in range(n_vars):
         for j in range(n_vars):
-            ax = fig.add_subplot(gs[i, j])
+            ax = axes[i, j]
 
             # Diagonal plots (histograms)
             if i == j:
@@ -390,13 +415,9 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
                     if base_color is None:
                         base_color = patches[0].get_facecolor()
                 else:
-                    ax.hist(population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color)
+                    _, _, patches = ax.hist(population.x[nd_inds, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color)
                     if base_color is None:
                         base_color = patches[0].get_facecolor()
-                if i == n_vars - 1:
-                    ax.set_xlabel(var_names[i])
-                if j == 0:
-                    ax.set_ylabel("Density")
 
                 # Add vertical bound lines to histograms
                 if lower_bounds is not None:
@@ -424,11 +445,6 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
                     inds = np.bitwise_and(~nd_inds, ~feas_inds)
                     ax.scatter(population.x[inds, j], population.x[inds, i], color=base_color, alpha=0.25, s=15, marker='x')
 
-                if i == n_vars - 1:
-                    ax.set_xlabel(var_names[j])
-                if j == 0:
-                    ax.set_ylabel(var_names[i])
-
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
                     ax.axvline(lower_bounds[j], **bound_props)  # x-axis bound
@@ -436,20 +452,11 @@ def plot_decision_var_pairs(population: Population, fig=None, settings: PlotDeci
                 if upper_bounds is not None:
                     ax.axvline(upper_bounds[j], **bound_props)  # x-axis bound
                     ax.axhline(upper_bounds[i], **bound_props)  # y-axis bound
-
-            # Remove top and right spines for cleaner look
-            ax.spines["top"].set_visible(False)
-            ax.spines["right"].set_visible(False)
-
-            # Use fewer ticks for cleaner appearance
-            ax.xaxis.set_major_locator(MaxNLocator(5))
-            ax.yaxis.set_major_locator(MaxNLocator(5))
-
-            # Only show ticks on bottom and left
-            ax.xaxis.set_ticks_position("bottom")
-            ax.yaxis.set_ticks_position("left")
-
-    return fig
+            if i == n_vars - 1:
+                ax.set_xlabel(var_names[j])
+            if j == 0:
+                ax.set_ylabel(var_names[i])
+    return fig, axes
 
 
 def animate_objectives(
