@@ -568,78 +568,51 @@ def animate_objectives(
     
     return anim
 
-
 def animate_decision_vars(
     history: History,
     interval: int = 200,
-    decision_var_plot_settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings
+    decision_var_plot_settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings()
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the decision variables evolve across generations.
-    
+
     Parameters
     ----------
     history : paretobench History
         The history object containing populations with data to plot
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    hist_bins : int, optional
-        Number of bins for histograms on the diagonal, default is 20
-    include_names : bool, optional
-        Whether to include variable names on the axes if they exist, default is True
-    problem : str/Problem, optional
-        The problem for plotting decision variable bounds
-    lower_bounds : array-like, optional
-        Lower bounds for each decision variable
-    upper_bounds : array-like, optional
-        Upper bounds for each decision variable
-        
+    decision_var_plot_settings : PlotDecisionVarPairsSettings
+        Settings for the decision variable plots
+
     Returns
     -------
     animation.Animation
         The animation object that can be displayed in notebooks or saved to file
-        
-    Raises
-    ------
-    ValueError
-        If there are no reports in the history
-        If both problem and bounds are specified
-        If bounds dimensions don't match
-        
-    Notes
-    -----
-    This method creates an animation showing how the decision variables evolve over time.
-    For each frame:
-    - Scatter plots show relationships between pairs of variables
-    - Histograms on the diagonal show distribution of each variable
-    - Red dashed lines show variable bounds if provided
-    
-    The animation can be displayed in Jupyter notebooks using:
-    >>> from IPython.display import HTML
-    >>> HTML(anim.to_jshtml())
     """
     if not history.reports:
         raise ValueError("No populations in history to animate")
 
-    settings = copy(decision_var_plot_settings) 
+    settings = copy(decision_var_plot_settings)
     if settings.problem is None:
         settings.problem = history.problem
-    
-    # Get dimensions from first population
-    n_vars = history.reports[0].x.shape[1]
-    
-    # Create figure with appropriate size
-    fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars))
-    
+
+    # Create initial plot to get figure and axes
+    fig, axes = plot_decision_var_pairs(history.reports[0], settings=settings)
+
     # Function to update frame for animation
     def update(frame_idx):
-        fig.clear()
+        # Clear all axes
+        for ax in axes.flat:
+            ax.clear()
+        
         population = history.reports[frame_idx]
         
-        # Use the population's plotting method
+        # Use the population's plotting method with existing fig and axes
         plot_decision_var_pairs(
             population,
             fig=fig,
+            axes=axes,
             settings=settings
         )
         
@@ -648,8 +621,8 @@ def animate_decision_vars(
         fevals = population.fevals
         fig.suptitle(f'Generation {generation} (Fevals: {fevals})')
         
-        return fig,
-    
+        return tuple(axes.flat)
+
     # Create and return the animation
     anim = animation.FuncAnimation(
         fig=fig,
@@ -658,5 +631,5 @@ def animate_decision_vars(
         interval=interval,
         blit=False
     )
-    
+
     return anim
