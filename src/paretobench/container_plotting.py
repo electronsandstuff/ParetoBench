@@ -13,6 +13,61 @@ from .exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesE
 from .utils import fast_dominated_argsort
 
 
+@dataclass
+class PointSettings:
+    nd_inds: np.ndarray
+    feas_inds: np.ndarray
+    markers: np.ndarray
+    plot_filt: np.ndarray
+    alpha: np.ndarray
+
+
+def get_per_point_settings_population(population: Population, plot_dominated, plot_feasible):
+    """
+    Calculate the per-point settings for scatter plots of the population (ie color, marker, which points are visible)
+    based on shared settings across plot types.
+    """
+    # Break the objectives into those which are non-dominated and those which are not
+    nd_inds = population.get_nondominated_indices()
+    feas_inds = population.get_feasible_indices()
+    markers = np.where(feas_inds, "o", "x")
+
+    # Process filters for what is visible
+    plot_filt = np.ones(len(population), dtype=bool)
+
+    # Handle the domination filter
+    if plot_dominated == "all":
+        pass
+    elif plot_dominated == "dominated":
+        plot_filt = np.bitwise_and(plot_filt, ~nd_inds)
+    elif plot_dominated == "non-dominated":
+        plot_filt = np.bitwise_and(plot_filt, nd_inds)
+    else:
+        raise ValueError(f"Unrecognized option for plot_dominated: {plot_dominated}")
+
+    # Handle the feasibility filter
+    if plot_feasible == "all":
+        pass
+    elif plot_feasible == "feasible":
+        plot_filt = np.bitwise_and(plot_filt, feas_inds)
+    elif plot_feasible == "infeasible":
+        plot_filt = np.bitwise_and(plot_filt, ~feas_inds)
+    else:
+        raise ValueError(f"Unrecognized option for plot_feasible: {plot_feasible}")
+
+    # Get the domination ranks and set alpha based on that
+    ranks = np.empty(len(population))
+    for rank, idx in enumerate(fast_dominated_argsort(population.f, population.g)):
+        ranks[idx] = rank
+    if np.all(rank < 1):
+        alpha = np.ones(len(population))
+    else:
+        alpha = 0.5 - ranks / ranks.max() * 0.3
+        alpha[ranks == 0] = 1.0
+
+    return PointSettings(nd_inds=nd_inds, feas_inds=feas_inds, plot_filt=plot_filt, alpha=alpha, markers=markers)
+
+
 def alpha_scatter(ax, x, y, color=None, alpha=None, marker=None, **kwargs):
     if color is None:
         color = ax._get_lines.get_next_color()
@@ -189,43 +244,8 @@ def plot_objectives(
                 f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives and {population.f.shape[1]} in population"
             )
 
-    # Break the objectives into those which are non-dominated and those which are not
-    nd_inds = population.get_nondominated_indices()
-    feas_inds = population.get_feasible_indices()
-    markers = np.where(feas_inds, "o", "x")
-
-    # Process filters for what is visible
-    plot_filt = np.ones(len(population), dtype=bool)
-
-    # Handle the domination filter
-    if settings.plot_dominated == "all":
-        pass
-    elif settings.plot_dominated == "dominated":
-        plot_filt = np.bitwise_and(plot_filt, ~nd_inds)
-    elif settings.plot_dominated == "non-dominated":
-        plot_filt = np.bitwise_and(plot_filt, nd_inds)
-    else:
-        raise ValueError(f"Unrecognized option for plot_dominated: {settings.plot_dominated}")
-
-    # Handle the feasibility filter
-    if settings.plot_feasible == "all":
-        pass
-    elif settings.plot_feasible == "feasible":
-        plot_filt = np.bitwise_and(plot_filt, feas_inds)
-    elif settings.plot_feasible == "infeasible":
-        plot_filt = np.bitwise_and(plot_filt, ~feas_inds)
-    else:
-        raise ValueError(f"Unrecognized option for plot_feasible: {settings.plot_feasible}")
-
-    # Get the domination ranks and set alpha based on that
-    ranks = np.empty(len(population))
-    for rank, idx in enumerate(fast_dominated_argsort(population.f, population.g)):
-        ranks[idx] = rank
-    if np.all(rank < 1):
-        alpha = np.ones(len(population))
-    else:
-        alpha = 0.5 - ranks / ranks.max() * 0.3
-        alpha[ranks == 0] = 1.0
+    # Get the point settings for this plot
+    ps = get_per_point_settings_population(population, settings.plot_dominated, settings.plot_feasible)
 
     # For 2D problems
     add_legend = False
@@ -238,10 +258,10 @@ def plot_objectives(
         # Feasible individuals
         scatter = alpha_scatter(
             ax,
-            population.f[plot_filt, 0],
-            population.f[plot_filt, 1],
-            alpha=alpha[plot_filt],
-            marker=markers[plot_filt],
+            population.f[ps.plot_filt, 0],
+            population.f[ps.plot_filt, 1],
+            alpha=ps.alpha[ps.plot_filt],
+            marker=ps.markers[ps.plot_filt],
             color=base_color,
             s=15,
             label=settings.label,
@@ -250,7 +270,7 @@ def plot_objectives(
             base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
         # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
-        inds = np.bitwise_and(nd_inds, feas_inds)
+        inds = np.bitwise_and(ps.nd_inds, ps.feas_inds)
         filt_f = population.f[inds, :]
         if settings.plot_attainment and len(filt_f) > 0:
             attainment = compute_attainment_surface(filt_f)
@@ -260,8 +280,8 @@ def plot_objectives(
         if settings.plot_dominated_area and len(filt_f) > 0:
             if settings.ref_point is None:
                 padding = settings.ref_point_padding
-                x_lb, x_ub = np.min(population.f[plot_filt, 0]), np.max(population.f[plot_filt, 0])
-                y_lb, y_ub = np.min(population.f[plot_filt, 1]), np.max(population.f[plot_filt, 1])
+                x_lb, x_ub = np.min(population.f[ps.plot_filt, 0]), np.max(population.f[ps.plot_filt, 0])
+                y_lb, y_ub = np.min(population.f[ps.plot_filt, 1]), np.max(population.f[ps.plot_filt, 1])
                 ref_point = (x_ub + (x_ub - x_lb) * padding, y_ub + (y_ub - y_lb) * padding)
             else:
                 ref_point = settings.ref_point
