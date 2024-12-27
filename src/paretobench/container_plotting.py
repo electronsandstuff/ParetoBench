@@ -30,6 +30,30 @@ def get_per_point_settings_population(
     """
     Calculate the per-point settings for scatter plots of the population (ie color, marker, which points are visible)
     based on shared settings across plot types.
+
+    Parameters
+    ----------
+    population : Population
+        Population we are plottings.
+    plot_dominated : {'all', 'dominated', 'non-dominated'}
+        Which points to plot based on domination status.
+    plot_feasible : {'all', 'feasible', 'infeasible'}
+        Which points to plot based on feasibility status.
+
+    Returns
+    -------
+    PointSettings
+        Settings object containing:
+        nd_inds : ndarray of bool
+            Non-dominated indices.
+        feas_inds : ndarray of bool
+            Feasible indices.
+        plot_filt : ndarray of bool
+            Which points should be plotted.
+        alpha : ndarray of float
+            Alpha value per point based on domination rank.
+        markers : ndarray of str
+            Marker type per point ('o' for feasible, 'x' for infeasible).
     """
     # Break the objectives into those which are non-dominated and those which are not
     nd_inds = population.get_nondominated_indices()
