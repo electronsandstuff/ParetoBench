@@ -113,7 +113,7 @@ class PlotObjectivesSettings:
         Passed to `loc` argument of plt.legend
     """
 
-    plot_dominated: bool = True
+    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
     plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
     problem: Optional[str] = None
     n_pf: int = 1000
@@ -193,7 +193,29 @@ def plot_objectives(
     nd_inds = population.get_nondominated_indices()
     feas_inds = population.get_feasible_indices()
     markers = np.where(feas_inds, "o", "x")
-    plot_filt = np.ones(len(population), dtype=bool) if settings.plot_dominated else nd_inds  # Filter which are shown
+
+    # Process filters for what is visible
+    plot_filt = np.ones(len(population), dtype=bool)
+
+    # Handle the domination filter
+    if settings.plot_dominated == "all":
+        pass
+    elif settings.plot_dominated == "dominated":
+        plot_filt = np.bitwise_and(plot_filt, ~nd_inds)
+    elif settings.plot_dominated == "non-dominated":
+        plot_filt = np.bitwise_and(plot_filt, nd_inds)
+    else:
+        raise ValueError(f"Unrecognized option for plot_dominated: {settings.plot_dominated}")
+
+    # Handle the feasibility filter
+    if settings.plot_feasible == "all":
+        pass
+    elif settings.plot_feasible == "feasible":
+        plot_filt = np.bitwise_and(plot_filt, feas_inds)
+    elif settings.plot_feasible == "infeasible":
+        plot_filt = np.bitwise_and(plot_filt, ~feas_inds)
+    else:
+        raise ValueError(f"Unrecognized option for plot_feasible: {settings.plot_feasible}")
 
     # Get the domination ranks and set alpha based on that
     ranks = np.empty(len(population))
