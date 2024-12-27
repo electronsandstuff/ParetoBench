@@ -13,20 +13,32 @@ from .exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesE
 from .utils import fast_dominated_argsort
 
 
-def alpha_scatter(ax, x, y, color=None, alpha=None, **kwargs):
-    # If color is None, get next color from current axes color cycle
+def alpha_scatter(ax, x, y, color=None, alpha=None, marker=None, **kwargs):
     if color is None:
         color = ax._get_lines.get_next_color()
 
     if alpha is None:
         alpha = 1.0
+
     r, g, b = to_rgb(color)
     if isinstance(alpha, float):
         color = (r, g, b, alpha)
     else:
-        color = [(r, g, b, alpha) for alpha in alpha]
+        color = [(r, g, b, a) for a in alpha]
 
-    return ax.scatter(x, y, c=color, **kwargs)
+    if marker is None:
+        return [ax.scatter(x, y, c=color, **kwargs)]
+
+    if isinstance(marker, str):
+        return [ax.scatter(x, y, c=color, marker=marker, **kwargs)]
+
+    points = []
+    unique_markers = set(marker)
+    for m in unique_markers:
+        mask = np.array(marker) == m
+        filtered_color = np.array(color)[mask] if isinstance(color, list) else color
+        points.append(ax.scatter(x[mask], y[mask], c=filtered_color, marker=m, **kwargs))
+    return points
 
 
 def compute_attainment_surface(points):
@@ -180,6 +192,7 @@ def plot_objectives(
     # Break the objectives into those which are non-dominated and those which are not
     nd_inds = population.get_nondominated_indices()
     feas_inds = population.get_feasible_indices()
+    markers = np.where(feas_inds, "o", "x")
     plot_filt = np.ones(len(population), dtype=bool) if settings.plot_dominated else nd_inds  # Filter which are shown
 
     # Get the domination ranks and set alpha based on that
@@ -201,26 +214,18 @@ def plot_objectives(
             ax = fig.add_subplot(111)
 
         # Feasible individuals
-        if settings.plot_feasible in ["all", "feasible"]:
-            inds = np.bitwise_and(plot_filt, feas_inds)
-            scatter = alpha_scatter(
-                ax,
-                population.f[inds, 0],
-                population.f[inds, 1],
-                alpha=alpha[inds],
-                color=base_color,
-                s=15,
-                label=settings.label,
-            )
-            base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
-
-        # Infeasible individuals
-        if settings.plot_feasible in ["all", "infeasible"]:
-            inds = np.bitwise_and(plot_filt, ~feas_inds)
-            scatter = alpha_scatter(
-                ax, population.f[inds, 0], population.f[inds, 1], color=base_color, alpha=alpha[inds], s=15, marker="x"
-            )
-            base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
+        scatter = alpha_scatter(
+            ax,
+            population.f[plot_filt, 0],
+            population.f[plot_filt, 1],
+            alpha=alpha[plot_filt],
+            marker=markers[plot_filt],
+            color=base_color,
+            s=15,
+            label=settings.label,
+        )
+        if scatter:
+            base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
         # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
         inds = np.bitwise_and(nd_inds, feas_inds)
