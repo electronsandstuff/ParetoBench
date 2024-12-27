@@ -22,7 +22,11 @@ class PointSettings:
     alpha: np.ndarray
 
 
-def get_per_point_settings_population(population: Population, plot_dominated, plot_feasible):
+def get_per_point_settings_population(
+    population: Population,
+    plot_dominated: Literal["all", "dominated", "non-dominated"],
+    plot_feasible: Literal["all", "feasible", "infeasible"],
+):
     """
     Calculate the per-point settings for scatter plots of the population (ie color, marker, which points are visible)
     based on shared settings across plot types.
@@ -378,7 +382,7 @@ class PlotDecisionVarPairsSettings:
         Upper bounds for each decision variable
     """
 
-    plot_dominated: bool = True
+    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
     plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
     hist_bins: Optional[int] = None
     include_names: bool = True
@@ -490,20 +494,8 @@ def plot_decision_var_pairs(
     # Define bound line properties
     bound_props = dict(color="red", linestyle="--", alpha=0.5, linewidth=1)
 
-    # Break the objectives into those which are non-dominated and those which are not
-    nd_inds = population.get_nondominated_indices()
-    filt = np.ones(len(population), dtype=bool) if settings.plot_dominated else nd_inds  # Filter which are shown
-    feas_inds = population.get_feasible_indices()
-
-    # Get the domination ranks and set alpha based on that
-    ranks = np.empty(len(population))
-    for rank, idx in enumerate(fast_dominated_argsort(population.f, population.g)):
-        ranks[idx] = rank
-    if np.all(rank < 1):
-        alpha = np.ones(len(population))
-    else:
-        alpha = 0.5 - ranks / ranks.max() * 0.3
-        alpha[ranks == 0] = 1.0
+    # Get the point settings for this plot
+    ps = get_per_point_settings_population(population, settings.plot_dominated, settings.plot_feasible)
 
     # Plot on all axes
     base_color = None
@@ -513,19 +505,9 @@ def plot_decision_var_pairs(
 
             # Diagonal plots (histograms)
             if i == j:
-                # Filter which individuals are shown
-                if settings.plot_dominated:
-                    filt = np.ones(len(population), dtype=bool)
-                else:
-                    filt = nd_inds
-                if settings.plot_feasible == "feasible":
-                    filt = np.bitwise_and(filt, feas_inds)
-                elif settings.plot_feasible == "infeasible":
-                    filt = np.bitwise_and(filt, ~feas_inds)
-
                 # Plot the histogram
                 _, _, patches = ax.hist(
-                    population.x[filt, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
+                    population.x[ps.plot_filt, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
                 )
                 if base_color is None:
                     base_color = patches[0].get_facecolor()
@@ -538,29 +520,18 @@ def plot_decision_var_pairs(
 
             # Off-diagonal plots (scatter plots)
             else:
-                # Feasible individuals
-                if settings.plot_feasible in ["all", "feasible"]:
-                    inds = np.bitwise_and(filt, feas_inds)
-                    scatter = alpha_scatter(
-                        ax, population.x[inds, j], population.x[inds, i], alpha=alpha[inds], color=base_color, s=15
-                    )
-                    if base_color is None:
-                        base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
-
-                # Non-dominated infeasible individuals
-                if settings.plot_feasible in ["all", "infeasible"]:
-                    inds = np.bitwise_and(filt, ~feas_inds)
-                    scatter = alpha_scatter(
-                        ax,
-                        population.x[inds, j],
-                        population.x[inds, i],
-                        color=base_color,
-                        alpha=alpha[inds],
-                        s=15,
-                        marker="x",
-                    )
-                    if base_color is None:
-                        base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
+                # Plot the decision vars
+                scatter = alpha_scatter(
+                    ax,
+                    population.x[ps.plot_filt, j],
+                    population.x[ps.plot_filt, i],
+                    alpha=ps.alpha[ps.plot_filt],
+                    color=base_color,
+                    s=15,
+                    marker=ps.markers[ps.plot_filt],
+                )
+                if base_color is None:
+                    base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
