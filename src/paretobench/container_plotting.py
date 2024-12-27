@@ -99,7 +99,7 @@ def get_per_point_settings_population(
     return PointSettings(nd_inds=nd_inds, feas_inds=feas_inds, plot_filt=plot_filt, alpha=alpha, markers=markers)
 
 
-def alpha_scatter(ax, x, y, color=None, alpha=None, marker=None, **kwargs):
+def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwargs):
     if color is None:
         color = ax._get_lines.get_next_color()
 
@@ -123,7 +123,10 @@ def alpha_scatter(ax, x, y, color=None, alpha=None, marker=None, **kwargs):
     for m in unique_markers:
         mask = np.array(marker) == m
         filtered_color = np.array(color)[mask] if isinstance(color, list) else color
-        points.append(ax.scatter(x[mask], y[mask], c=filtered_color, marker=m, **kwargs))
+        if z is None:
+            points.append(ax.scatter(x[mask], y[mask], c=filtered_color, marker=m, **kwargs))
+        else:
+            points.append(ax.scatter(x[mask], y[mask], z[mask], c=filtered_color, marker=m, **kwargs))
     return points
 
 
@@ -244,8 +247,8 @@ def plot_objectives(
     if not population.m:
         raise NoObjectivesError()
 
-    if fig is None and ax is None:
-        fig, ax = plt.subplots()
+    if fig is None:
+        fig = plt.figure()
 
     # Input validation for Pareto front specification
     pf_sources_specified = sum(x is not None for x in [settings.problem, settings.pf_objectives])
@@ -286,7 +289,7 @@ def plot_objectives(
         if ax is None:
             ax = fig.add_subplot(111)
 
-        # Feasible individuals
+        # Plot the data
         scatter = alpha_scatter(
             ax,
             population.f[ps.plot_filt, 0],
@@ -347,36 +350,42 @@ def plot_objectives(
 
     # For 3D problems
     elif population.f.shape[1] == 3:
-        raise NotImplementedError("3D plotting will be implemented in future")
-        # if settings.plot_attainment or settings.plot_dominated_area:
-        #     raise ValueError("Attainment surface and dominated area plotting is only supported for 2D problems")
+        if settings.plot_attainment or settings.plot_dominated_area:
+            raise ValueError("Attainment surface and dominated area plotting is only supported for 2D problems")
 
-        # # Get an axis if not supplied
-        # if ax is None:
-        #     ax = fig.add_subplot(111, projection="3d")
+        # Get an axis if not supplied
+        if ax is None:
+            ax = fig.add_subplot(111, projection="3d")
 
-        # # Plot non-dominated solutions with high alpha
-        # scatter = ax.scatter(nd_objs[:, 0], nd_objs[:, 1], nd_objs[:, 2], alpha=0.9, s=15)
-        # base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
+        # Plot the data
+        scatter = alpha_scatter(
+            ax,
+            population.f[ps.plot_filt, 0],
+            population.f[ps.plot_filt, 1],
+            population.f[ps.plot_filt, 2],
+            alpha=ps.alpha[ps.plot_filt],
+            marker=ps.markers[ps.plot_filt],
+            color=base_color,
+            s=15,
+            label=settings.label,
+        )
+        if scatter:
+            base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
-        # # Plot dominated solutions with low alpha if requested
-        # if settings.plot_dominated and len(dom_objs) > 0:
-        #     ax.scatter(dom_objs[:, 0], dom_objs[:, 1], dom_objs[:, 2], color=base_color, alpha=0.25, s=15)
+        # Add in Pareto front
+        if pf is not None:
+            ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF")
+            add_legend = True
 
-        # # Add in Pareto front
-        # if pf is not None:
-        #     ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF")
-        #     add_legend = True
-
-        # # Handle the axis labels
-        # if population.names_f:
-        #     ax.set_xlabel(population.names_f[0])
-        #     ax.set_ylabel(population.names_f[1])
-        #     ax.set_zlabel(population.names_f[2])
-        # else:
-        #     ax.set_xlabel(r"$f_1$")
-        #     ax.set_ylabel(r"$f_2$")
-        #     ax.set_zlabel(r"$f_3$")
+        # Handle the axis labels
+        if population.names_f:
+            ax.set_xlabel(population.names_f[0])
+            ax.set_ylabel(population.names_f[1])
+            ax.set_zlabel(population.names_f[2])
+        else:
+            ax.set_xlabel(r"$f_1$")
+            ax.set_ylabel(r"$f_2$")
+            ax.set_zlabel(r"$f_3$")
 
     # We can't plot in 4D :(
     else:
