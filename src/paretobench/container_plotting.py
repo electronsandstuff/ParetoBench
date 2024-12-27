@@ -357,6 +357,11 @@ def plot_objectives(
         if ax is None:
             ax = fig.add_subplot(111, projection="3d")
 
+        # Add in Pareto front
+        if pf is not None:
+            ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF", alpha=0.75)
+            add_legend = True
+
         # Plot the data
         scatter = alpha_scatter(
             ax,
@@ -371,11 +376,6 @@ def plot_objectives(
         )
         if scatter:
             base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
-
-        # Add in Pareto front
-        if pf is not None:
-            ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF")
-            add_legend = True
 
         # Handle the axis labels
         if population.names_f:
