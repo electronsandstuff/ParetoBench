@@ -214,6 +214,123 @@ def save_mesh_to_stl(vertices: np.ndarray, triangles: np.ndarray, filename: str)
             f.write(" endfacet\n")
 
 
+def get_vertex_index(point, vertex_dict, vertices):
+    """Helper function to get or create vertex index for a point."""
+    point_tuple = tuple(point)
+    if point_tuple not in vertex_dict:
+        vertex_dict[point_tuple] = len(vertices)
+        vertices.append(point)
+    return vertex_dict[point_tuple]
+
+
+def get_nondominated_2d(points_array):
+    """Get nondominated points in 2D using numpy operations."""
+    if len(points_array) == 0:
+        return np.array([])
+
+    is_dominated = np.zeros(len(points_array), dtype=bool)
+    for i, point in enumerate(points_array):
+        # Check if any other point dominates this point
+        dominates = (points_array[:, 0] <= point[0]) & (points_array[:, 1] <= point[1])
+        strictly_dominates = (points_array[:, 0] < point[0]) | (points_array[:, 1] < point[1])
+        is_dominated[i] = np.any(dominates & strictly_dominates & (np.arange(len(points_array)) != i))
+
+    return points_array[~is_dominated]
+
+
+def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, vertices):
+    """
+    Generate mesh for a plane where fixed_dim is the sorting dimension
+    and dim1, dim2 are the dimensions to create the grid in.
+    """
+    triangles_plane = []
+
+    # Process each point by increasing fixed_dim coordinate
+    for i, current_point in enumerate(sorted_points):
+        # Get points with smaller fixed_dim coordinate
+        previous_points = sorted_points[:i]
+        current_fixed = current_point[fixed_dim]
+
+        if len(previous_points) == 0:
+            # If no previous points, just add triangles up to reference point
+            point_2d = np.array(
+                [
+                    [current_point[dim1], current_point[dim2]],
+                    [current_point[dim1], reference[dim2]],
+                    [reference[dim1], current_point[dim2]],
+                    [reference[dim1], reference[dim2]],
+                ]
+            )
+
+            # Create vertex coordinates in 3D
+            vertices_3d = []
+            for p in point_2d:
+                coord = np.zeros(3)
+                coord[fixed_dim] = current_fixed
+                coord[dim1] = p[0]
+                coord[dim2] = p[1]
+                vertices_3d.append(get_vertex_index(coord, vertex_dict, vertices))
+
+            # Add two triangles for the rectangle
+            triangles_plane.extend(
+                [[vertices_3d[0], vertices_3d[1], vertices_3d[3]], [vertices_3d[0], vertices_3d[3], vertices_3d[2]]]
+            )
+            continue
+
+        # Get nondominated points from previous layers
+        previous_2d = np.column_stack((previous_points[:, dim1], previous_points[:, dim2]))
+        nd_points = get_nondominated_2d(previous_2d)
+
+        # Get unique coordinates including current point and reference
+        coords1 = np.unique(np.concatenate([nd_points[:, 0], [current_point[dim1], reference[dim1]]]))
+        coords2 = np.unique(np.concatenate([nd_points[:, 1], [current_point[dim2], reference[dim2]]]))
+
+        # Create grid of coordinates
+        C1, C2 = np.meshgrid(coords1[:-1], coords2[:-1])
+        next_C1, next_C2 = np.meshgrid(coords1[1:], coords2[1:])
+
+        # For each grid cell
+        grid_shape = C1.shape
+        for row in range(grid_shape[0]):
+            for col in range(grid_shape[1]):
+                cell_min = np.array([C1[row, col], C2[row, col]])
+                cell_max = np.array([next_C1[row, col], next_C2[row, col]])
+
+                # Check if cell is dominated by current point
+                if cell_min[0] >= current_point[dim1] and cell_min[1] >= current_point[dim2]:
+                    # Check if cell is not dominated by any previous nondominated point
+                    is_dominated_by_previous = False
+                    for nd_point in nd_points:
+                        if cell_min[0] >= nd_point[0] and cell_min[1] >= nd_point[1]:
+                            is_dominated_by_previous = True
+                            break
+
+                    if not is_dominated_by_previous:
+                        # Create vertices for this cell
+                        vertices_3d = []
+                        for p in [
+                            (cell_min[0], cell_min[1]),
+                            (cell_max[0], cell_min[1]),
+                            (cell_min[0], cell_max[1]),
+                            (cell_max[0], cell_max[1]),
+                        ]:
+                            coord = np.zeros(3)
+                            coord[fixed_dim] = current_fixed
+                            coord[dim1] = p[0]
+                            coord[dim2] = p[1]
+                            vertices_3d.append(get_vertex_index(coord, vertex_dict, vertices))
+
+                        # Add triangles for this cell
+                        triangles_plane.extend(
+                            [
+                                [vertices_3d[0], vertices_3d[1], vertices_3d[3]],
+                                [vertices_3d[0], vertices_3d[3], vertices_3d[2]],
+                            ]
+                        )
+
+    return triangles_plane
+
+
 def compute_attainment_surface_3d(points: np.ndarray, reference=None):
     """
     Generate triangular mesh for union of cuboids.
@@ -237,106 +354,23 @@ def compute_attainment_surface_3d(points: np.ndarray, reference=None):
     if not np.all(reference >= np.max(points, axis=0)):
         raise ValueError("Reference point must dominate all points")
 
-    # Get unique coordinates along each axis
-    xs = np.unique(np.r_[points[:, 0], reference[0]])
-    ys = np.unique(np.r_[points[:, 1], reference[1]])
-    zs = np.unique(np.r_[points[:, 2], reference[2]])
-
     vertices = []
     triangles = []
     vertex_dict = {}
 
-    def add_vertex(v):
-        v_tuple = tuple(v)
-        if v_tuple not in vertex_dict:
-            vertex_dict[v_tuple] = len(vertices)
-            vertices.append(v)
-        return vertex_dict[v_tuple]
+    # Sort points in each dimension
+    sorted_by_z = points[np.argsort(points[:, 2])]  # For XY plane
+    sorted_by_x = points[np.argsort(points[:, 0])]  # For YZ plane
+    sorted_by_y = points[np.argsort(points[:, 1])]  # For XZ plane
 
-    # Create all cell centers at once using meshgrid
-    xc = (xs[:-1] + xs[1:]) / 2
-    yc = (ys[:-1] + ys[1:]) / 2
-    zc = (zs[:-1] + zs[1:]) / 2
+    # Process XY plane (sorted by Z)
+    triangles.extend(mesh_plane(sorted_by_z, 2, 0, 1, reference, vertex_dict, vertices))
 
-    # Create grid of centers
-    X, Y, Z = np.meshgrid(xc, yc, zc, indexing="ij")
-    centers = np.stack([X, Y, Z], axis=-1)  # shape: (nx-1, ny-1, nz-1, 3)
+    # Process YZ plane (sorted by X)
+    triangles.extend(mesh_plane(sorted_by_x, 0, 1, 2, reference, vertex_dict, vertices))
 
-    # Test if any point in points dominates each center
-    dominated = np.any(
-        np.all(points[:, np.newaxis, np.newaxis, np.newaxis, :] <= centers[np.newaxis, :, :, :, :], axis=-1), axis=0
-    )
-
-    # Now iterate through dominated cells to create faces
-    for i in range(len(xc)):
-        for j in range(len(yc)):
-            for k in range(len(zc)):
-                if dominated[i, j, k]:
-                    # -x face
-                    if i == 0 or not dominated[i - 1, j, k]:
-                        v = np.array([xs[i], ys[j], zs[k]])
-                        indices = [
-                            add_vertex(v),
-                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
-                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
-                            add_vertex(v + [0, ys[j + 1] - ys[j], zs[k + 1] - zs[k]]),
-                        ]
-                        triangles.extend([[indices[0], indices[1], indices[2]], [indices[2], indices[1], indices[3]]])
-
-                    # +x face
-                    if i == len(xc) - 1 or not dominated[i + 1, j, k]:
-                        v = np.array([xs[i + 1], ys[j], zs[k]])
-                        indices = [
-                            add_vertex(v),
-                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
-                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
-                            add_vertex(v + [0, ys[j + 1] - ys[j], zs[k + 1] - zs[k]]),
-                        ]
-                        triangles.extend([[indices[0], indices[2], indices[1]], [indices[2], indices[3], indices[1]]])
-
-                    # -y face
-                    if j == 0 or not dominated[i, j - 1, k]:
-                        v = np.array([xs[i], ys[j], zs[k]])
-                        indices = [
-                            add_vertex(v),
-                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
-                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
-                            add_vertex(v + [xs[i + 1] - xs[i], 0, zs[k + 1] - zs[k]]),
-                        ]
-                        triangles.extend([[indices[0], indices[2], indices[1]], [indices[2], indices[3], indices[1]]])
-
-                    # +y face
-                    if j == len(yc) - 1 or not dominated[i, j + 1, k]:
-                        v = np.array([xs[i], ys[j + 1], zs[k]])
-                        indices = [
-                            add_vertex(v),
-                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
-                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
-                            add_vertex(v + [xs[i + 1] - xs[i], 0, zs[k + 1] - zs[k]]),
-                        ]
-                        triangles.extend([[indices[0], indices[1], indices[2]], [indices[2], indices[1], indices[3]]])
-
-                    # -z face
-                    if k == 0 or not dominated[i, j, k - 1]:
-                        v = np.array([xs[i], ys[j], zs[k]])
-                        indices = [
-                            add_vertex(v),
-                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
-                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
-                            add_vertex(v + [xs[i + 1] - xs[i], ys[j + 1] - ys[j], 0]),
-                        ]
-                        triangles.extend([[indices[0], indices[2], indices[1]], [indices[2], indices[3], indices[1]]])
-
-                    # +z face
-                    if k == len(zc) - 1 or not dominated[i, j, k + 1]:
-                        v = np.array([xs[i], ys[j], zs[k + 1]])
-                        indices = [
-                            add_vertex(v),
-                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
-                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
-                            add_vertex(v + [xs[i + 1] - xs[i], ys[j + 1] - ys[j], 0]),
-                        ]
-                        triangles.extend([[indices[0], indices[1], indices[2]], [indices[2], indices[1], indices[3]]])
+    # Process XZ plane (sorted by Y)
+    triangles.extend(mesh_plane(sorted_by_y, 1, 0, 2, reference, vertex_dict, vertices))
 
     return np.array(vertices), np.array(triangles)
 
