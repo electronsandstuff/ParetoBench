@@ -608,7 +608,10 @@ def plot_objectives(
         if scatter:
             base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
-        if settings.plot_attainment or settings.plot_dominated_area:
+        if settings.plot_dominated_area:
+            raise NotImplementedError("Cannot display dominated volume in 3D :(")
+
+        if settings.plot_attainment:
             vertices, faces = compute_attainment_surface_3d(population.f[np.bitwise_and(ps.nd_inds, ps.feas_inds), :])
             poly3d = Poly3DCollection(
                 [vertices[face] for face in faces],
