@@ -1,11 +1,12 @@
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
+from copy import copy
+from dataclasses import dataclass
 from matplotlib import animation
 from matplotlib.colors import to_rgb
+from matplotlib.ticker import MaxNLocator
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from typing import Optional, Tuple, Literal
+import matplotlib.pyplot as plt
 import numpy as np
-from dataclasses import dataclass
-from copy import copy
 
 from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
@@ -169,6 +170,175 @@ def compute_attainment_surface(points):
         surface.append(next_point)
 
     return np.array(surface)
+
+
+def save_mesh_to_stl(vertices: np.ndarray, triangles: np.ndarray, filename: str):
+    """
+    Save a triangular mesh to STL file format.
+
+    Args:
+        vertices: (n,3) array of vertex coordinates
+        triangles: (m,3) array of triangle indices into vertices
+        filename: output filename (should end in .stl)
+    """
+    # Ensure proper file extension
+    if not filename.endswith(".stl"):
+        filename += ".stl"
+
+    with open(filename, "w") as f:
+        f.write("solid attainment_surface\n")
+
+        # For each triangle
+        for triangle in triangles:
+            # Get vertex coordinates for this triangle
+            v0 = vertices[triangle[0]]
+            v1 = vertices[triangle[1]]
+            v2 = vertices[triangle[2]]
+
+            # Compute normal using cross product
+            edge1 = v1 - v0
+            edge2 = v2 - v0
+            normal = np.cross(edge1, edge2)
+            # Normalize
+            length = np.sqrt(np.sum(normal**2))
+            if length > 0:
+                normal = normal / length
+
+            # Write facet
+            f.write(f" facet normal {normal[0]:.6e} {normal[1]:.6e} {normal[2]:.6e}\n")
+            f.write("  outer loop\n")
+            f.write(f"   vertex {v0[0]:.6e} {v0[1]:.6e} {v0[2]:.6e}\n")
+            f.write(f"   vertex {v1[0]:.6e} {v1[1]:.6e} {v1[2]:.6e}\n")
+            f.write(f"   vertex {v2[0]:.6e} {v2[1]:.6e} {v2[2]:.6e}\n")
+            f.write("  endloop\n")
+            f.write(" endfacet\n")
+
+
+def compute_attainment_surface_3d(points: np.ndarray, reference=None):
+    """
+    Generate triangular mesh for union of cuboids.
+    Args:
+        points: (n,3) array of points, each defining a cuboid corner
+        reference: (3,) array defining the other corner of each cuboid
+    Returns:
+        vertices: (m,3) array of unique vertices in the mesh
+        triangles: (k,3) array of indices into vertices defining triangles
+    """
+    if points.shape[1] != 3:
+        raise ValueError("This function only works for 3D points")
+
+    # If no reference point provided, compute one
+    if reference is None:
+        padding = 0.1
+        max_vals = np.max(points, axis=0)
+        range_vals = max_vals - np.min(points, axis=0)
+        reference = max_vals + padding * range_vals
+    reference = np.asarray(reference)
+    if not np.all(reference >= np.max(points, axis=0)):
+        raise ValueError("Reference point must dominate all points")
+
+    # Get unique coordinates along each axis
+    xs = np.unique(np.r_[points[:, 0], reference[0]])
+    ys = np.unique(np.r_[points[:, 1], reference[1]])
+    zs = np.unique(np.r_[points[:, 2], reference[2]])
+
+    vertices = []
+    triangles = []
+    vertex_dict = {}
+
+    def add_vertex(v):
+        v_tuple = tuple(v)
+        if v_tuple not in vertex_dict:
+            vertex_dict[v_tuple] = len(vertices)
+            vertices.append(v)
+        return vertex_dict[v_tuple]
+
+    # Create all cell centers at once using meshgrid
+    xc = (xs[:-1] + xs[1:]) / 2
+    yc = (ys[:-1] + ys[1:]) / 2
+    zc = (zs[:-1] + zs[1:]) / 2
+
+    # Create grid of centers
+    X, Y, Z = np.meshgrid(xc, yc, zc, indexing="ij")
+    centers = np.stack([X, Y, Z], axis=-1)  # shape: (nx-1, ny-1, nz-1, 3)
+
+    # Test if any point in points dominates each center
+    dominated = np.any(
+        np.all(points[:, np.newaxis, np.newaxis, np.newaxis, :] <= centers[np.newaxis, :, :, :, :], axis=-1), axis=0
+    )
+
+    # Now iterate through dominated cells to create faces
+    for i in range(len(xc)):
+        for j in range(len(yc)):
+            for k in range(len(zc)):
+                if dominated[i, j, k]:
+                    # -x face
+                    if i == 0 or not dominated[i - 1, j, k]:
+                        v = np.array([xs[i], ys[j], zs[k]])
+                        indices = [
+                            add_vertex(v),
+                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
+                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
+                            add_vertex(v + [0, ys[j + 1] - ys[j], zs[k + 1] - zs[k]]),
+                        ]
+                        triangles.extend([[indices[0], indices[1], indices[2]], [indices[2], indices[1], indices[3]]])
+
+                    # +x face
+                    if i == len(xc) - 1 or not dominated[i + 1, j, k]:
+                        v = np.array([xs[i + 1], ys[j], zs[k]])
+                        indices = [
+                            add_vertex(v),
+                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
+                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
+                            add_vertex(v + [0, ys[j + 1] - ys[j], zs[k + 1] - zs[k]]),
+                        ]
+                        triangles.extend([[indices[0], indices[2], indices[1]], [indices[2], indices[3], indices[1]]])
+
+                    # -y face
+                    if j == 0 or not dominated[i, j - 1, k]:
+                        v = np.array([xs[i], ys[j], zs[k]])
+                        indices = [
+                            add_vertex(v),
+                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
+                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
+                            add_vertex(v + [xs[i + 1] - xs[i], 0, zs[k + 1] - zs[k]]),
+                        ]
+                        triangles.extend([[indices[0], indices[2], indices[1]], [indices[2], indices[3], indices[1]]])
+
+                    # +y face
+                    if j == len(yc) - 1 or not dominated[i, j + 1, k]:
+                        v = np.array([xs[i], ys[j + 1], zs[k]])
+                        indices = [
+                            add_vertex(v),
+                            add_vertex(v + [0, 0, zs[k + 1] - zs[k]]),
+                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
+                            add_vertex(v + [xs[i + 1] - xs[i], 0, zs[k + 1] - zs[k]]),
+                        ]
+                        triangles.extend([[indices[0], indices[1], indices[2]], [indices[2], indices[1], indices[3]]])
+
+                    # -z face
+                    if k == 0 or not dominated[i, j, k - 1]:
+                        v = np.array([xs[i], ys[j], zs[k]])
+                        indices = [
+                            add_vertex(v),
+                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
+                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
+                            add_vertex(v + [xs[i + 1] - xs[i], ys[j + 1] - ys[j], 0]),
+                        ]
+                        triangles.extend([[indices[0], indices[2], indices[1]], [indices[2], indices[3], indices[1]]])
+
+                    # +z face
+                    if k == len(zc) - 1 or not dominated[i, j, k + 1]:
+                        v = np.array([xs[i], ys[j], zs[k + 1]])
+                        indices = [
+                            add_vertex(v),
+                            add_vertex(v + [xs[i + 1] - xs[i], 0, 0]),
+                            add_vertex(v + [0, ys[j + 1] - ys[j], 0]),
+                            add_vertex(v + [xs[i + 1] - xs[i], ys[j + 1] - ys[j], 0]),
+                        ]
+                        triangles.extend([[indices[0], indices[1], indices[2]], [indices[2], indices[1], indices[3]]])
+
+    return np.array(vertices), np.array(triangles)
 
 
 @dataclass
@@ -350,9 +520,6 @@ def plot_objectives(
 
     # For 3D problems
     elif population.f.shape[1] == 3:
-        if settings.plot_attainment or settings.plot_dominated_area:
-            raise ValueError("Attainment surface and dominated area plotting is only supported for 2D problems")
-
         # Get an axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111, projection="3d")
@@ -376,6 +543,20 @@ def plot_objectives(
         )
         if scatter:
             base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
+
+        if settings.plot_attainment or settings.plot_dominated_area:
+            from matplotlib.colors import LightSource
+
+            vertices, faces = compute_attainment_surface_3d(population.f[np.bitwise_and(ps.nd_inds, ps.feas_inds), :])
+            save_mesh_to_stl(vertices, faces, "test.stl")
+            poly3d = Poly3DCollection(
+                [vertices[face] for face in faces],
+                shade=True,
+                facecolors=base_color,
+                edgecolors=base_color,
+                lightsource=LightSource(azdeg=174, altdeg=-15),
+            )
+            ax.add_collection3d(poly3d)
 
         # Handle the axis labels
         if population.names_f:
