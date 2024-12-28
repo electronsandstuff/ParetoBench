@@ -238,6 +238,47 @@ def get_nondominated_2d(points_array):
     return points_array[~is_dominated]
 
 
+def find_rectangles(valid_cells, coords1, coords2):
+    """
+    Find maximal rectangles in a binary grid.
+    Returns list of (min_coord1, min_coord2, max_coord1, max_coord2) for each rectangle.
+    """
+    if not valid_cells.any():
+        return []
+
+    rectangles = []
+    remaining = valid_cells.copy()
+
+    while remaining.any():
+        # Find first remaining true cell
+        row_idx, col_idx = np.nonzero(remaining)
+        start_row, start_col = row_idx[0], col_idx[0]
+
+        # Try to expand rectangle right and down
+        max_col = start_col
+        while max_col + 1 < remaining.shape[1] and remaining[start_row, max_col + 1]:
+            max_col += 1
+
+        max_row = start_row
+        while max_row + 1 < remaining.shape[0]:
+            can_expand = True
+            for c in range(start_col, max_col + 1):
+                if not remaining[max_row + 1, c]:
+                    can_expand = False
+                    break
+            if not can_expand:
+                break
+            max_row += 1
+
+        # Add rectangle
+        rectangles.append((coords1[start_col], coords2[start_row], coords1[max_col + 1], coords2[max_row + 1]))
+
+        # Mark used cells as processed
+        remaining[start_row : max_row + 1, start_col : max_col + 1] = False
+
+    return rectangles
+
+
 def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, vertices):
     """
     Generate mesh for a plane where fixed_dim is the sorting dimension
@@ -252,26 +293,20 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
         current_fixed = current_point[fixed_dim]
 
         if len(previous_points) == 0:
-            # If no previous points, just add triangles up to reference point
-            point_2d = np.array(
-                [
-                    [current_point[dim1], current_point[dim2]],
-                    [current_point[dim1], reference[dim2]],
-                    [reference[dim1], current_point[dim2]],
-                    [reference[dim1], reference[dim2]],
-                ]
-            )
-
-            # Create vertex coordinates in 3D
+            # If no previous points, just add one rectangle up to reference point
             vertices_3d = []
-            for p in point_2d:
+            for p in [
+                [current_point[dim1], current_point[dim2]],
+                [reference[dim1], current_point[dim2]],
+                [current_point[dim1], reference[dim2]],
+                [reference[dim1], reference[dim2]],
+            ]:
                 coord = np.zeros(3)
                 coord[fixed_dim] = current_fixed
                 coord[dim1] = p[0]
                 coord[dim2] = p[1]
                 vertices_3d.append(get_vertex_index(coord, vertex_dict, vertices))
 
-            # Add two triangles for the rectangle
             triangles_plane.extend(
                 [[vertices_3d[0], vertices_3d[1], vertices_3d[3]], [vertices_3d[0], vertices_3d[3], vertices_3d[2]]]
             )
@@ -285,16 +320,13 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
         coords1 = np.unique(np.concatenate([nd_points[:, 0], [current_point[dim1], reference[dim1]]]))
         coords2 = np.unique(np.concatenate([nd_points[:, 1], [current_point[dim2], reference[dim2]]]))
 
-        # Create grid of coordinates
-        C1, C2 = np.meshgrid(coords1[:-1], coords2[:-1])
-        next_C1, next_C2 = np.meshgrid(coords1[1:], coords2[1:])
+        # Create grid of valid cells
+        valid_cells = np.zeros((len(coords2) - 1, len(coords1) - 1), dtype=bool)
 
         # For each grid cell
-        grid_shape = C1.shape
-        for row in range(grid_shape[0]):
-            for col in range(grid_shape[1]):
-                cell_min = np.array([C1[row, col], C2[row, col]])
-                cell_max = np.array([next_C1[row, col], next_C2[row, col]])
+        for row in range(valid_cells.shape[0]):
+            for col in range(valid_cells.shape[1]):
+                cell_min = np.array([coords1[col], coords2[row]])
 
                 # Check if cell is dominated by current point
                 if cell_min[0] >= current_point[dim1] and cell_min[1] >= current_point[dim2]:
@@ -305,28 +337,24 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
                             is_dominated_by_previous = True
                             break
 
-                    if not is_dominated_by_previous:
-                        # Create vertices for this cell
-                        vertices_3d = []
-                        for p in [
-                            (cell_min[0], cell_min[1]),
-                            (cell_max[0], cell_min[1]),
-                            (cell_min[0], cell_max[1]),
-                            (cell_max[0], cell_max[1]),
-                        ]:
-                            coord = np.zeros(3)
-                            coord[fixed_dim] = current_fixed
-                            coord[dim1] = p[0]
-                            coord[dim2] = p[1]
-                            vertices_3d.append(get_vertex_index(coord, vertex_dict, vertices))
+                    valid_cells[row, col] = not is_dominated_by_previous
 
-                        # Add triangles for this cell
-                        triangles_plane.extend(
-                            [
-                                [vertices_3d[0], vertices_3d[1], vertices_3d[3]],
-                                [vertices_3d[0], vertices_3d[3], vertices_3d[2]],
-                            ]
-                        )
+        # Find maximal rectangles in valid cells
+        rectangles = find_rectangles(valid_cells, coords1, coords2)
+
+        # Create triangles for each rectangle
+        for rect_min1, rect_min2, rect_max1, rect_max2 in rectangles:
+            vertices_3d = []
+            for p in [[rect_min1, rect_min2], [rect_max1, rect_min2], [rect_min1, rect_max2], [rect_max1, rect_max2]]:
+                coord = np.zeros(3)
+                coord[fixed_dim] = current_fixed
+                coord[dim1] = p[0]
+                coord[dim2] = p[1]
+                vertices_3d.append(get_vertex_index(coord, vertex_dict, vertices))
+
+            triangles_plane.extend(
+                [[vertices_3d[0], vertices_3d[1], vertices_3d[3]], [vertices_3d[0], vertices_3d[3], vertices_3d[2]]]
+            )
 
     return triangles_plane
 
