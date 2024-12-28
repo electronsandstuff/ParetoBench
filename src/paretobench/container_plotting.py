@@ -1,12 +1,14 @@
 from copy import copy
 from dataclasses import dataclass
 from matplotlib import animation
+from matplotlib.colors import LightSource
 from matplotlib.colors import to_rgb
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from typing import Optional, Tuple, Literal
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
@@ -607,10 +609,7 @@ def plot_objectives(
             base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
         if settings.plot_attainment or settings.plot_dominated_area:
-            from matplotlib.colors import LightSource
-
             vertices, faces = compute_attainment_surface_3d(population.f[np.bitwise_and(ps.nd_inds, ps.feas_inds), :])
-            save_mesh_to_stl(vertices, faces, "test.stl")
             poly3d = Poly3DCollection(
                 [vertices[face] for face in faces],
                 shade=True,
