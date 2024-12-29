@@ -840,7 +840,10 @@ def plot_decision_var_pairs(
 
 
 def animate_objectives(
-    history: History, interval: int = 200, objectives_plot_settings: PlotObjectivesSettings = PlotObjectivesSettings()
+    history: History,
+    interval: int = 200,
+    objectives_plot_settings: PlotObjectivesSettings = PlotObjectivesSettings(),
+    dynamic_scaling: bool = False,
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the Pareto front evolves across generations.
@@ -851,38 +854,16 @@ def animate_objectives(
         The history object containing populations with data to plot
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    problem : str, optional
-        Name of the problem for true Pareto front plotting, by default None
-    n_pf : int, optional
-        Number of points for Pareto front plotting when applicable, by default 1000
-    figsize : Tuple[int, int], optional
-        Figure size in inches (width, height), by default (8, 6)
+    objectives_plot_settings : PlotObjectivesSettings, optional
+        Settings for plotting objectives
+    dynamic_scaling : bool, optional
+        If True, axes limits will update based on each frame's data.
+        If False, axes limits will be fixed based on all data, by default False
 
     Returns
     -------
     animation.Animation
         The animation object that can be displayed in notebooks or saved to file
-
-    Raises
-    ------
-    ValueError
-        If the population has more than 3 objectives (cannot be visualized)
-        If there are no reports in the history
-
-    Notes
-    -----
-    This method creates an animation showing how the Pareto front evolves over time.
-    For each frame:
-    - Red points show the current population's non-dominated solutions
-    - Gray points show dominated solutions
-    - Black points show the true Pareto front (if problem is provided)
-
-    The animation can be displayed in Jupyter notebooks using:
-    >>> from IPython.display import HTML
-    >>> HTML(anim.to_jshtml())
-
-    Or saved to file using:
-    >>> anim.save('filename.gif', writer='pillow')
     """
     if not history.reports:
         raise ValueError("No populations in history to animate")
@@ -905,8 +886,8 @@ def animate_objectives(
     else:
         ax = fig.add_subplot(111)
 
-    # Ensure consistent axis limits across frames
-    if n_objectives == 2:
+    # Calculate global axis limits if not using dynamic scaling
+    if not dynamic_scaling and n_objectives == 2:
         padding = 0.05
         all_f = np.vstack([pop.f for pop in history.reports])
         xlim = (np.min(all_f[:, 0]), np.max(all_f[:, 0]))
@@ -927,9 +908,28 @@ def animate_objectives(
         fevals = population.fevals
         ax.set_title(f"Generation {generation} (Fevals: {fevals})")
 
-        # Scale the plot
-        ax.set_xlim(*xlim)
-        ax.set_ylim(*ylim)
+        if n_objectives == 2:
+            if dynamic_scaling:
+                # Calculate frame-specific limits
+                padding = 0.05
+                f = population.f
+                current_xlim = (np.min(f[:, 0]), np.max(f[:, 0]))
+                current_ylim = (np.min(f[:, 1]), np.max(f[:, 1]))
+                current_xlim = (
+                    current_xlim[0] - (current_xlim[1] - current_xlim[0]) * padding,
+                    current_xlim[1] + (current_xlim[1] - current_xlim[0]) * padding,
+                )
+                current_ylim = (
+                    current_ylim[0] - (current_ylim[1] - current_ylim[0]) * padding,
+                    current_ylim[1] + (current_ylim[1] - current_ylim[0]) * padding,
+                )
+                ax.set_xlim(*current_xlim)
+                ax.set_ylim(*current_ylim)
+            else:
+                # Use global limits
+                ax.set_xlim(*xlim)
+                ax.set_ylim(*ylim)
+
         return (ax,)
 
     # Create and return the animation
