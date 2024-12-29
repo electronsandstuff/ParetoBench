@@ -133,7 +133,7 @@ def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwarg
     return points
 
 
-def compute_attainment_surface(points):
+def compute_attainment_surface_2d(points: np.ndarray, ref_point=None, padding=0.1):
     """
     Compute the attainment surface for a set of non-dominated points in 2D.
     The surface consists of horizontal and vertical lines connecting the points,
@@ -153,6 +153,21 @@ def compute_attainment_surface(points):
     if points.shape[1] != 2:
         raise ValueError("Attainment surface can only be computed for 2D points")
 
+    # Handle missing ref-point
+    if ref_point is None:
+        x_lb, x_ub = np.min(points[:, 0]), np.max(points[:, 0])
+        y_lb, y_ub = np.min(points[:, 1]), np.max(points[:, 1])
+        ref_point = (x_ub + (x_ub - x_lb) * padding, y_ub + (y_ub - y_lb) * padding)
+
+    # Get only nondominated points
+    points = get_nondominated(points)
+
+    if (ref_point[0] < points[:, 0]).any() or (ref_point[1] < points[:, 1]).any():
+        raise ValueError(
+            f"Reference point coordinates must exceed all points in non-dominated set "
+            f"(ref_point={ref_point}, max_pf=({np.max(points[:, 0])}, {np.max(points[:, 1])}))"
+        )
+
     # Sort points by x coordinate (first objective)
     sorted_indices = np.argsort(points[:, 0])
     sorted_points = points[sorted_indices]
@@ -170,8 +185,15 @@ def compute_attainment_surface(points):
         surface.append([next_point[0], current[1]])
         # Add the next point
         surface.append(next_point)
-
-    return np.array(surface)
+    surface = np.array(surface)
+    return np.concatenate(
+        (
+            [[surface[0, 0], ref_point[1]]],
+            surface,
+            [[ref_point[0], surface[-1, 1]]],
+        ),
+        axis=0,
+    )
 
 
 def save_mesh_to_stl(vertices: np.ndarray, triangles: np.ndarray, filename: str):
@@ -225,19 +247,16 @@ def get_vertex_index(point, vertex_dict, vertices):
     return vertex_dict[point_tuple]
 
 
-def get_nondominated_2d(points_array):
-    """Get nondominated points in 2D using numpy operations."""
+def get_nondominated(points_array):
     if len(points_array) == 0:
         return np.array([])
 
-    is_dominated = np.zeros(len(points_array), dtype=bool)
-    for i, point in enumerate(points_array):
-        # Check if any other point dominates this point
-        dominates = (points_array[:, 0] <= point[0]) & (points_array[:, 1] <= point[1])
-        strictly_dominates = (points_array[:, 0] < point[0]) | (points_array[:, 1] < point[1])
-        is_dominated[i] = np.any(dominates & strictly_dominates & (np.arange(len(points_array)) != i))
-
-    return points_array[~is_dominated]
+    dom = np.bitwise_and(
+        (points_array[:, None, :] <= points_array[None, :, :]).all(axis=-1),
+        (points_array[:, None, :] < points_array[None, :, :]).any(axis=-1),
+    )
+    nondominated = np.sum(dom, axis=0) == 0
+    return points_array[nondominated, :]
 
 
 def find_rectangles(valid_cells, coords1, coords2):
@@ -316,7 +335,7 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
 
         # Get nondominated points from previous layers
         previous_2d = np.column_stack((previous_points[:, dim1], previous_points[:, dim2]))
-        nd_points = get_nondominated_2d(previous_2d)
+        nd_points = get_nondominated(previous_2d)
 
         # Get unique coordinates including current point and reference
         coords1 = np.unique(np.concatenate([nd_points[:, 0], [current_point[dim1], reference[dim1]]]))
@@ -361,7 +380,7 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
     return triangles_plane
 
 
-def compute_attainment_surface_3d(points: np.ndarray, reference=None):
+def compute_attainment_surface_3d(points: np.ndarray, reference=None, padding=0.1):
     """
     Generate triangular mesh for union of cuboids.
     Args:
@@ -376,13 +395,15 @@ def compute_attainment_surface_3d(points: np.ndarray, reference=None):
 
     # If no reference point provided, compute one
     if reference is None:
-        padding = 0.1
         max_vals = np.max(points, axis=0)
         range_vals = max_vals - np.min(points, axis=0)
         reference = max_vals + padding * range_vals
     reference = np.asarray(reference)
     if not np.all(reference >= np.max(points, axis=0)):
         raise ValueError("Reference point must dominate all points")
+
+    # Get the nondominated points
+    points = get_nondominated(points)
 
     vertices = []
     triangles = []
@@ -541,30 +562,16 @@ def plot_objectives(
         inds = np.bitwise_and(ps.nd_inds, ps.feas_inds)
         filt_f = population.f[inds, :]
         if settings.plot_attainment and len(filt_f) > 0:
-            attainment = compute_attainment_surface(filt_f)
+            attainment = compute_attainment_surface_2d(filt_f)
             ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, label="Attainment Surface")
             add_legend = True
 
         if settings.plot_dominated_area and len(filt_f) > 0:
-            if settings.ref_point is None:
-                padding = settings.ref_point_padding
-                x_lb, x_ub = np.min(population.f[ps.plot_filt, 0]), np.max(population.f[ps.plot_filt, 0])
-                y_lb, y_ub = np.min(population.f[ps.plot_filt, 1]), np.max(population.f[ps.plot_filt, 1])
-                ref_point = (x_ub + (x_ub - x_lb) * padding, y_ub + (y_ub - y_lb) * padding)
-            else:
-                ref_point = settings.ref_point
-
-            attainment = compute_attainment_surface(filt_f)
-            if (ref_point[0] < attainment[:, 0]).any() or (ref_point[1] < attainment[:, 1]).any():
-                raise ValueError(
-                    f"Reference point coordinates must exceed all points in non-dominated set "
-                    f"(ref_point={ref_point}, max_pf=({np.max(attainment[:, 0])}, {np.max(attainment[:, 1])}))"
-                )
-
+            attainment = compute_attainment_surface_2d(filt_f, settings.ref_point)
             plt.fill_between(
-                np.concatenate((attainment[:, 0], [ref_point[0]])),
-                np.concatenate((attainment[:, 1], [attainment[-1, 1]])),
-                ref_point[1] * np.ones(attainment.shape[0] + 1),
+                attainment[:, 0],
+                attainment[:, 1],
+                attainment[0, 1] * np.ones(attainment.shape[0]),
                 color=base_color,
                 alpha=0.5,
             )
