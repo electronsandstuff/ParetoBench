@@ -152,6 +152,8 @@ def compute_attainment_surface_2d(points: np.ndarray, ref_point=None, padding=0.
     """
     if points.shape[1] != 2:
         raise ValueError("Attainment surface can only be computed for 2D points")
+    if len(points) == 0:
+        return np.empty((0, 2))
 
     # Handle missing ref-point
     if ref_point is None:
@@ -380,7 +382,7 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
     return triangles_plane
 
 
-def compute_attainment_surface_3d(points: np.ndarray, reference=None, padding=0.1):
+def compute_attainment_surface_3d(points: np.ndarray, ref_point=None, padding=0.1):
     """
     Generate triangular mesh for union of cuboids.
     Args:
@@ -392,14 +394,16 @@ def compute_attainment_surface_3d(points: np.ndarray, reference=None, padding=0.
     """
     if points.shape[1] != 3:
         raise ValueError("This function only works for 3D points")
+    if len(points) == 0:
+        return np.empty((0, 3)), np.empty((0,))
 
     # If no reference point provided, compute one
-    if reference is None:
+    if ref_point is None:
         max_vals = np.max(points, axis=0)
         range_vals = max_vals - np.min(points, axis=0)
-        reference = max_vals + padding * range_vals
-    reference = np.asarray(reference)
-    if not np.all(reference >= np.max(points, axis=0)):
+        ref_point = max_vals + padding * range_vals
+    ref_point = np.asarray(ref_point)
+    if not np.all(ref_point >= np.max(points, axis=0)):
         raise ValueError("Reference point must dominate all points")
 
     # Get the nondominated points
@@ -415,13 +419,13 @@ def compute_attainment_surface_3d(points: np.ndarray, reference=None, padding=0.
     sorted_by_y = points[np.argsort(points[:, 1])]  # For XZ plane
 
     # Process XY plane (sorted by Z)
-    triangles.extend(mesh_plane(sorted_by_z, 2, 0, 1, reference, vertex_dict, vertices))
+    triangles.extend(mesh_plane(sorted_by_z, 2, 0, 1, ref_point, vertex_dict, vertices))
 
     # Process YZ plane (sorted by X)
-    triangles.extend(mesh_plane(sorted_by_x, 0, 1, 2, reference, vertex_dict, vertices))
+    triangles.extend(mesh_plane(sorted_by_x, 0, 1, 2, ref_point, vertex_dict, vertices))
 
     # Process XZ plane (sorted by Y)
-    triangles.extend(mesh_plane(sorted_by_y, 1, 0, 2, reference, vertex_dict, vertices))
+    triangles.extend(mesh_plane(sorted_by_y, 1, 0, 2, ref_point, vertex_dict, vertices))
 
     return np.array(vertices), np.array(triangles)
 
@@ -558,16 +562,14 @@ def plot_objectives(
         if scatter:
             base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
-        # Plot attainment surface if requested (using the non-dominated, feasible objectives only)
-        inds = np.bitwise_and(ps.nd_inds, ps.feas_inds)
-        filt_f = population.f[inds, :]
-        if settings.plot_attainment and len(filt_f) > 0:
-            attainment = compute_attainment_surface_2d(filt_f)
+        # Plot attainment surface if requested (using feasible solutions only)
+        attainment = compute_attainment_surface_2d(
+            population.f[ps.feas_inds, :], ref_point=settings.ref_point, padding=settings.ref_point_padding
+        )
+        if settings.plot_attainment:
             ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, label="Attainment Surface")
             add_legend = True
-
-        if settings.plot_dominated_area and len(filt_f) > 0:
-            attainment = compute_attainment_surface_2d(filt_f, settings.ref_point)
+        if settings.plot_dominated_area:
             plt.fill_between(
                 attainment[:, 0],
                 attainment[:, 1],
@@ -619,7 +621,9 @@ def plot_objectives(
             raise NotImplementedError("Cannot display dominated volume in 3D :(")
 
         if settings.plot_attainment:
-            vertices, faces = compute_attainment_surface_3d(population.f[np.bitwise_and(ps.nd_inds, ps.feas_inds), :])
+            vertices, faces = compute_attainment_surface_3d(
+                population.f[ps.feas_inds, :], ref_point=settings.ref_point, padding=settings.ref_point_padding
+            )
             poly3d = Poly3DCollection(
                 [vertices[face] for face in faces],
                 shade=True,
