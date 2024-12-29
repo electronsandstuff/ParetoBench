@@ -965,41 +965,24 @@ def animate_objectives(
     def update(frame_idx):
         ax.clear()
 
-        # Get current population
-        if cumulative:
-            # Add all populations up to current frame
-            population = history.reports[0]
-            for i in range(1, frame_idx + 1):
-                population = population + history.reports[i]
-        else:
-            population = history.reports[frame_idx]
-
-        # Plot the current population
-        plot_objectives(population, fig=fig, ax=ax, settings=settings)
+        # Plot the objectives using the new function
+        plot_objectives_hist(
+            history,
+            idx=frame_idx,
+            fig=fig,
+            ax=ax,
+            settings=settings,
+            cumulative=cumulative,
+            plot_pf=True if settings.problem is not None else False,
+        )
 
         # Add generation counter
         generation = frame_idx + 1
-        fevals = population.fevals
+        fevals = history.reports[frame_idx].fevals
         ax.set_title(f"Generation {generation} (Fevals: {fevals})")
 
         if n_objectives == 2:
-            if dynamic_scaling:
-                # Calculate frame-specific limits
-                padding = 0.05
-                f = population.f
-                current_xlim = (np.min(f[:, 0]), np.max(f[:, 0]))
-                current_ylim = (np.min(f[:, 1]), np.max(f[:, 1]))
-                current_xlim = (
-                    current_xlim[0] - (current_xlim[1] - current_xlim[0]) * padding,
-                    current_xlim[1] + (current_xlim[1] - current_xlim[0]) * padding,
-                )
-                current_ylim = (
-                    current_ylim[0] - (current_ylim[1] - current_ylim[0]) * padding,
-                    current_ylim[1] + (current_ylim[1] - current_ylim[0]) * padding,
-                )
-                ax.set_xlim(*current_xlim)
-                ax.set_ylim(*current_ylim)
-            else:
+            if not dynamic_scaling:
                 # Use global limits
                 ax.set_xlim(*xlim)
                 ax.set_ylim(*ylim)
