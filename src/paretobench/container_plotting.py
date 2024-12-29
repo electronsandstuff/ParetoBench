@@ -844,6 +844,7 @@ def animate_objectives(
     interval: int = 200,
     objectives_plot_settings: PlotObjectivesSettings = PlotObjectivesSettings(),
     dynamic_scaling: bool = False,
+    cumulative: bool = False,
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the Pareto front evolves across generations.
@@ -859,6 +860,9 @@ def animate_objectives(
     dynamic_scaling : bool, optional
         If True, axes limits will update based on each frame's data.
         If False, axes limits will be fixed based on all data, by default False
+    cumulative : bool, optional
+        If True, shows all points seen up to current frame.
+        If False, shows only current frame's points, by default False
 
     Returns
     -------
@@ -898,7 +902,15 @@ def animate_objectives(
     # Function to update frame for animation
     def update(frame_idx):
         ax.clear()
-        population = history.reports[frame_idx]
+
+        # Get current population
+        if cumulative:
+            # Add all populations up to current frame
+            population = history.reports[0]
+            for i in range(1, frame_idx + 1):
+                population = population + history.reports[i]
+        else:
+            population = history.reports[frame_idx]
 
         # Plot the current population
         plot_objectives(population, fig=fig, ax=ax, settings=settings)
