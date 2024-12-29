@@ -876,7 +876,7 @@ def plot_decision_var_pairs_hist(
     history: History,
     idx=-1,
     fig=None,
-    ax=None,
+    axes=None,
     settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings(),
     cumulative=False,
 ):
@@ -898,7 +898,7 @@ def plot_decision_var_pairs_hist(
     else:
         population = history.reports[idx]
 
-    return plot_decision_var_pairs(population, fig=fig, ax=ax, settings=settings)
+    return plot_decision_var_pairs(population, fig=fig, axes=axes, settings=settings)
 
 
 def animate_objectives(
@@ -999,6 +999,8 @@ def animate_decision_vars(
     history: History,
     interval: int = 200,
     decision_var_plot_settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings(),
+    dynamic_scaling: bool = False,
+    cumulative: bool = False,
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the decision variables evolve across generations.
@@ -1011,6 +1013,12 @@ def animate_decision_vars(
         Delay between frames in milliseconds, by default 200
     decision_var_plot_settings : PlotDecisionVarPairsSettings
         Settings for the decision variable plots
+    dynamic_scaling : bool, optional
+        If True, axes limits will update based on each frame's data.
+        If False, axes limits will be fixed based on all data, by default False
+    cumulative : bool, optional
+        If True, shows all points seen up to current frame.
+        If False, shows only current frame's points, by default False
 
     Returns
     -------
@@ -1027,21 +1035,50 @@ def animate_decision_vars(
     # Create initial plot to get figure and axes
     fig, axes = plot_decision_var_pairs(history.reports[0], settings=settings)
 
+    # Calculate global axis limits if not using dynamic scaling
+    if not dynamic_scaling:
+        padding = 0.05
+        all_x = np.vstack([pop.x for pop in history.reports])
+        n_vars = all_x.shape[1]
+
+        # Calculate limits for each variable
+        var_limits = []
+        for i in range(n_vars):
+            var_min, var_max = np.min(all_x[:, i]), np.max(all_x[:, i])
+            limit = (var_min - (var_max - var_min) * padding, var_max + (var_max - var_min) * padding)
+            var_limits.append(limit)
+
     # Function to update frame for animation
     def update(frame_idx):
         # Clear all axes
         for ax in axes.flat:
             ax.clear()
 
-        population = history.reports[frame_idx]
-
-        # Use the population's plotting method with existing fig and axes
-        plot_decision_var_pairs(population, fig=fig, axes=axes, settings=settings)
+        # Plot using the history object plotting function
+        plot_decision_var_pairs_hist(
+            history,
+            idx=frame_idx,
+            fig=fig,
+            axes=axes,
+            settings=settings,
+            cumulative=cumulative,
+        )
 
         # Add generation counter
         generation = frame_idx + 1
-        fevals = population.fevals
+        fevals = history.reports[frame_idx].fevals
         fig.suptitle(f"Generation {generation} (Fevals: {fevals})")
+
+        if not dynamic_scaling:
+            # Apply global limits to all subplots
+            for i, ax in enumerate(axes.flat):
+                row = i // axes.shape[1]
+                col = i % axes.shape[1]
+                if col < row:  # Skip lower triangle
+                    continue
+                if row != col:  # Only for pair plots
+                    ax.set_xlim(*var_limits[col])
+                    ax.set_ylim(*var_limits[row])
 
         return tuple(axes.flat)
 
