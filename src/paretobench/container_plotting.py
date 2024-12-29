@@ -842,6 +842,8 @@ def plot_decision_var_pairs(
 def plot_objectives_hist(
     history: History,
     idx=-1,
+    fig=None,
+    ax=None,
     settings: PlotObjectivesSettings = PlotObjectivesSettings(),
     cumulative=False,
     plot_pf=False,
@@ -867,7 +869,36 @@ def plot_objectives_hist(
     if plot_pf:
         settings.problem = history.problem
 
-    return plot_objectives(population, settings=settings)
+    return plot_objectives(population, fig=fig, ax=ax, settings=settings)
+
+
+def plot_decision_var_pairs_hist(
+    history: History,
+    idx=-1,
+    fig=None,
+    ax=None,
+    settings: PlotDecisionVarPairsSettings = PlotDecisionVarPairsSettings(),
+    cumulative=False,
+):
+    """
+    Plot the objectives from a history object
+    """
+    # We need positive index in some places after this
+    if idx < 0:
+        idx = len(history.reports) + idx
+        if idx < 0:
+            raise IndexError(
+                f"Negative index extends beyond length of history object (len(history) = {len(history.reports)})"
+            )
+
+    if cumulative:
+        population = history.reports[0]
+        for i in range(1, idx):
+            population = population + history.reports[i]
+    else:
+        population = history.reports[idx]
+
+    return plot_decision_var_pairs(population, fig=fig, ax=ax, settings=settings)
 
 
 def animate_objectives(
