@@ -157,9 +157,9 @@ def compute_attainment_surface_2d(points: np.ndarray, ref_point=None, padding=0.
 
     # Handle missing ref-point
     if ref_point is None:
-        x_lb, x_ub = np.min(points[:, 0]), np.max(points[:, 0])
-        y_lb, y_ub = np.min(points[:, 1]), np.max(points[:, 1])
-        ref_point = (x_ub + (x_ub - x_lb) * padding, y_ub + (y_ub - y_lb) * padding)
+        min_vals = np.min(points, axis=0)
+        max_vals = np.max(points, axis=0)
+        ref_point = max_vals + (max_vals - min_vals) * padding
 
     # Get only nondominated points
     points = get_nondominated(points)
@@ -399,9 +399,9 @@ def compute_attainment_surface_3d(points: np.ndarray, ref_point=None, padding=0.
 
     # If no reference point provided, compute one
     if ref_point is None:
+        min_vals = np.min(points, axis=0)
         max_vals = np.max(points, axis=0)
-        range_vals = max_vals - np.min(points, axis=0)
-        ref_point = max_vals + padding * range_vals
+        ref_point = max_vals + (max_vals - min_vals) * padding
     ref_point = np.asarray(ref_point)
     if not np.all(ref_point >= np.max(points, axis=0)):
         raise ValueError("Reference point must dominate all points")
