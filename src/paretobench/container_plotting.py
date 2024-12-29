@@ -881,7 +881,7 @@ def plot_decision_var_pairs_hist(
     cumulative=False,
 ):
     """
-    Plot the objectives from a history object
+    Plot the decision vars from a history object
     """
     # We need positive index in some places after this
     if idx < 0:
