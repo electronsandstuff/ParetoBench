@@ -4,6 +4,13 @@ from .containers import Population
 from .utils import get_nondominated_inds
 
 
+def get_reference_point(population: Population, padding=0.1):
+    min_vals = np.min(population.f, axis=0)
+    max_vals = np.max(population.f, axis=0)
+    ref_point = max_vals + (max_vals - min_vals) * padding
+    return ref_point
+
+
 def compute_attainment_surface_2d(population: Population, ref_point=None, padding=0.1):
     """
     Compute the attainment surface for a set of non-dominated points in 2D.
@@ -32,9 +39,8 @@ def compute_attainment_surface_2d(population: Population, ref_point=None, paddin
 
     # Handle missing ref-point
     if ref_point is None:
-        min_vals = np.min(population.f, axis=0)
-        max_vals = np.max(population.f, axis=0)
-        ref_point = max_vals + (max_vals - min_vals) * padding
+        ref_point = get_reference_point(population, padding=padding)
+    ref_point = np.asarray(ref_point)
 
     # Get only nondominated points
     population = population.get_nondominated_set()
@@ -274,9 +280,7 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
 
     # If no reference point provided, compute one
     if ref_point is None:
-        min_vals = np.min(population.f, axis=0)
-        max_vals = np.max(population.f, axis=0)
-        ref_point = max_vals + (max_vals - min_vals) * padding
+        ref_point = get_reference_point(population, padding=padding)
     ref_point = np.asarray(ref_point)
 
     if not np.all(ref_point >= np.max(population.f, axis=0)):
