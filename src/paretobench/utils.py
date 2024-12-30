@@ -97,7 +97,7 @@ def fast_dominated_argsort(objs, constraints=None):
     return F
 
 
-def get_nondominated(objs, constraints=None):
+def get_nondominated_inds(objs, constraints=None):
     """
     Returns the indices of the nondominated individuals for the objectives O, an (m,n) array for the m objectives
     """

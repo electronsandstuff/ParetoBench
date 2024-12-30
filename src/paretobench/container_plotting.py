@@ -13,7 +13,7 @@ import numpy as np
 from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 from .exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
-from .utils import fast_dominated_argsort
+from .utils import fast_dominated_argsort, get_nondominated_inds
 
 
 @dataclass
@@ -162,7 +162,7 @@ def compute_attainment_surface_2d(points: np.ndarray, ref_point=None, padding=0.
         ref_point = max_vals + (max_vals - min_vals) * padding
 
     # Get only nondominated points
-    points = get_nondominated(points)
+    points = points[get_nondominated_inds(points), :]
 
     if (ref_point[0] < points[:, 0]).any() or (ref_point[1] < points[:, 1]).any():
         raise ValueError(
@@ -249,18 +249,6 @@ def get_vertex_index(point, vertex_dict, vertices):
     return vertex_dict[point_tuple]
 
 
-def get_nondominated(points_array):
-    if len(points_array) == 0:
-        return np.array([])
-
-    dom = np.bitwise_and(
-        (points_array[:, None, :] <= points_array[None, :, :]).all(axis=-1),
-        (points_array[:, None, :] < points_array[None, :, :]).any(axis=-1),
-    )
-    nondominated = np.sum(dom, axis=0) == 0
-    return points_array[nondominated, :]
-
-
 def find_rectangles(valid_cells, coords1, coords2):
     """
     Find maximal rectangles in a binary grid.
@@ -337,7 +325,7 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
 
         # Get nondominated points from previous layers
         previous_2d = np.column_stack((previous_points[:, dim1], previous_points[:, dim2]))
-        nd_points = get_nondominated(previous_2d)
+        nd_points = previous_2d[get_nondominated_inds(previous_2d), :]
 
         # Get unique coordinates including current point and reference
         coords1 = np.unique(np.concatenate([nd_points[:, 0], [current_point[dim1], reference[dim1]]]))
@@ -407,7 +395,7 @@ def compute_attainment_surface_3d(points: np.ndarray, ref_point=None, padding=0.
         raise ValueError("Reference point must dominate all points")
 
     # Get the nondominated points
-    points = get_nondominated(points)
+    points = points[get_nondominated_inds(points), :]
 
     vertices = []
     triangles = []
