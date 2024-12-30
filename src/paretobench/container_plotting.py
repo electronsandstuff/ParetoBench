@@ -268,7 +268,7 @@ def plot_objectives(
 
         # Plot attainment surface if requested (using feasible solutions only)
         attainment = compute_attainment_surface_2d(
-            population.f[ps.feas_inds, :], ref_point=settings.ref_point, padding=settings.ref_point_padding
+            population, ref_point=settings.ref_point, padding=settings.ref_point_padding
         )
         if settings.plot_attainment:
             ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, label="Attainment Surface")
@@ -326,7 +326,7 @@ def plot_objectives(
 
         if settings.plot_attainment:
             vertices, faces = compute_attainment_surface_3d(
-                population.f[ps.feas_inds, :], ref_point=settings.ref_point, padding=settings.ref_point_padding
+                population, ref_point=settings.ref_point, padding=settings.ref_point_padding
             )
             poly3d = Poly3DCollection(
                 [vertices[face] for face in faces],

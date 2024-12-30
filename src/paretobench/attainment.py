@@ -1,9 +1,10 @@
 import numpy as np
 
+from .containers import Population
 from .utils import get_nondominated_inds
 
 
-def compute_attainment_surface_2d(points: np.ndarray, ref_point=None, padding=0.1):
+def compute_attainment_surface_2d(population: Population, ref_point=None, padding=0.1):
     """
     Compute the attainment surface for a set of non-dominated points in 2D.
     The surface consists of horizontal and vertical lines connecting the points,
@@ -11,8 +12,8 @@ def compute_attainment_surface_2d(points: np.ndarray, ref_point=None, padding=0.
 
     Parameters
     ----------
-    points : np.ndarray
-        2D array of non-dominated points, shape (n_points, 2)
+    pop : Population
+        The population of individuals to compute the attainment surface for.
 
     Returns
     -------
@@ -20,29 +21,33 @@ def compute_attainment_surface_2d(points: np.ndarray, ref_point=None, padding=0.
         Array of points defining the attainment surface, shape (n_segments, 2)
         Each consecutive pair of points defines a line segment of the surface
     """
-    if points.shape[1] != 2:
+    if population.m != 2:
         raise ValueError("Attainment surface can only be computed for 2D points")
-    if len(points) == 0:
+
+    # This only works on feasible individuals
+    population = population[population.get_feasible_indices()]
+
+    if len(population) == 0:
         return np.empty((0, 2))
 
     # Handle missing ref-point
     if ref_point is None:
-        min_vals = np.min(points, axis=0)
-        max_vals = np.max(points, axis=0)
+        min_vals = np.min(population.f, axis=0)
+        max_vals = np.max(population.f, axis=0)
         ref_point = max_vals + (max_vals - min_vals) * padding
 
     # Get only nondominated points
-    points = points[get_nondominated_inds(points), :]
+    population = population.get_nondominated_set()
 
-    if (ref_point[0] < points[:, 0]).any() or (ref_point[1] < points[:, 1]).any():
+    if not np.all(ref_point >= np.max(population.f, axis=0)):
         raise ValueError(
             f"Reference point coordinates must exceed all points in non-dominated set "
-            f"(ref_point={ref_point}, max_pf=({np.max(points[:, 0])}, {np.max(points[:, 1])}))"
+            f"(ref_point={ref_point}, max_pf=({np.max(population.f[:, 0])}, {np.max(population.f[:, 1])}))"
         )
 
     # Sort points by x coordinate (first objective)
-    sorted_indices = np.argsort(points[:, 0])
-    sorted_points = points[sorted_indices]
+    sorted_indices = np.argsort(population.f[:, 0])
+    sorted_points = population.f[sorted_indices]
 
     # Initialize the surface points list with the first point
     surface = []
@@ -240,41 +245,54 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
     return triangles_plane
 
 
-def compute_attainment_surface_3d(points: np.ndarray, ref_point=None, padding=0.1):
+def compute_attainment_surface_3d(population: Population, ref_point=None, padding=0.1):
     """
-    Generate triangular mesh for union of cuboids.
-    Args:
-        points: (n,3) array of points, each defining a cuboid corner
-        reference: (3,) array defining the other corner of each cuboid
-    Returns:
-        vertices: (m,3) array of unique vertices in the mesh
-        triangles: (k,3) array of indices into vertices defining triangles
+    Generate triangular mesh for union of cuboids attainment surface.
+
+    Parameters
+    ----------
+    pop : Population
+        The population of individuals to compute the attainment surface for.
+    reference : ndarray, shape (3,)
+        Array defining the other corner of each cuboid starting from nondominated individuals in the population.
+
+    Returns
+    -------
+    vertices : ndarray, shape (m, 3)
+        Array of unique vertices in the mesh.
+    triangles : ndarray, shape (k, 3)
+        Array of indices into vertices defining triangles.
     """
-    if points.shape[1] != 3:
+    if population.m != 3:
         raise ValueError("This function only works for 3D points")
-    if len(points) == 0:
+
+    # This only works on feasible individuals
+    population = population[population.get_feasible_indices()]
+
+    if len(population) == 0:
         return np.empty((0, 3)), np.empty((0,))
 
     # If no reference point provided, compute one
     if ref_point is None:
-        min_vals = np.min(points, axis=0)
-        max_vals = np.max(points, axis=0)
+        min_vals = np.min(population.f, axis=0)
+        max_vals = np.max(population.f, axis=0)
         ref_point = max_vals + (max_vals - min_vals) * padding
     ref_point = np.asarray(ref_point)
-    if not np.all(ref_point >= np.max(points, axis=0)):
+
+    if not np.all(ref_point >= np.max(population.f, axis=0)):
         raise ValueError("Reference point must dominate all points")
 
     # Get the nondominated points
-    points = points[get_nondominated_inds(points), :]
+    population = population.get_nondominated_set()
 
     vertices = []
     triangles = []
     vertex_dict = {}
 
     # Sort points in each dimension
-    sorted_by_z = points[np.argsort(points[:, 2])]  # For XY plane
-    sorted_by_x = points[np.argsort(points[:, 0])]  # For YZ plane
-    sorted_by_y = points[np.argsort(points[:, 1])]  # For XZ plane
+    sorted_by_z = population.f[np.argsort(population.f[:, 2])]  # For XY plane
+    sorted_by_x = population.f[np.argsort(population.f[:, 0])]  # For YZ plane
+    sorted_by_y = population.f[np.argsort(population.f[:, 1])]  # For XZ plane
 
     # Process XY plane (sorted by Z)
     triangles.extend(mesh_plane(sorted_by_z, 2, 0, 1, ref_point, vertex_dict, vertices))
