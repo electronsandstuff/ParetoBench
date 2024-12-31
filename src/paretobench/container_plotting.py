@@ -14,7 +14,7 @@ from .containers import Population, History
 from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 from .exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
 from .utils import fast_dominated_argsort
-from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
+from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d, get_reference_point
 
 
 @dataclass
@@ -172,10 +172,12 @@ class PlotObjectivesSettings:
     pf_objectives: Optional[np.ndarray] = None
     plot_attainment: bool = False
     plot_dominated_area: bool = False
+    dominated_area_zorder: Optional[int] = None
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.05
     label: Optional[str] = None
     legend_loc: Optional[str] = None
+    color: Optional[str] = None
 
 
 def plot_objectives(
@@ -246,7 +248,7 @@ def plot_objectives(
 
     # For 2D problems
     add_legend = False
-    base_color = None
+    base_color = settings.color
     if population.f.shape[1] == 2:
         # Make axis if not supplied
         if ax is None:
@@ -271,7 +273,7 @@ def plot_objectives(
             population, ref_point=settings.ref_point, padding=settings.ref_point_padding
         )
         if settings.plot_attainment:
-            ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, label="Attainment Surface")
+            ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5)
             add_legend = True
         if settings.plot_dominated_area:
             plt.fill_between(
@@ -280,6 +282,7 @@ def plot_objectives(
                 attainment[0, 1] * np.ones(attainment.shape[0]),
                 color=base_color,
                 alpha=0.5,
+                zorder=settings.dominated_area_zorder,
             )
 
         # Add in Pareto front
@@ -790,3 +793,132 @@ def animate_decision_vars(
     anim = animation.FuncAnimation(fig=fig, func=update, frames=len(history.reports), interval=interval, blit=False)
 
     return anim
+
+
+@dataclass
+class PlotHistorySettings:
+    """
+    Settings for plotting the objective functions from a history of populations.
+
+    plot_dominated : bool, optional
+        Include the dominated individuals, by default True
+    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+        Plot only the feasible/infeasible solutions, or all. Defaults to all
+    plot_pf : bool, optional
+        Whether to plot the Pareto front, by default True
+    pf_objectives : array-like, optional
+        User-specified Pareto front objectives
+    colormap : str, optional
+        Name of the colormap to use for generation colors, by default 'viridis'
+    plot_attainment: bool = False
+        Whether to plot attainment surfaces for each generation
+    plot_dominated_area: bool = False
+        Whether to plot the dominated area for each generation
+    ref_point: Optional[Tuple[float, float]] = None
+        Reference point for attainment surface calculation
+    ref_point_padding: float = 0.05
+        Padding for automatic reference point calculation
+    label: Optional[str] = "Generation"
+    legend_loc: Optional[str] = None
+    """
+
+    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
+    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    plot_pf: bool = False
+    pf_objectives: Optional[np.ndarray] = None
+    colormap: str = "viridis"
+    plot_attainment: bool = False
+    plot_dominated_area: bool = False
+    ref_point: Optional[Tuple[float, float]] = None
+    ref_point_padding: float = 0.1
+    label: Optional[str] = "Generation"
+    legend_loc: Optional[str] = None
+
+
+def plot_history(
+    history,
+    fig=None,
+    ax=None,
+    settings: PlotHistorySettings = PlotHistorySettings(),
+):
+    """
+    Plot the objectives from a history of populations, using color to represent generations.
+
+    Parameters
+    ----------
+    history : History object
+        The history containing populations to plot
+    fig : matplotlib figure, optional
+        Figure to plot on, by default None
+    ax : matplotlib axis, optional
+        Axis to plot on, by default None
+    settings : PlotHistorySettings
+        Settings for the plot
+
+    Returns
+    -------
+    matplotlib figure and matplotlib axis
+        The figure and axis containing the history plot
+    """
+    # Basic input validation
+    if not history.reports:
+        raise ValueError("History contains no reports")
+
+    # Get dimensions from first population
+    first_pop = history.reports[0]
+    if not len(first_pop):
+        raise EmptyPopulationError()
+    if not first_pop.m:
+        raise NoObjectivesError()
+
+    if fig is None:
+        fig = plt.figure()
+
+    # Calculate global reference point if not provided
+    global_ref_point = None
+    if settings.ref_point is None:
+        # Combine all populations using addition operator
+        combined_population = sum(history.reports[1:], history.reports[0])
+        global_ref_point = get_reference_point(combined_population, padding=settings.ref_point_padding)
+    else:
+        global_ref_point = settings.ref_point
+
+    # Create colormap for generations
+    n_generations = len(history.reports)
+    cmap = plt.get_cmap(settings.colormap)
+    norm = plt.Normalize(0, n_generations - 1)
+
+    # Create base settings for plot_objectives
+    obj_settings = PlotObjectivesSettings(
+        plot_dominated=settings.plot_dominated,
+        plot_feasible=settings.plot_feasible,
+        plot_attainment=settings.plot_attainment,
+        plot_dominated_area=settings.plot_dominated_area,
+        pf_objectives=settings.pf_objectives,
+        ref_point=global_ref_point,
+        legend_loc=settings.legend_loc,
+    )
+
+    # Plot each generation with its own color
+    for gen_idx, population in enumerate(history.reports):
+        color = cmap(norm(gen_idx))
+
+        # Update settings for this generation
+        obj_settings.color = color
+        obj_settings.dominated_area_zorder = -1 - gen_idx
+
+        # Only plot PF on the last generation if requested
+        if gen_idx == n_generations - 1 and settings.plot_pf and history.problem is not None:
+            obj_settings.problem = history.problem
+        else:
+            obj_settings.problem = None
+
+        # Plot this generation
+        fig, ax = plot_objectives(population, fig=fig, ax=ax, settings=obj_settings)
+
+    # Add colorbar
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])  # Dummy array for the colorbar
+    fig.colorbar(sm, ax=ax, label=settings.label)
+
+    return fig, ax
