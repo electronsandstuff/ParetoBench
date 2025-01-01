@@ -112,6 +112,9 @@ def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwarg
     if isinstance(marker, str):
         return [ax.scatter(x, y, c=color, marker=marker, **kwargs)]
 
+    if "label" in kwargs:
+        ax.scatter([], [], color=(r, g, b), label=kwargs.pop("label"), **kwargs)
+
     points = []
     unique_markers = set(marker)
     for m in unique_markers:
