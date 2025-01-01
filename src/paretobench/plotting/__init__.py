@@ -1,21 +1,26 @@
-from .population import PlotObjectivesSettings, PlotDecisionVarPairsSettings, plot_decision_var_pairs, plot_objectives
+from .population import (
+    PlotObjectivesPopulationSettings,
+    PlotDecisionVarPairsPopulationSettings,
+    plot_decision_var_pairs_population,
+    plot_objectives_population,
+)
 from .history import (
     animate_decision_vars,
     animate_objectives,
-    PlotDecisionVarHistorySettings,
+    PlotDecisionVarPairsHistorySettings,
     PlotObjectivesHistorySettings,
     plot_objectives_history,
     plot_decision_var_pairs_history,
 )
 
 __all__ = [
-    "PlotObjectivesSettings",
-    "PlotDecisionVarPairsSettings",
-    "plot_decision_var_pairs",
-    "plot_objectives",
+    "PlotObjectivesPopulationSettings",
+    "PlotDecisionVarPairsPopulationSettings",
+    "plot_decision_var_pairs_population",
+    "plot_objectives_population",
     "animate_decision_vars",
     "animate_objectives",
-    "PlotDecisionVarHistorySettings",
+    "PlotDecisionVarPairsHistorySettings",
     "PlotObjectivesHistorySettings",
     "plot_objectives_history",
     "plot_decision_var_pairs_history",
