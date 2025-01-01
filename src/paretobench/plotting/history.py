@@ -182,6 +182,7 @@ def plot_objectives_history(
         for plot_idx, gen_idx in enumerate(indices):
             population = history.reports[gen_idx]
             obj_settings.color = cmap(norm(gen_idx))
+            obj_settings.dominated_area_zorder = -1 - plot_idx
 
             # Only plot PF on the last iteration if requested
             if plot_idx == len(indices) - 1 and settings.plot_pf and history.problem is not None:

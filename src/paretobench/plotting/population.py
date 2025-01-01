@@ -153,15 +153,21 @@ def plot_objectives(
             population, ref_point=settings.ref_point, padding=settings.ref_point_padding
         )
         if settings.plot_attainment:
-            ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5)
-            add_legend = True
+            ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
         if settings.plot_dominated_area:
             plt.fill_between(
                 attainment[:, 0],
                 attainment[:, 1],
                 attainment[0, 1] * np.ones(attainment.shape[0]),
+                color="white",
+                zorder=settings.dominated_area_zorder,
+            )
+            plt.fill_between(
+                attainment[:, 0],
+                attainment[:, 1],
+                attainment[0, 1] * np.ones(attainment.shape[0]),
                 color=base_color,
-                alpha=0.5,
+                alpha=0.8,
                 zorder=settings.dominated_area_zorder,
             )
 
