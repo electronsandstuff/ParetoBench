@@ -1,7 +1,7 @@
 import numpy as np
 
-from .containers import Population
-from .utils import get_nondominated_inds
+from ..containers import Population
+from ..utils import get_nondominated_inds
 
 
 def get_reference_point(population: Population, padding=0.1):

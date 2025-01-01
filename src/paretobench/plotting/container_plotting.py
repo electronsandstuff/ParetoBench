@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-from .containers import Population, History
-from .problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
-from .exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
-from .utils import fast_dominated_argsort
+from ..containers import Population, History
+from ..problem import ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
+from ..exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
+from ..utils import fast_dominated_argsort
 from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d, get_reference_point
 
 
