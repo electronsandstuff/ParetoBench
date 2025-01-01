@@ -223,19 +223,21 @@ class PlotDecisionVarHistorySettings:
         - 'cumulative': Merge all selected generations into single population
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+    plot_bounds: bool = False
+        Whether to plot bounds for the problem
     """
 
     plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
     plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
     colormap: str = "viridis"
     label: Optional[str] = "Generation"
-    legend_loc: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
+    plot_bounds: bool = False
 
 
 def plot_decision_var_pairs_history(
-    history,
+    history: History,
     select: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
     fig=None,
     axes=None,
@@ -315,7 +317,6 @@ def plot_decision_var_pairs_history(
     plot_settings = PlotDecisionVarPairsSettings(
         plot_dominated=settings.plot_dominated,
         plot_feasible=settings.plot_feasible,
-        legend_loc=settings.legend_loc,
     )
 
     if settings.generation_mode == "cumulative":
@@ -323,6 +324,9 @@ def plot_decision_var_pairs_history(
         combined_population = history.reports[indices[0]]
         for idx in indices[1:]:
             combined_population = combined_population + history.reports[idx]
+
+        if settings.plot_bounds and history.problem is not None:
+            plot_settings.problem = history.problem
 
         # Set optional color and plot combined population
         plot_settings.color = settings.single_color  # Will use default if None
@@ -337,6 +341,12 @@ def plot_decision_var_pairs_history(
             population = history.reports[gen_idx]
             plot_settings.color = cmap(norm(gen_idx))
 
+            # Only plot PF on the last iteration if requested
+            if plot_idx == len(indices) - 1 and settings.plot_bounds and history.problem is not None:
+                plot_settings.problem = history.problem
+            else:
+                plot_settings.problem = None
+
             # Plot this generation
             fig, axes = plot_decision_var_pairs(population, fig=fig, axes=axes, settings=plot_settings)
 
@@ -344,7 +354,8 @@ def plot_decision_var_pairs_history(
         if settings.label:
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
             sm.set_array([])  # Dummy array for the colorbar
-            fig.colorbar(sm, label=settings.label)
+            # Use ax parameter to let constrained_layout handle the positioning
+            fig.colorbar(sm, ax=axes.ravel().tolist(), label=settings.label)
     else:
         raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
 
