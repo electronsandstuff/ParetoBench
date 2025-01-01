@@ -9,15 +9,15 @@ from ..containers import History
 from ..exceptions import EmptyPopulationError, NoObjectivesError
 from .attainment import get_reference_point
 from .population import (
-    PlotObjectivesPopulationSettings,
-    plot_objectives_population,
-    plot_decision_var_pairs_population,
-    PlotDecisionVarPairsPopulationSettings,
+    PopulationObjectivesConfig,
+    plot_population_objectives,
+    plot_population_decision_vars,
+    PopulationDecisionVarsConfig,
 )
 
 
 @dataclass
-class PlotObjectivesHistorySettings:
+class HistoryObjectivesConfig:
     """
     Settings for plotting the objective functions from a history of populations.
 
@@ -65,12 +65,12 @@ class PlotObjectivesHistorySettings:
     single_color: Optional[str] = None
 
 
-def plot_objectives_history(
+def plot_history_objectives(
     history,
     select: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     ax=None,
-    settings: PlotObjectivesHistorySettings = PlotObjectivesHistorySettings(),
+    settings: HistoryObjectivesConfig = HistoryObjectivesConfig(),
 ):
     """
     Plot the objectives from a history of populations, using either a colormap for generations
@@ -147,8 +147,8 @@ def plot_objectives_history(
     if fig is None:
         fig = plt.figure()
 
-    # Create base settings for plot_objectives_population
-    obj_settings = PlotObjectivesPopulationSettings(
+    # Create base settings for plot_population_objectives
+    obj_settings = PopulationObjectivesConfig(
         plot_dominated=settings.plot_dominated,
         plot_feasible=settings.plot_feasible,
         plot_attainment=settings.plot_attainment,
@@ -177,7 +177,7 @@ def plot_objectives_history(
         if settings.plot_pf and history.problem is not None:
             obj_settings.problem = history.problem
 
-        fig, ax = plot_objectives_population(combined_population, fig=fig, ax=ax, settings=obj_settings)
+        fig, ax = plot_population_objectives(combined_population, fig=fig, ax=ax, settings=obj_settings)
 
     elif settings.generation_mode == "cmap":
         cmap = plt.get_cmap(settings.colormap)
@@ -196,7 +196,7 @@ def plot_objectives_history(
                 obj_settings.problem = None
 
             # Plot this generation
-            fig, ax = plot_objectives_population(population, fig=fig, ax=ax, settings=obj_settings)
+            fig, ax = plot_population_objectives(population, fig=fig, ax=ax, settings=obj_settings)
 
         # Add colorbar if label is provided
         if settings.label:
@@ -210,7 +210,7 @@ def plot_objectives_history(
 
 
 @dataclass
-class PlotDecisionVarPairsHistorySettings:
+class HistoryDecisionVarsConfig:
     """
     Settings for plotting the decision variables from a history of populations.
 
@@ -242,12 +242,12 @@ class PlotDecisionVarPairsHistorySettings:
     plot_bounds: bool = False
 
 
-def plot_decision_var_pairs_history(
+def plot_history_decision_vars(
     history: History,
     select: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
     fig=None,
     axes=None,
-    settings: PlotDecisionVarPairsHistorySettings = PlotDecisionVarPairsHistorySettings(),
+    settings: HistoryDecisionVarsConfig = HistoryDecisionVarsConfig(),
 ):
     """
     Plot the decision variables from a history of populations, using either a colormap
@@ -268,7 +268,7 @@ def plot_decision_var_pairs_history(
         Figure to plot on, by default None
     axes : array of matplotlib axes, optional
         Axes to plot on, by default None
-    settings : PlotDecisionVarPairsHistorySettings
+    settings : HistoryDecisionVarsConfig
         Settings for the plot
 
     Returns
@@ -319,8 +319,8 @@ def plot_decision_var_pairs_history(
     if not len(first_pop):
         raise EmptyPopulationError()
 
-    # Create base settings for plot_decision_var_pairs_population
-    plot_settings = PlotDecisionVarPairsPopulationSettings(
+    # Create base settings for plot_population_decision_vars
+    plot_settings = PopulationDecisionVarsConfig(
         plot_dominated=settings.plot_dominated,
         plot_feasible=settings.plot_feasible,
     )
@@ -336,7 +336,7 @@ def plot_decision_var_pairs_history(
 
         # Set optional color and plot combined population
         plot_settings.color = settings.single_color  # Will use default if None
-        fig, axes = plot_decision_var_pairs_population(combined_population, fig=fig, axes=axes, settings=plot_settings)
+        fig, axes = plot_population_decision_vars(combined_population, fig=fig, axes=axes, settings=plot_settings)
 
     elif settings.generation_mode == "cmap":
         cmap = plt.get_cmap(settings.colormap)
@@ -354,7 +354,7 @@ def plot_decision_var_pairs_history(
                 plot_settings.problem = None
 
             # Plot this generation
-            fig, axes = plot_decision_var_pairs_population(population, fig=fig, axes=axes, settings=plot_settings)
+            fig, axes = plot_population_decision_vars(population, fig=fig, axes=axes, settings=plot_settings)
 
         # Add colorbar if label is provided
         if settings.label:
@@ -368,10 +368,10 @@ def plot_decision_var_pairs_history(
     return fig, axes
 
 
-def animate_objectives(
+def animate_history_objectives(
     history: History,
     interval: int = 200,
-    objectives_plot_settings: PlotObjectivesHistorySettings = PlotObjectivesHistorySettings(),
+    objectives_plot_settings: HistoryObjectivesConfig = HistoryObjectivesConfig(),
     dynamic_scaling: bool = False,
     cumulative: bool = False,
 ) -> animation.Animation:
@@ -384,7 +384,7 @@ def animate_objectives(
         The history object containing populations with data to plot
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    objectives_plot_settings : PlotObjectivesHistorySettings, optional
+    objectives_plot_settings : HistoryObjectivesConfig, optional
         Settings for plotting objectives
     dynamic_scaling : bool, optional
         If True, axes limits will update based on each frame's data.
@@ -435,7 +435,7 @@ def animate_objectives(
         frame_settings.generation_mode = "cumulative"
 
         # Plot using the new history plotting function
-        plot_objectives_history(
+        plot_history_objectives(
             history,
             select=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
             fig=fig,
@@ -462,10 +462,10 @@ def animate_objectives(
     return anim
 
 
-def animate_decision_vars(
+def animate_history_decision_vars(
     history: History,
     interval: int = 200,
-    decision_var_plot_settings: PlotDecisionVarPairsHistorySettings = PlotDecisionVarPairsHistorySettings(),
+    decision_var_plot_settings: HistoryDecisionVarsConfig = HistoryDecisionVarsConfig(),
     dynamic_scaling: bool = False,
     cumulative: bool = False,
 ) -> animation.Animation:
@@ -478,7 +478,7 @@ def animate_decision_vars(
         The history object containing populations with data to plot
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    decision_var_plot_settings : PlotDecisionVarPairsHistorySettings
+    decision_var_plot_settings : HistoryDecisionVarsConfig
         Settings for the decision variable plots
     dynamic_scaling : bool, optional
         If True, axes limits will update based on each frame's data.
@@ -499,7 +499,7 @@ def animate_decision_vars(
 
     # Create initial plot to get figure and axes
     settings.generation_mode = "cumulative"
-    fig, axes = plot_decision_var_pairs_history(history, select=0, settings=settings)
+    fig, axes = plot_history_decision_vars(history, select=0, settings=settings)
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling:
@@ -525,7 +525,7 @@ def animate_decision_vars(
         frame_settings.generation_mode = "cumulative"
 
         # Plot using the new history plotting function
-        plot_decision_var_pairs_history(
+        plot_history_decision_vars(
             history,
             select=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
             fig=fig,

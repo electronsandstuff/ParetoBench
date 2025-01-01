@@ -15,7 +15,7 @@ from .utils import get_per_point_settings_population, alpha_scatter
 
 
 @dataclass
-class PlotObjectivesPopulationSettings:
+class PopulationObjectivesConfig:
     """
     Settings for plotting the objective functions from `Population`.
 
@@ -60,11 +60,11 @@ class PlotObjectivesPopulationSettings:
     color: Optional[str] = None
 
 
-def plot_objectives_population(
+def plot_population_objectives(
     population: Population,
     fig=None,
     ax=None,
-    settings: PlotObjectivesPopulationSettings = PlotObjectivesPopulationSettings(),
+    settings: PopulationObjectivesConfig = PopulationObjectivesConfig(),
 ):
     """
     Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
@@ -78,7 +78,7 @@ def plot_objectives_population(
         Figure to plot on, by default None
     ax : matplotlib axis, optional
         Axis to plot on, by default None
-    settings : PlotObjectivesPopulationSettings
+    settings : PopulationObjectivesConfig
         Settings for the plot
 
     Returns
@@ -247,7 +247,7 @@ def plot_objectives_population(
 
 
 @dataclass
-class PlotDecisionVarPairsPopulationSettings:
+class PopulationDecisionVarsConfig:
     """
     Settings related to plotting decision variables from `Population`.
 
@@ -277,11 +277,11 @@ class PlotDecisionVarPairsPopulationSettings:
     color: Optional[str] = None
 
 
-def plot_decision_var_pairs_population(
+def plot_population_decision_vars(
     population: Population,
     fig=None,
     axes=None,
-    settings: PlotDecisionVarPairsPopulationSettings = PlotDecisionVarPairsPopulationSettings(),
+    settings: PopulationDecisionVarsConfig = PopulationDecisionVarsConfig(),
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -296,7 +296,7 @@ def plot_decision_var_pairs_population(
     axes : numpy.ndarray of matplotlib.axes.Axes, optional
         2D array of axes to plot on. If None and fig is None, creates new axes.
         Must be provided if fig is provided and vice versa.
-    settings : PlotDecisionVarPairsPopulationSettings
+    settings : PopulationDecisionVarsConfig
         Settings related to plotting the decision variables
 
     Returns
