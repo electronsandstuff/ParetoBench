@@ -1,7 +1,7 @@
 from copy import copy
 from dataclasses import dataclass
 from matplotlib import animation
-from typing import Optional, Tuple, Literal
+from typing import Optional, Tuple, Literal, Union, List
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -284,7 +284,12 @@ class PlotHistorySettings:
     ref_point_padding: float = 0.05
         Padding for automatic reference point calculation
     label: Optional[str] = "Generation"
+        Label for colorbar (only used when use_colormap is True)
     legend_loc: Optional[str] = None
+    use_colormap: bool = True
+        If True, uses colormap to distinguish generations. If False, plots all points in single color.
+    single_color: Optional[str] = None
+        Color to use when use_colormap is False. If None, uses default color from matplotlib.
     """
 
     plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
@@ -298,21 +303,32 @@ class PlotHistorySettings:
     ref_point_padding: float = 0.1
     label: Optional[str] = "Generation"
     legend_loc: Optional[str] = None
+    use_colormap: bool = True
+    single_color: Optional[str] = None
 
 
 def plot_history(
     history,
+    select: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     ax=None,
     settings: PlotHistorySettings = PlotHistorySettings(),
 ):
     """
-    Plot the objectives from a history of populations, using color to represent generations.
+    Plot the objectives from a history of populations, using either a colormap for generations
+    or a single color for all points.
 
     Parameters
     ----------
     history : History object
         The history containing populations to plot
+    select : int, slice, List[int], or Tuple[int, int], optional
+        Specifies which generations to plot. Can be:
+        - None: All generations (default)
+        - int: Single generation index (negative counts from end)
+        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
+        - List[int]: Explicit list of generation indices
+        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     fig : matplotlib figure, optional
         Figure to plot on, by default None
     ax : matplotlib axis, optional
@@ -329,6 +345,40 @@ def plot_history(
     if not history.reports:
         raise ValueError("History contains no reports")
 
+    # Handle different types of selection
+    if select is None:
+        # Select all populations
+        indices = list(range(len(history.reports)))
+    elif isinstance(select, int):
+        # Single index - convert negative to positive
+        if select < 0:
+            select = len(history.reports) + select
+            if select < 0:
+                raise IndexError(f"Index {select} out of range for history with length {len(history.reports)}")
+        indices = [select]
+    elif isinstance(select, slice):
+        # Slice - get list of indices
+        indices = list(range(*select.indices(len(history.reports))))
+    elif isinstance(select, (list, np.ndarray)):
+        # List of indices - convert negative to positive
+        indices = []
+        for i in select:
+            idx = i if i >= 0 else len(history.reports) + i
+            if idx < 0 or idx >= len(history.reports):
+                raise IndexError(f"Index {i} out of range for history with length {len(history.reports)}")
+            indices.append(idx)
+    elif isinstance(select, tuple) and len(select) == 2:
+        # Range tuple (start, end)
+        start, end = select
+        if start < 0 or end > len(history.reports):
+            raise IndexError(f"Range {start}:{end} out of bounds for history with length {len(history.reports)}")
+        indices = list(range(start, end))
+    else:
+        raise ValueError(f"Unsupported selection type: {type(select)}")
+
+    if not indices:
+        raise ValueError("No generations selected")
+
     # Get dimensions from first population
     first_pop = history.reports[0]
     if not len(first_pop):
@@ -342,16 +392,12 @@ def plot_history(
     # Calculate global reference point if not provided
     global_ref_point = None
     if settings.ref_point is None:
-        # Combine all populations using addition operator
-        combined_population = sum(history.reports[1:], history.reports[0])
+        combined_population = history.reports[indices[0]]
+        for idx in indices[1:]:
+            combined_population = combined_population + history.reports[idx]
         global_ref_point = get_reference_point(combined_population, padding=settings.ref_point_padding)
     else:
         global_ref_point = settings.ref_point
-
-    # Create colormap for generations
-    n_generations = len(history.reports)
-    cmap = plt.get_cmap(settings.colormap)
-    norm = plt.Normalize(0, n_generations - 1)
 
     # Create base settings for plot_objectives
     obj_settings = PlotObjectivesSettings(
@@ -364,16 +410,26 @@ def plot_history(
         legend_loc=settings.legend_loc,
     )
 
-    # Plot each generation with its own color
-    for gen_idx, population in enumerate(history.reports):
-        color = cmap(norm(gen_idx))
+    # Set up colormap if using one, otherwise get consistent color
+    if settings.use_colormap:
+        cmap = plt.get_cmap(settings.colormap)
+        norm = plt.Normalize(min(indices), max(indices))
+    else:
+        if settings.single_color is not None:
+            obj_settings.color = settings.single_color
+        else:
+            # Get next color from the default color cycle
+            obj_settings.color = next(iter(plt.rcParams["axes.prop_cycle"]))["color"]
 
-        # Update settings for this generation
-        obj_settings.color = color
-        obj_settings.dominated_area_zorder = -1 - gen_idx
+    # Plot each selected generation
+    for plot_idx, gen_idx in enumerate(indices):
+        population = history.reports[gen_idx]
 
-        # Only plot PF on the last generation if requested
-        if gen_idx == n_generations - 1 and settings.plot_pf and history.problem is not None:
+        if settings.use_colormap:
+            obj_settings.color = cmap(norm(gen_idx))
+
+        # Only plot PF on the last iteration if requested
+        if plot_idx == len(indices) - 1 and settings.plot_pf and history.problem is not None:
             obj_settings.problem = history.problem
         else:
             obj_settings.problem = None
@@ -381,9 +437,10 @@ def plot_history(
         # Plot this generation
         fig, ax = plot_objectives(population, fig=fig, ax=ax, settings=obj_settings)
 
-    # Add colorbar
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])  # Dummy array for the colorbar
-    fig.colorbar(sm, ax=ax, label=settings.label)
+    # Add colorbar if using colormap
+    if settings.use_colormap and settings.label:
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])  # Dummy array for the colorbar
+        fig.colorbar(sm, ax=ax, label=settings.label)
 
     return fig, ax
