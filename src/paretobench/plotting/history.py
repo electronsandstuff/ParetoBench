@@ -498,6 +498,7 @@ def animate_decision_vars(
     settings = copy(decision_var_plot_settings)
 
     # Create initial plot to get figure and axes
+    settings.generation_mode = "cumulative"
     fig, axes = plot_decision_var_pairs_history(history, select=0, settings=settings)
 
     # Calculate global axis limits if not using dynamic scaling
