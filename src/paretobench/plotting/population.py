@@ -268,6 +268,7 @@ class PlotDecisionVarPairsSettings:
     problem: Optional[str] = None
     lower_bounds: Optional[np.ndarray] = None
     upper_bounds: Optional[np.ndarray] = None
+    color: Optional[str] = None
 
 
 def plot_decision_var_pairs(
@@ -377,7 +378,7 @@ def plot_decision_var_pairs(
     ps = get_per_point_settings_population(population, settings.plot_dominated, settings.plot_feasible)
 
     # Plot on all axes
-    base_color = None
+    base_color = settings.color
     for i in range(n_vars):
         for j in range(n_vars):
             ax = axes[i, j]

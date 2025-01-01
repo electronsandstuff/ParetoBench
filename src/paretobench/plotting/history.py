@@ -261,7 +261,7 @@ def animate_decision_vars(
 
 
 @dataclass
-class PlotHistorySettings:
+class PlotObjectivesHistorySettings:
     """
     Settings for plotting the objective functions from a history of populations.
 
@@ -309,12 +309,12 @@ class PlotHistorySettings:
     single_color: Optional[str] = None
 
 
-def plot_history(
+def plot_objectives_history(
     history,
     select: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     ax=None,
-    settings: PlotHistorySettings = PlotHistorySettings(),
+    settings: PlotObjectivesHistorySettings = PlotObjectivesHistorySettings(),
 ):
     """
     Plot the objectives from a history of populations, using either a colormap for generations
@@ -450,3 +450,151 @@ def plot_history(
         raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
 
     return fig, ax
+
+
+@dataclass
+class PlotDecisionVarHistorySettings:
+    """
+    Settings for plotting the decision variables from a history of populations.
+
+    plot_dominated : Literal['all', 'dominated', 'non-dominated'], optional
+        Include all, only dominated, or only non-dominated solutions, by default 'all'
+    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+        Plot only the feasible/infeasible solutions, or all. Defaults to all
+    colormap : str, optional
+        Name of the colormap to use for generation colors, by default 'viridis'
+    label: Optional[str] = "Generation"
+        Label for colorbar (only used when generation_mode is 'cmap')
+    legend_loc: Optional[str] = None
+    generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
+        How to handle multiple generations:
+        - 'cmap': Plot each generation separately with colors from colormap
+        - 'cumulative': Merge all selected generations into single population
+    single_color: Optional[str] = None
+        Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+    """
+
+    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
+    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    colormap: str = "viridis"
+    label: Optional[str] = "Generation"
+    legend_loc: Optional[str] = None
+    generation_mode: Literal["cmap", "cumulative"] = "cmap"
+    single_color: Optional[str] = None
+
+
+def plot_decision_var_pairs_history(
+    history,
+    select: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
+    fig=None,
+    axes=None,
+    settings: PlotDecisionVarHistorySettings = PlotDecisionVarHistorySettings(),
+):
+    """
+    Plot the decision variables from a history of populations, using either a colormap
+    for generations or merging all generations into a single population.
+
+    Parameters
+    ----------
+    history : History object
+        The history containing populations to plot
+    select : int, slice, List[int], or Tuple[int, int], optional
+        Specifies which generations to plot. Can be:
+        - None: All generations (default)
+        - int: Single generation index (negative counts from end)
+        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
+        - List[int]: Explicit list of generation indices
+        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+    fig : matplotlib figure, optional
+        Figure to plot on, by default None
+    axes : array of matplotlib axes, optional
+        Axes to plot on, by default None
+    settings : PlotDecisionVarHistorySettings
+        Settings for the plot
+
+    Returns
+    -------
+    matplotlib figure and array of matplotlib axes
+        The figure and axes containing the history plot
+    """
+    # Basic input validation
+    if not history.reports:
+        raise ValueError("History contains no reports")
+
+    # Handle different types of selection
+    if select is None:
+        # Select all populations
+        indices = list(range(len(history.reports)))
+    elif isinstance(select, int):
+        # Single index - convert negative to positive
+        if select < 0:
+            select = len(history.reports) + select
+            if select < 0:
+                raise IndexError(f"Index {select} out of range for history with length {len(history.reports)}")
+        indices = [select]
+    elif isinstance(select, slice):
+        # Slice - get list of indices
+        indices = list(range(*select.indices(len(history.reports))))
+    elif isinstance(select, (list, np.ndarray)):
+        # List of indices - convert negative to positive
+        indices = []
+        for i in select:
+            idx = i if i >= 0 else len(history.reports) + i
+            if idx < 0 or idx >= len(history.reports):
+                raise IndexError(f"Index {i} out of range for history with length {len(history.reports)}")
+            indices.append(idx)
+    elif isinstance(select, tuple) and len(select) == 2:
+        # Range tuple (start, end)
+        start, end = select
+        if start < 0 or end > len(history.reports):
+            raise IndexError(f"Range {start}:{end} out of bounds for history with length {len(history.reports)}")
+        indices = list(range(start, end))
+    else:
+        raise ValueError(f"Unsupported selection type: {type(select)}")
+
+    if not indices:
+        raise ValueError("No generations selected")
+
+    # Get dimensions from first population
+    first_pop = history.reports[0]
+    if not len(first_pop):
+        raise EmptyPopulationError()
+
+    # Create base settings for plot_decision_var_pairs
+    plot_settings = PlotDecisionVarPairsSettings(
+        plot_dominated=settings.plot_dominated,
+        plot_feasible=settings.plot_feasible,
+        legend_loc=settings.legend_loc,
+    )
+
+    if settings.generation_mode == "cumulative":
+        # Merge all selected populations
+        combined_population = history.reports[indices[0]]
+        for idx in indices[1:]:
+            combined_population = combined_population + history.reports[idx]
+
+        # Set optional color and plot combined population
+        plot_settings.color = settings.single_color  # Will use default if None
+        fig, axes = plot_decision_var_pairs(combined_population, fig=fig, axes=axes, settings=plot_settings)
+
+    elif settings.generation_mode == "cmap":
+        cmap = plt.get_cmap(settings.colormap)
+        norm = plt.Normalize(min(indices), max(indices))
+
+        # Plot each selected generation
+        for plot_idx, gen_idx in enumerate(indices):
+            population = history.reports[gen_idx]
+            plot_settings.color = cmap(norm(gen_idx))
+
+            # Plot this generation
+            fig, axes = plot_decision_var_pairs(population, fig=fig, axes=axes, settings=plot_settings)
+
+        # Add colorbar if label is provided
+        if settings.label:
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])  # Dummy array for the colorbar
+            fig.colorbar(sm, label=settings.label)
+    else:
+        raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
+
+    return fig, axes
