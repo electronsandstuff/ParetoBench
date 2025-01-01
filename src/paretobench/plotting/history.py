@@ -284,12 +284,14 @@ class PlotHistorySettings:
     ref_point_padding: float = 0.05
         Padding for automatic reference point calculation
     label: Optional[str] = "Generation"
-        Label for colorbar (only used when use_colormap is True)
+        Label for colorbar (only used when generation_mode is 'cmap')
     legend_loc: Optional[str] = None
-    use_colormap: bool = True
-        If True, uses colormap to distinguish generations. If False, plots all points in single color.
+    generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
+        How to handle multiple generations:
+        - 'cmap': Plot each generation separately with colors from colormap
+        - 'cumulative': Merge all selected generations into single population
     single_color: Optional[str] = None
-        Color to use when use_colormap is False. If None, uses default color from matplotlib.
+        Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     """
 
     plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
@@ -303,7 +305,7 @@ class PlotHistorySettings:
     ref_point_padding: float = 0.1
     label: Optional[str] = "Generation"
     legend_loc: Optional[str] = None
-    use_colormap: bool = True
+    generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
 
 
@@ -316,7 +318,7 @@ def plot_history(
 ):
     """
     Plot the objectives from a history of populations, using either a colormap for generations
-    or a single color for all points.
+    or merging all generations into a single population.
 
     Parameters
     ----------
@@ -389,16 +391,6 @@ def plot_history(
     if fig is None:
         fig = plt.figure()
 
-    # Calculate global reference point if not provided
-    global_ref_point = None
-    if settings.ref_point is None:
-        combined_population = history.reports[indices[0]]
-        for idx in indices[1:]:
-            combined_population = combined_population + history.reports[idx]
-        global_ref_point = get_reference_point(combined_population, padding=settings.ref_point_padding)
-    else:
-        global_ref_point = settings.ref_point
-
     # Create base settings for plot_objectives
     obj_settings = PlotObjectivesSettings(
         plot_dominated=settings.plot_dominated,
@@ -406,41 +398,55 @@ def plot_history(
         plot_attainment=settings.plot_attainment,
         plot_dominated_area=settings.plot_dominated_area,
         pf_objectives=settings.pf_objectives,
-        ref_point=global_ref_point,
         legend_loc=settings.legend_loc,
     )
 
-    # Set up colormap if using one, otherwise get consistent color
-    if settings.use_colormap:
+    # Calculate global reference point if not provided
+    if settings.ref_point is None:
+        combined_population = history.reports[indices[0]]
+        for idx in indices[1:]:
+            combined_population = combined_population + history.reports[idx]
+        obj_settings.ref_point = get_reference_point(combined_population, padding=settings.ref_point_padding)
+    else:
+        obj_settings.ref_point = settings.ref_point
+
+    if settings.generation_mode == "cumulative":
+        # Merge all selected populations
+        combined_population = history.reports[indices[0]]
+        for idx in indices[1:]:
+            combined_population = combined_population + history.reports[idx]
+
+        # Set optional color and plot combined population
+        obj_settings.color = settings.single_color  # Will use default if None
+        if settings.plot_pf and history.problem is not None:
+            obj_settings.problem = history.problem
+
+        fig, ax = plot_objectives(combined_population, fig=fig, ax=ax, settings=obj_settings)
+
+    elif settings.generation_mode == "cmap":
         cmap = plt.get_cmap(settings.colormap)
         norm = plt.Normalize(min(indices), max(indices))
-    else:
-        if settings.single_color is not None:
-            obj_settings.color = settings.single_color
-        else:
-            # Get next color from the default color cycle
-            obj_settings.color = next(iter(plt.rcParams["axes.prop_cycle"]))["color"]
 
-    # Plot each selected generation
-    for plot_idx, gen_idx in enumerate(indices):
-        population = history.reports[gen_idx]
-
-        if settings.use_colormap:
+        # Plot each selected generation
+        for plot_idx, gen_idx in enumerate(indices):
+            population = history.reports[gen_idx]
             obj_settings.color = cmap(norm(gen_idx))
 
-        # Only plot PF on the last iteration if requested
-        if plot_idx == len(indices) - 1 and settings.plot_pf and history.problem is not None:
-            obj_settings.problem = history.problem
-        else:
-            obj_settings.problem = None
+            # Only plot PF on the last iteration if requested
+            if plot_idx == len(indices) - 1 and settings.plot_pf and history.problem is not None:
+                obj_settings.problem = history.problem
+            else:
+                obj_settings.problem = None
 
-        # Plot this generation
-        fig, ax = plot_objectives(population, fig=fig, ax=ax, settings=obj_settings)
+            # Plot this generation
+            fig, ax = plot_objectives(population, fig=fig, ax=ax, settings=obj_settings)
 
-    # Add colorbar if using colormap
-    if settings.use_colormap and settings.label:
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm.set_array([])  # Dummy array for the colorbar
-        fig.colorbar(sm, ax=ax, label=settings.label)
+        # Add colorbar if label is provided
+        if settings.label:
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+            sm.set_array([])  # Dummy array for the colorbar
+            fig.colorbar(sm, ax=ax, label=settings.label)
+    else:
+        raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
 
     return fig, ax
