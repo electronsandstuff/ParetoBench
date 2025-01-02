@@ -100,6 +100,7 @@ def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwarg
     if alpha is None:
         alpha = 1.0
 
+    # Create a color for each point with the appropriate alpha
     r, g, b = to_rgb(color)
     if isinstance(alpha, float):
         color = (r, g, b, alpha)
@@ -112,9 +113,10 @@ def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwarg
     if isinstance(marker, str):
         return [ax.scatter(x, y, c=color, marker=marker, **kwargs)]
 
-    if "label" in kwargs:
-        ax.scatter([], [], color=(r, g, b), label=kwargs.pop("label"), **kwargs)
+    # Pull out the label before going into loop
+    label = kwargs.pop("label", None)
 
+    # Loop over each possible label in the dataset and plot in batches
     points = []
     unique_markers = set(marker)
     for m in unique_markers:
@@ -124,4 +126,12 @@ def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwarg
             points.append(ax.scatter(x[mask], y[mask], c=filtered_color, marker=m, **kwargs))
         else:
             points.append(ax.scatter(x[mask], y[mask], z[mask], c=filtered_color, marker=m, **kwargs))
+
+    # Add an empty scatter object for the legend. Place at end to avoid affecting axis limits
+    if label is not None:
+        if z is None:
+            ax.scatter([], [], color=(r, g, b), label=label, **kwargs)
+        else:
+            ax.scatter([], [], [], color=(r, g, b), label=label, **kwargs)
+
     return points
