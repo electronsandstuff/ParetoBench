@@ -382,16 +382,17 @@ def population_dvar_pairs(
             layout="constrained",
             sharex="col",
         )
+
+        # Convert axes to 2D array if only one variable is selected
+        if n_vars == 1:
+            axes = np.array([[axes]])
+
     elif (fig is None) != (axes is None):  # XOR operation
         raise ValueError("Either both fig and axes must be provided or neither must be provided")
     else:
         # Validate provided axes dimensions
         if axes.shape != (n_vars, n_vars):
             raise ValueError(f"Provided axes must have shape ({n_vars}, {n_vars}), got {axes.shape}")
-
-    # Convert axes to 2D array if only one variable is selected
-    if n_vars == 1:
-        axes = np.array([[axes]])
 
     # Style all axes
     for i in range(n_vars):
