@@ -25,6 +25,8 @@ class HistoryObjScatterConfig:
         Include the dominated individuals, by default True
     plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
+    show_points : bool
+        Whether to plot the points (useful for only showing attainment surface)
     plot_pf : bool, optional
         Whether to plot the Pareto front, by default True
     pf_objectives : array-like, optional
@@ -54,6 +56,7 @@ class HistoryObjScatterConfig:
 
     plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
     plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    show_points: bool = True
     plot_pf: bool = False
     pf_objectives: Optional[np.ndarray] = None
     colormap: str = "viridis"
@@ -154,6 +157,7 @@ def history_obj_scatter(
     obj_settings = PopulationObjScatterConfig(
         plot_dominated=settings.plot_dominated,
         plot_feasible=settings.plot_feasible,
+        show_points=settings.show_points,
         plot_attainment=settings.plot_attainment,
         plot_dominated_area=settings.plot_dominated_area,
         pf_objectives=settings.pf_objectives,

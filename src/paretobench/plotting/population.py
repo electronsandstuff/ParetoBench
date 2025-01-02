@@ -23,6 +23,8 @@ class PopulationObjScatterConfig:
         Include the dominated individuals, by default True
     plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
+    show_points : bool
+        Whether to actually show the points (useful for only showing attainment surface or dominated region)
     problem : str, optional
         Name of the problem for Pareto front plotting, by default None
     n_pf : int, optional
@@ -47,6 +49,7 @@ class PopulationObjScatterConfig:
 
     plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
     plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    show_points: bool = True
     problem: Optional[str] = None
     n_pf: int = 1000
     pf_objectives: Optional[np.ndarray] = None
@@ -135,18 +138,19 @@ def population_obj_scatter(
             ax = fig.add_subplot(111)
 
         # Plot the data
-        scatter = alpha_scatter(
-            ax,
-            population.f[ps.plot_filt, 0],
-            population.f[ps.plot_filt, 1],
-            alpha=ps.alpha[ps.plot_filt],
-            marker=ps.markers[ps.plot_filt],
-            color=base_color,
-            s=15,
-            label=settings.label,
-        )
-        if scatter:
-            base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
+        if settings.show_points:
+            scatter = alpha_scatter(
+                ax,
+                population.f[ps.plot_filt, 0],
+                population.f[ps.plot_filt, 1],
+                alpha=ps.alpha[ps.plot_filt],
+                marker=ps.markers[ps.plot_filt],
+                color=base_color,
+                s=15,
+                label=settings.label,
+            )
+            if scatter:
+                base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
         # Plot attainment surface if requested (using feasible solutions only)
         attainment = compute_attainment_surface_2d(
@@ -196,24 +200,28 @@ def population_obj_scatter(
             add_legend = True
 
         # Plot the data
-        scatter = alpha_scatter(
-            ax,
-            population.f[ps.plot_filt, 0],
-            population.f[ps.plot_filt, 1],
-            population.f[ps.plot_filt, 2],
-            alpha=ps.alpha[ps.plot_filt],
-            marker=ps.markers[ps.plot_filt],
-            color=base_color,
-            s=15,
-            label=settings.label,
-        )
-        if scatter:
-            base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
+        if settings.show_points:
+            scatter = alpha_scatter(
+                ax,
+                population.f[ps.plot_filt, 0],
+                population.f[ps.plot_filt, 1],
+                population.f[ps.plot_filt, 2],
+                alpha=ps.alpha[ps.plot_filt],
+                marker=ps.markers[ps.plot_filt],
+                color=base_color,
+                s=15,
+                label=settings.label,
+            )
+            if scatter:
+                base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
         if settings.plot_dominated_area:
             raise NotImplementedError("Cannot display dominated volume in 3D :(")
 
         if settings.plot_attainment:
+            if base_color is None:
+                base_color = ax._get_lines.get_next_color()
+
             vertices, faces = compute_attainment_surface_3d(
                 population, ref_point=settings.ref_point, padding=settings.ref_point_padding
             )
