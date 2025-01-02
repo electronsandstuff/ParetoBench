@@ -48,6 +48,8 @@ class HistoryObjScatterConfig:
         - 'cumulative': Merge all selected generations into single population
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+    label_mode: Literal['index', 'fevals'] = 'index'
+        Whether to use report index or function evaluations (fevals) for labels
     """
 
     plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
@@ -59,10 +61,11 @@ class HistoryObjScatterConfig:
     plot_dominated_area: bool = False
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.1
-    label: Optional[str] = "Generation"
+    label: Optional[str] = None
     legend_loc: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
+    label_mode: Literal["index", "fevals"] = "index"
 
 
 def history_obj_scatter(
@@ -180,13 +183,21 @@ def history_obj_scatter(
         fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, settings=obj_settings)
 
     elif settings.generation_mode == "cmap":
+        if settings.label_mode == "index":
+            norm_values = indices
+            label = settings.label if settings.label else "Generation"
+        else:  # fevals mode
+            norm_values = [history.reports[idx].fevals for idx in indices]
+            label = settings.label if settings.label else "Function Evaluations"
+
         cmap = plt.get_cmap(settings.colormap)
-        norm = plt.Normalize(min(indices), max(indices))
+        norm = plt.Normalize(min(norm_values), max(norm_values))
 
         # Plot each selected generation
         for plot_idx, gen_idx in enumerate(indices):
             population = history.reports[gen_idx]
-            obj_settings.color = cmap(norm(gen_idx))
+            norm_value = gen_idx if settings.label_mode == "index" else population.fevals
+            obj_settings.color = cmap(norm(norm_value))
             obj_settings.dominated_area_zorder = -2 - plot_idx
 
             # Only plot PF on the last iteration if requested
@@ -199,10 +210,10 @@ def history_obj_scatter(
             fig, ax = population_obj_scatter(population, fig=fig, ax=ax, settings=obj_settings)
 
         # Add colorbar if label is provided
-        if settings.label:
+        if label:
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
             sm.set_array([])  # Dummy array for the colorbar
-            fig.colorbar(sm, ax=ax, label=settings.label)
+            fig.colorbar(sm, ax=ax, label=label)
     else:
         raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
 
