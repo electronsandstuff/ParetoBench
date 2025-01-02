@@ -242,15 +242,18 @@ class HistoryDVarPairsConfig:
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     plot_bounds: bool = False
         Whether to plot bounds for the problem
+    label_mode: Literal['index', 'fevals'] = 'index'
+        Whether to use report index or function evaluations (fevals) for labels
     """
 
     plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
     plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
     colormap: str = "viridis"
-    label: Optional[str] = "Generation"
+    label: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
     plot_bounds: bool = False
+    label_mode: Literal["index", "fevals"] = "index"
 
 
 def history_dvar_pairs(
@@ -353,15 +356,23 @@ def history_dvar_pairs(
         fig, axes = population_dvar_pairs(combined_population, dvars=dvars, fig=fig, axes=axes, settings=plot_settings)
 
     elif settings.generation_mode == "cmap":
+        if settings.label_mode == "index":
+            norm_values = indices
+            label = settings.label if settings.label else "Generation"
+        else:  # fevals mode
+            norm_values = [history.reports[idx].fevals for idx in indices]
+            label = settings.label if settings.label else "Function Evaluations"
+
         cmap = plt.get_cmap(settings.colormap)
-        norm = plt.Normalize(min(indices), max(indices))
+        norm = plt.Normalize(min(norm_values), max(norm_values))
 
         # Plot each selected generation
         for plot_idx, gen_idx in enumerate(indices):
             population = history.reports[gen_idx]
-            plot_settings.color = cmap(norm(gen_idx))
+            norm_value = gen_idx if settings.label_mode == "index" else population.fevals
+            plot_settings.color = cmap(norm(norm_value))
 
-            # Only plot PF on the last iteration if requested
+            # Only plot bounds on the last iteration if requested
             if plot_idx == len(indices) - 1 and settings.plot_bounds and history.problem is not None:
                 plot_settings.problem = history.problem
             else:
@@ -371,11 +382,11 @@ def history_dvar_pairs(
             fig, axes = population_dvar_pairs(population, dvars=dvars, fig=fig, axes=axes, settings=plot_settings)
 
         # Add colorbar if label is provided
-        if settings.label:
+        if label:
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
             sm.set_array([])  # Dummy array for the colorbar
             # Use ax parameter to let constrained_layout handle the positioning
-            fig.colorbar(sm, ax=axes.ravel().tolist(), label=settings.label)
+            fig.colorbar(sm, ax=axes.ravel().tolist(), label=label)
     else:
         raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
 
