@@ -15,7 +15,7 @@ from .utils import get_per_point_settings_population, alpha_scatter
 
 
 @dataclass
-class PopulationObjectivesConfig:
+class PopulationObjScatterConfig:
     """
     Settings for plotting the objective functions from `Population`.
 
@@ -60,11 +60,11 @@ class PopulationObjectivesConfig:
     color: Optional[str] = None
 
 
-def plot_population_objectives(
+def population_obj_scatter(
     population: Population,
     fig=None,
     ax=None,
-    settings: PopulationObjectivesConfig = PopulationObjectivesConfig(),
+    settings: PopulationObjScatterConfig = PopulationObjScatterConfig(),
 ):
     """
     Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
@@ -78,7 +78,7 @@ def plot_population_objectives(
         Figure to plot on, by default None
     ax : matplotlib axis, optional
         Axis to plot on, by default None
-    settings : PopulationObjectivesConfig
+    settings : PopulationObjScatterConfig
         Settings for the plot
 
     Returns
@@ -247,7 +247,7 @@ def plot_population_objectives(
 
 
 @dataclass
-class PopulationDecisionVarsConfig:
+class PopulationDVarPairsConfig:
     """
     Settings related to plotting decision variables from `Population`.
 
@@ -277,11 +277,11 @@ class PopulationDecisionVarsConfig:
     color: Optional[str] = None
 
 
-def plot_population_decision_vars(
+def population_dvar_pairs(
     population: Population,
     fig=None,
     axes=None,
-    settings: PopulationDecisionVarsConfig = PopulationDecisionVarsConfig(),
+    settings: PopulationDVarPairsConfig = PopulationDVarPairsConfig(),
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -296,7 +296,7 @@ def plot_population_decision_vars(
     axes : numpy.ndarray of matplotlib.axes.Axes, optional
         2D array of axes to plot on. If None and fig is None, creates new axes.
         Must be provided if fig is provided and vice versa.
-    settings : PopulationDecisionVarsConfig
+    settings : PopulationDVarPairsConfig
         Settings related to plotting the decision variables
 
     Returns
