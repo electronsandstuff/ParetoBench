@@ -279,7 +279,7 @@ class PopulationDVarPairsConfig:
 
 def population_dvar_pairs(
     population: Population,
-    select: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+    dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     axes=None,
     settings: PopulationDVarPairsConfig = PopulationDVarPairsConfig(),
@@ -292,7 +292,7 @@ def population_dvar_pairs(
     ----------
     population : paretobench Population
         The population containing data to plot
-    select : int, slice, List[int], or Tuple[int, int], optional
+    dvars : int, slice, List[int], or Tuple[int, int], optional
         Specifies which decision variables to plot. Can be:
         - None: All variables (default)
         - int: Single variable index (negative counts from end)
@@ -321,19 +321,19 @@ def population_dvar_pairs(
 
     # Process the select parameter to get indices of variables to plot
     all_var_indices = np.arange(population.n)
-    if select is None:
+    if dvars is None:
         var_indices = all_var_indices
-    elif isinstance(select, int):
-        var_indices = [all_var_indices[select]]
-    elif isinstance(select, slice):
-        var_indices = all_var_indices[select]
-    elif isinstance(select, (list, tuple)):
-        if len(select) == 2 and all(isinstance(x, int) for x in select):
+    elif isinstance(dvars, int):
+        var_indices = [all_var_indices[dvars]]
+    elif isinstance(dvars, slice):
+        var_indices = all_var_indices[dvars]
+    elif isinstance(dvars, (list, tuple)):
+        if len(dvars) == 2 and all(isinstance(x, int) for x in dvars):
             # Treat as range tuple (start, end)
-            var_indices = all_var_indices[slice(*select)]
+            var_indices = all_var_indices[slice(*dvars)]
         else:
             # Treat as explicit list of indices
-            var_indices = [all_var_indices[i] for i in select]
+            var_indices = [all_var_indices[i] for i in dvars]
     else:
         raise ValueError("select must be None, int, slice, List[int], or Tuple[int, int]")
 

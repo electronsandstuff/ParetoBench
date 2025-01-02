@@ -67,7 +67,7 @@ class HistoryObjScatterConfig:
 
 def history_obj_scatter(
     history,
-    select: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+    reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     ax=None,
     settings: HistoryObjScatterConfig = HistoryObjScatterConfig(),
@@ -80,7 +80,7 @@ def history_obj_scatter(
     ----------
     history : History object
         The history containing populations to plot
-    select : int, slice, List[int], or Tuple[int, int], optional
+    reports : int, slice, List[int], or Tuple[int, int], optional
         Specifies which generations to plot. Can be:
         - None: All generations (default)
         - int: Single generation index (negative counts from end)
@@ -104,35 +104,35 @@ def history_obj_scatter(
         raise ValueError("History contains no reports")
 
     # Handle different types of selection
-    if select is None:
+    if reports is None:
         # Select all populations
         indices = list(range(len(history.reports)))
-    elif isinstance(select, int):
+    elif isinstance(reports, int):
         # Single index - convert negative to positive
-        if select < 0:
-            select = len(history.reports) + select
-            if select < 0:
-                raise IndexError(f"Index {select} out of range for history with length {len(history.reports)}")
-        indices = [select]
-    elif isinstance(select, slice):
+        if reports < 0:
+            reports = len(history.reports) + reports
+            if reports < 0:
+                raise IndexError(f"Index {reports} out of range for history with length {len(history.reports)}")
+        indices = [reports]
+    elif isinstance(reports, slice):
         # Slice - get list of indices
-        indices = list(range(*select.indices(len(history.reports))))
-    elif isinstance(select, (list, np.ndarray)):
+        indices = list(range(*reports.indices(len(history.reports))))
+    elif isinstance(reports, (list, np.ndarray)):
         # List of indices - convert negative to positive
         indices = []
-        for i in select:
+        for i in reports:
             idx = i if i >= 0 else len(history.reports) + i
             if idx < 0 or idx >= len(history.reports):
                 raise IndexError(f"Index {i} out of range for history with length {len(history.reports)}")
             indices.append(idx)
-    elif isinstance(select, tuple) and len(select) == 2:
+    elif isinstance(reports, tuple) and len(reports) == 2:
         # Range tuple (start, end)
-        start, end = select
+        start, end = reports
         if start < 0 or end > len(history.reports):
             raise IndexError(f"Range {start}:{end} out of bounds for history with length {len(history.reports)}")
         indices = list(range(start, end))
     else:
-        raise ValueError(f"Unsupported selection type: {type(select)}")
+        raise ValueError(f"Unsupported selection type: {type(reports)}")
 
     if not indices:
         raise ValueError("No generations selected")
@@ -244,7 +244,7 @@ class HistoryDVarPairsConfig:
 
 def history_dvar_pairs(
     history: History,
-    select: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
+    reports: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
     fig=None,
     axes=None,
     settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
@@ -257,7 +257,7 @@ def history_dvar_pairs(
     ----------
     history : History object
         The history containing populations to plot
-    select : int, slice, List[int], or Tuple[int, int], optional
+    reports : int, slice, List[int], or Tuple[int, int], optional
         Specifies which generations to plot. Can be:
         - None: All generations (default)
         - int: Single generation index (negative counts from end)
@@ -281,35 +281,35 @@ def history_dvar_pairs(
         raise ValueError("History contains no reports")
 
     # Handle different types of selection
-    if select is None:
+    if reports is None:
         # Select all populations
         indices = list(range(len(history.reports)))
-    elif isinstance(select, int):
+    elif isinstance(reports, int):
         # Single index - convert negative to positive
-        if select < 0:
-            select = len(history.reports) + select
-            if select < 0:
-                raise IndexError(f"Index {select} out of range for history with length {len(history.reports)}")
-        indices = [select]
-    elif isinstance(select, slice):
+        if reports < 0:
+            reports = len(history.reports) + reports
+            if reports < 0:
+                raise IndexError(f"Index {reports} out of range for history with length {len(history.reports)}")
+        indices = [reports]
+    elif isinstance(reports, slice):
         # Slice - get list of indices
-        indices = list(range(*select.indices(len(history.reports))))
-    elif isinstance(select, (list, np.ndarray)):
+        indices = list(range(*reports.indices(len(history.reports))))
+    elif isinstance(reports, (list, np.ndarray)):
         # List of indices - convert negative to positive
         indices = []
-        for i in select:
+        for i in reports:
             idx = i if i >= 0 else len(history.reports) + i
             if idx < 0 or idx >= len(history.reports):
                 raise IndexError(f"Index {i} out of range for history with length {len(history.reports)}")
             indices.append(idx)
-    elif isinstance(select, tuple) and len(select) == 2:
+    elif isinstance(reports, tuple) and len(reports) == 2:
         # Range tuple (start, end)
-        start, end = select
+        start, end = reports
         if start < 0 or end > len(history.reports):
             raise IndexError(f"Range {start}:{end} out of bounds for history with length {len(history.reports)}")
         indices = list(range(start, end))
     else:
-        raise ValueError(f"Unsupported selection type: {type(select)}")
+        raise ValueError(f"Unsupported selection type: {type(reports)}")
 
     if not indices:
         raise ValueError("No generations selected")
@@ -437,7 +437,7 @@ def history_obj_animation(
         # Plot using the new history plotting function
         history_obj_scatter(
             history,
-            select=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
+            reports=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
             fig=fig,
             ax=ax,
             settings=frame_settings,
@@ -499,7 +499,7 @@ def history_dvar_animation(
 
     # Create initial plot to get figure and axes
     settings.generation_mode = "cumulative"
-    fig, axes = history_dvar_pairs(history, select=0, settings=settings)
+    fig, axes = history_dvar_pairs(history, reports=0, settings=settings)
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling:
@@ -527,7 +527,7 @@ def history_dvar_animation(
         # Plot using the new history plotting function
         history_dvar_pairs(
             history,
-            select=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
+            reports=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
             fig=fig,
             axes=axes,
             settings=frame_settings,
