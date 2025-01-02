@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from matplotlib.colors import LightSource
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from typing import Optional, Tuple, Literal
+from typing import Optional, Tuple, Literal, Union, List
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -279,6 +279,7 @@ class PopulationDVarPairsConfig:
 
 def population_dvar_pairs(
     population: Population,
+    select: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     axes=None,
     settings: PopulationDVarPairsConfig = PopulationDVarPairsConfig(),
@@ -291,6 +292,13 @@ def population_dvar_pairs(
     ----------
     population : paretobench Population
         The population containing data to plot
+    select : int, slice, List[int], or Tuple[int, int], optional
+        Specifies which decision variables to plot. Can be:
+        - None: All variables (default)
+        - int: Single variable index (negative counts from end)
+        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd var)
+        - List[int]: Explicit list of variable indices
+        - Tuple[int, int]: Range of variables as (start, end) where end is exclusive
     fig : matplotlib.figure.Figure, optional
         Figure to plot on. If None and axes is None, creates a new figure.
     axes : numpy.ndarray of matplotlib.axes.Axes, optional
@@ -311,7 +319,26 @@ def population_dvar_pairs(
     if not population.n:
         raise NoDecisionVarsError()
 
-    n_vars = population.n
+    # Process the select parameter to get indices of variables to plot
+    all_var_indices = np.arange(population.n)
+    if select is None:
+        var_indices = all_var_indices
+    elif isinstance(select, int):
+        var_indices = [all_var_indices[select]]
+    elif isinstance(select, slice):
+        var_indices = all_var_indices[select]
+    elif isinstance(select, (list, tuple)):
+        if len(select) == 2 and all(isinstance(x, int) for x in select):
+            # Treat as range tuple (start, end)
+            var_indices = all_var_indices[slice(*select)]
+        else:
+            # Treat as explicit list of indices
+            var_indices = [all_var_indices[i] for i in select]
+    else:
+        raise ValueError("select must be None, int, slice, List[int], or Tuple[int, int]")
+
+    var_indices = np.array(var_indices)
+    n_vars = len(var_indices)
 
     # Default, don't show bounds
     lower_bounds = None
@@ -322,9 +349,9 @@ def population_dvar_pairs(
         if (settings.lower_bounds is not None) or (settings.upper_bounds is not None):
             raise ValueError("Only specify one of problem or the upper/lower bounds")
         problem = get_problem_from_obj_or_str(settings.problem)
-        if problem.n != n_vars:
+        if problem.n != population.n:
             raise ValueError(
-                f"Number of decision vars in problem must match number in population. Got {problem.n} in problem and {n_vars} in population"
+                f"Number of decision vars in problem must match number in population. Got {problem.n} in problem and {population.n} in population"
             )
         lower_bounds = problem.var_lower_bounds
         upper_bounds = problem.var_upper_bounds
@@ -332,13 +359,17 @@ def population_dvar_pairs(
     # Validate and convert bounds to numpy arrays if provided
     if settings.lower_bounds is not None:
         lower_bounds = np.asarray(settings.lower_bounds)
-        if len(lower_bounds) != n_vars:
-            raise ValueError(f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({n_vars})")
+        if len(lower_bounds) != population.n:
+            raise ValueError(
+                f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({population.n})"
+            )
 
     if settings.upper_bounds is not None:
         upper_bounds = np.asarray(settings.upper_bounds)
-        if len(upper_bounds) != n_vars:
-            raise ValueError(f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({n_vars})")
+        if len(upper_bounds) != population.n:
+            raise ValueError(
+                f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({population.n})"
+            )
 
     # Handle figure and axes creation/validation
     if fig is None and axes is None:
@@ -358,6 +389,10 @@ def population_dvar_pairs(
         if axes.shape != (n_vars, n_vars):
             raise ValueError(f"Provided axes must have shape ({n_vars}, {n_vars}), got {axes.shape}")
 
+    # Convert axes to 2D array if only one variable is selected
+    if n_vars == 1:
+        axes = np.array([[axes]])
+
     # Style all axes
     for i in range(n_vars):
         for j in range(n_vars):
@@ -370,15 +405,14 @@ def population_dvar_pairs(
             # Hide x-axis labels and ticks for all rows except the bottom row
             if i != n_vars - 1:
                 plt.setp(ax.get_xticklabels(), visible=False)
-                # Hide x-axis labels and ticks for all rows except the bottom row
             if j != 0:
                 plt.setp(ax.get_yticklabels(), visible=False)
 
     # Get variable names or create default ones
     if population.names_x and settings.include_names:
-        var_names = population.names_x
+        var_names = [population.names_x[i] for i in var_indices]
     else:
-        var_names = [f"x{i+1}" for i in range(n_vars)]
+        var_names = [f"x{i+1}" for i in var_indices]
 
     # Define bound line properties
     bound_props = dict(color="red", linestyle="--", alpha=0.5, linewidth=1)
@@ -396,24 +430,28 @@ def population_dvar_pairs(
             if i == j:
                 # Plot the histogram
                 _, _, patches = ax.hist(
-                    population.x[ps.plot_filt, i], bins=settings.hist_bins, density=True, alpha=0.7, color=base_color
+                    population.x[ps.plot_filt, var_indices[i]],
+                    bins=settings.hist_bins,
+                    density=True,
+                    alpha=0.7,
+                    color=base_color,
                 )
                 if base_color is None:
                     base_color = patches[0].get_facecolor()
 
                 # Add vertical bound lines to histograms
                 if lower_bounds is not None:
-                    ax.axvline(lower_bounds[i], **bound_props)
+                    ax.axvline(lower_bounds[var_indices[i]], **bound_props)
                 if upper_bounds is not None:
-                    ax.axvline(upper_bounds[i], **bound_props)
+                    ax.axvline(upper_bounds[var_indices[i]], **bound_props)
 
             # Off-diagonal plots (scatter plots)
             else:
                 # Plot the decision vars
                 scatter = alpha_scatter(
                     ax,
-                    population.x[ps.plot_filt, j],
-                    population.x[ps.plot_filt, i],
+                    population.x[ps.plot_filt, var_indices[j]],
+                    population.x[ps.plot_filt, var_indices[i]],
                     alpha=ps.alpha[ps.plot_filt],
                     color=base_color,
                     s=15,
@@ -424,11 +462,11 @@ def population_dvar_pairs(
 
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
-                    ax.axvline(lower_bounds[j], **bound_props)  # x-axis bound
-                    ax.axhline(lower_bounds[i], **bound_props)  # y-axis bound
+                    ax.axvline(lower_bounds[var_indices[j]], **bound_props)  # x-axis bound
+                    ax.axhline(lower_bounds[var_indices[i]], **bound_props)  # y-axis bound
                 if upper_bounds is not None:
-                    ax.axvline(upper_bounds[j], **bound_props)  # x-axis bound
-                    ax.axhline(upper_bounds[i], **bound_props)  # y-axis bound
+                    ax.axvline(upper_bounds[var_indices[j]], **bound_props)  # x-axis bound
+                    ax.axhline(upper_bounds[var_indices[i]], **bound_props)  # y-axis bound
             if i == n_vars - 1:
                 ax.set_xlabel(var_names[j])
             if j == 0:
