@@ -52,7 +52,7 @@ class PopulationObjScatterConfig:
     pf_objectives: Optional[np.ndarray] = None
     plot_attainment: bool = False
     plot_dominated_area: bool = False
-    dominated_area_zorder: Optional[int] = None
+    dominated_area_zorder: Optional[int] = -2
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.05
     label: Optional[str] = None
