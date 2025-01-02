@@ -245,6 +245,7 @@ class HistoryDVarPairsConfig:
 def history_dvar_pairs(
     history: History,
     reports: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
+    dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     axes=None,
     settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
@@ -264,6 +265,8 @@ def history_dvar_pairs(
         - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
         - List[int]: Explicit list of generation indices
         - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+    dvars : int, slice, List[int], or Tuple[int, int], optional
+        Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     fig : matplotlib figure, optional
         Figure to plot on, by default None
     axes : array of matplotlib axes, optional
@@ -336,7 +339,7 @@ def history_dvar_pairs(
 
         # Set optional color and plot combined population
         plot_settings.color = settings.single_color  # Will use default if None
-        fig, axes = population_dvar_pairs(combined_population, fig=fig, axes=axes, settings=plot_settings)
+        fig, axes = population_dvar_pairs(combined_population, dvars=dvars, fig=fig, axes=axes, settings=plot_settings)
 
     elif settings.generation_mode == "cmap":
         cmap = plt.get_cmap(settings.colormap)
@@ -354,7 +357,7 @@ def history_dvar_pairs(
                 plot_settings.problem = None
 
             # Plot this generation
-            fig, axes = population_dvar_pairs(population, fig=fig, axes=axes, settings=plot_settings)
+            fig, axes = population_dvar_pairs(population, dvars=dvars, fig=fig, axes=axes, settings=plot_settings)
 
         # Add colorbar if label is provided
         if settings.label:
@@ -464,6 +467,7 @@ def history_obj_animation(
 
 def history_dvar_animation(
     history: History,
+    dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     interval: int = 200,
     decision_var_plot_settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
     dynamic_scaling: bool = False,
@@ -476,6 +480,8 @@ def history_dvar_animation(
     ----------
     history : paretobench History
         The history object containing populations with data to plot
+    dvars : int, slice, List[int], or Tuple[int, int], optional
+        Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     interval : int, optional
         Delay between frames in milliseconds, by default 200
     decision_var_plot_settings : HistoryDVarPairsConfig
@@ -499,7 +505,7 @@ def history_dvar_animation(
 
     # Create initial plot to get figure and axes
     settings.generation_mode = "cumulative"
-    fig, axes = history_dvar_pairs(history, reports=0, settings=settings)
+    fig, axes = history_dvar_pairs(history, reports=0, dvars=dvars, settings=settings)
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling:
@@ -528,6 +534,7 @@ def history_dvar_animation(
         history_dvar_pairs(
             history,
             reports=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
+            dvars=dvars,
             fig=fig,
             axes=axes,
             settings=frame_settings,
