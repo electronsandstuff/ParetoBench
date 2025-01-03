@@ -12,6 +12,10 @@ from .exceptions import (
     DeserializationError,
     UnknownProblemError,
     InputError,
+    EmptyPopulationError,
+    NoObjectivesError,
+    NoConstraintsError,
+    NoDecisionVarsError,
 )
 
 # Test problems
@@ -59,4 +63,8 @@ __all__ = [
     "aggregate_metrics_feval_budget",
     "construct_metric_comparison_table",
     "comparison_table_to_latex",
+    "EmptyPopulationError",
+    "NoObjectivesError",
+    "NoConstraintsError",
+    "NoDecisionVarsError",
 ] + [cls.__name__ for cls in _PROBLEM_CLASSES]
