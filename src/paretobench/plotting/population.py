@@ -177,7 +177,7 @@ def population_obj_scatter(
 
         # Add in Pareto front
         if pf is not None:
-            ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF")
+            ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF", zorder=min(-1, settings.dominated_area_zorder) - 1)
             add_legend = True
 
         # Handle the axis labels
