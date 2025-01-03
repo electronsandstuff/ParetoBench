@@ -121,3 +121,24 @@ def test_population_obj_scatter_edge_cases():
     assert ax_return == ax
     assert fig_return == fig
     plt.close(fig)
+
+
+def test_population_obj_scatter_attainment_and_dominated():
+    """Test that attainment surface and dominated region appear in plot when requested"""
+    # Create random population
+    pop = Population.from_random(n_objectives=2, n_decision_vars=2, n_constraints=1, pop_size=5)
+
+    # Test with both attainment and dominated area enabled
+    settings = PopulationObjScatterConfig(plot_attainment=True, plot_dominated_area=True)
+
+    fig, ax = population_obj_scatter(pop, settings=settings)
+
+    # Check for attainment surface line
+    lines = ax.get_lines()
+    assert len(lines) > 0, "No attainment surface line found"
+
+    # Check for dominated area fill
+    fills = [c for c in ax.collections if isinstance(c, plt.matplotlib.collections.PolyCollection)]
+    assert len(fills) > 0, "No dominated area fill found"
+
+    plt.close(fig)
