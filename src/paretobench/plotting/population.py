@@ -33,7 +33,7 @@ class PopulationObjScatterConfig:
         User-specified Pareto front objectives. Should be a 2D array where each row represents a point
         on the Pareto front and each column represents an objective value.
     plot_attainment : bool, optional
-        Whether to plot the attainment surface (2D only), by default False
+        Whether to plot the attainment surface, by default False
     plot_dominated_area : bool, optional
         Plots the dominated region towards the larger values of each decision var
     ref_point : Union[str, Tuple[float, float]], optional
