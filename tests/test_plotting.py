@@ -3,8 +3,16 @@ from matplotlib.collections import PathCollection
 import matplotlib.pyplot as plt
 import pytest
 
-from paretobench import Population, EmptyPopulationError
-from paretobench.plotting import population_obj_scatter, PopulationObjScatterConfig, population_dvar_pairs
+from paretobench import Population, History, EmptyPopulationError
+from paretobench.plotting import (
+    population_obj_scatter,
+    PopulationObjScatterConfig,
+    population_dvar_pairs,
+    history_dvar_pairs,
+    history_obj_scatter,
+    HistoryDVarPairsConfig,
+    HistoryObjScatterConfig,
+)
 from paretobench.plotting.utils import get_per_point_settings_population
 from paretobench.plotting.attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
 
@@ -243,3 +251,73 @@ def test_population_dvar_pairs_errors():
     # Test out of bounds index
     with pytest.raises(IndexError):
         population_dvar_pairs(pop, dvars=10)
+
+
+def test_history_obj_scatter():
+    """Test basic functionality of history objective scatter plotting"""
+    # Create a random history with 10 populations
+    hist = History.from_random(10, 3, 4, 0, 50)
+
+    # Test default plotting (all reports)
+    fig, ax = history_obj_scatter(hist)
+    # Should have colorbar by default in 'cmap' mode
+    assert len(fig.get_axes()) == 2  # Main axis + colorbar
+    plt.close(fig)
+
+
+@pytest.mark.parametrize(
+    "reports, expected_gens",
+    [
+        (slice(1, 4), 3),  # Should plot 3 generations
+        ([0, 5, 9], 3),  # Should plot 3 specific generations
+        ((2, 6), 4),  # Should plot 4 generations (2,3,4,5)
+        (5, 1),  # Should plot single generation
+    ],
+)
+def test_history_plots_reports(reports, expected_gens):
+    """Test different report selection methods for both obj_scatter and dvar_pairs"""
+    hist = History.from_random(10, 3, 4, 0, 50)
+
+    # Test objective scatter plot
+    obj_settings = HistoryObjScatterConfig(generation_mode="cmap")
+    fig, ax = history_obj_scatter(hist, reports=reports, settings=obj_settings)
+    # In cmap mode, each generation gets its own color in the colorbar
+    sm = fig.get_axes()[-1].collections[0]  # Get ScalarMappable from colorbar
+    assert len(sm.get_cmap().colors) >= expected_gens
+    plt.close(fig)
+
+    # Test decision variable pairs plot
+    dvar_settings = HistoryDVarPairsConfig(generation_mode="cmap")
+    fig, axes = history_dvar_pairs(hist, reports=reports, settings=dvar_settings)
+    assert axes.shape == (4, 4)  # Should be 4x4 grid for 4 decision vars
+    sm = fig.get_axes()[-1].collections[0]  # Get ScalarMappable from colorbar
+    assert len(sm.get_cmap().colors) >= expected_gens
+    plt.close(fig)
+
+
+def test_history_dvar_pairs():
+    """Test basic functionality of history decision variable pairs plotting"""
+    # Create a random history with 10 populations
+    hist = History.from_random(10, 3, 4, 0, 50)
+
+    # Test default plotting (all reports)
+    fig, axes = history_dvar_pairs(hist)
+    assert axes.shape == (4, 4)  # Should be 4x4 grid for 4 decision variables
+    # Should have colorbar
+    assert len(fig.get_axes()) == 17  # 16 subplots + 1 colorbar
+    plt.close(fig)
+
+    # Test report selection with variable selection
+    settings = HistoryDVarPairsConfig(generation_mode="cmap")
+
+    # Test with slice of reports and specific variables
+    fig, axes = history_dvar_pairs(
+        hist,
+        reports=slice(0, 3),  # First 3 generations
+        dvars=[0, 2],  # First and third variables
+        settings=settings,
+    )
+
+    assert axes.shape == (2, 2)  # Should be 2x2 grid for 2 variables
+    assert len(fig.get_axes()) == 5  # 4 subplots + 1 colorbar
+    plt.close(fig)
