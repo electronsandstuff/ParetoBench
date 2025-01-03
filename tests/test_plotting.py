@@ -6,6 +6,7 @@ import pytest
 from paretobench import Population, EmptyPopulationError
 from paretobench.plotting import population_obj_scatter, PopulationObjScatterConfig
 from paretobench.plotting.utils import get_per_point_settings_population
+from paretobench.plotting.attainment import compute_attainment_surface_2d
 
 
 def test_per_point_settings_nondominated():
@@ -142,3 +143,20 @@ def test_population_obj_scatter_attainment_and_dominated():
     assert len(fills) > 0, "No dominated area fill found"
 
     plt.close(fig)
+
+
+def test_attainment_surface_2d():
+    """Test that no point on the attainment surface is dominated by the original population"""
+    # Create a random population
+    pop = Population.from_random(n_objectives=2, n_decision_vars=0, n_constraints=0, pop_size=50)
+
+    # Compute attainment surface
+    surface_points = compute_attainment_surface_2d(pop)
+
+    # Check if any population point strongly dominates any surface point
+    feasible_indices = pop.get_feasible_indices()
+    objs = np.concatenate((pop.f[feasible_indices], surface_points[1:-1]), axis=0)
+    strong_dom = (objs[:, None, :] < objs[None, :, :]).all(axis=-1)
+    assert not strong_dom[
+        : len(feasible_indices), len(feasible_indices) :
+    ].any(), "Found surface points dominated by population points"
