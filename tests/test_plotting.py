@@ -26,7 +26,7 @@ def test_per_point_settings_nondominated():
     # Make points non-dominated by setting objectives such that no point dominates another
     pop.f = np.array([[1.0, 2.0], [2.0, 1.0], [1.5, 1.5]])
 
-    settings = get_per_point_settings_population(pop, plot_dominated="all", plot_feasible="all")
+    settings = get_per_point_settings_population(pop, domination_filt="all", feasibility_filt="all")
 
     assert np.all(settings.nd_inds)  # All should be non-dominated
     assert np.all(settings.feas_inds)  # All should be feasible
@@ -44,7 +44,7 @@ def test_per_point_settings_random():
 
     pop.g = np.array([[1.0], [1.0], [-1.0], [-1.0], [1.0]])
 
-    settings = get_per_point_settings_population(pop, plot_dominated="all", plot_feasible="all")
+    settings = get_per_point_settings_population(pop, domination_filt="all", feasibility_filt="all")
 
     # Check non-dominated status
     assert np.array_equal(settings.nd_inds, [True, False, False, False, True])
@@ -59,11 +59,11 @@ def test_per_point_settings_random():
     assert np.all(settings.plot_filt)
 
     # Test filtering
-    settings = get_per_point_settings_population(pop, plot_dominated="non-dominated", plot_feasible="feasible")
+    settings = get_per_point_settings_population(pop, domination_filt="non-dominated", feasibility_filt="feasible")
     assert np.array_equal(settings.plot_filt, [True, False, False, False, True])
 
     # Test filtering
-    settings = get_per_point_settings_population(pop, plot_dominated="dominated", plot_feasible="infeasible")
+    settings = get_per_point_settings_population(pop, domination_filt="dominated", feasibility_filt="infeasible")
     assert np.array_equal(settings.plot_filt, [False, False, True, True, False])
 
 
@@ -118,7 +118,7 @@ def test_population_obj_scatter_edge_cases():
     plt.close(fig)
 
     # No points after filtering
-    settings = PopulationObjScatterConfig(plot_feasible="infeasible")
+    settings = PopulationObjScatterConfig(feasibility_filt="infeasible")
     fig, ax = population_obj_scatter(pop, settings=settings)
     scatter_plots = [c for c in ax.collections if isinstance(c, PathCollection)]
     assert len(scatter_plots) == 0
@@ -138,7 +138,7 @@ def test_population_obj_scatter_attainment_and_dominated():
     pop = Population.from_random(n_objectives=2, n_decision_vars=2, n_constraints=1, pop_size=5)
 
     # Test with both attainment and dominated area enabled
-    settings = PopulationObjScatterConfig(plot_attainment=True, plot_dominated_area=True)
+    settings = PopulationObjScatterConfig(show_attainment=True, show_dominated_area=True)
 
     fig, ax = population_obj_scatter(pop, settings=settings)
 

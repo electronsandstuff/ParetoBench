@@ -19,9 +19,9 @@ class PopulationObjScatterConfig:
     """
     Settings for plotting the objective functions from `Population`.
 
-    plot_dominated : bool, optional
+    domination_filt : bool, optional
         Include the dominated individuals, by default True
-    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     show_points : bool
         Whether to actually show the points (useful for only showing attainment surface or dominated region)
@@ -32,9 +32,9 @@ class PopulationObjScatterConfig:
     pf_objectives : array-like, optional
         User-specified Pareto front objectives. Should be a 2D array where each row represents a point
         on the Pareto front and each column represents an objective value.
-    plot_attainment : bool, optional
+    show_attainment : bool, optional
         Whether to plot the attainment surface, by default False
-    plot_dominated_area : bool, optional
+    show_dominated_area : bool, optional
         Plots the dominated region towards the larger values of each decision var
     ref_point : Union[str, Tuple[float, float]], optional
         Where to stop plotting the dominated region. Must be a point to the upper right (increasing value of objectives in 3D)
@@ -47,14 +47,14 @@ class PopulationObjScatterConfig:
         Passed to `loc` argument of plt.legend
     """
 
-    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
-    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     show_points: bool = True
     problem: Optional[str] = None
     n_pf: int = 1000
     pf_objectives: Optional[np.ndarray] = None
-    plot_attainment: bool = False
-    plot_dominated_area: bool = False
+    show_attainment: bool = False
+    show_dominated_area: bool = False
     dominated_area_zorder: Optional[int] = -2
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.05
@@ -127,7 +127,7 @@ def population_obj_scatter(
             )
 
     # Get the point settings for this plot
-    ps = get_per_point_settings_population(population, settings.plot_dominated, settings.plot_feasible)
+    ps = get_per_point_settings_population(population, settings.domination_filt, settings.feasibility_filt)
 
     # For 2D problems
     add_legend = False
@@ -156,9 +156,9 @@ def population_obj_scatter(
         attainment = compute_attainment_surface_2d(
             population, ref_point=settings.ref_point, padding=settings.ref_point_padding
         )
-        if settings.plot_attainment:
+        if settings.show_attainment:
             ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
-        if settings.plot_dominated_area:
+        if settings.show_dominated_area:
             plt.fill_between(
                 attainment[:, 0],
                 attainment[:, 1],
@@ -215,10 +215,10 @@ def population_obj_scatter(
             if scatter:
                 base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
-        if settings.plot_dominated_area:
+        if settings.show_dominated_area:
             raise NotImplementedError("Cannot display dominated volume in 3D :(")
 
-        if settings.plot_attainment:
+        if settings.show_attainment:
             if base_color is None:
                 base_color = ax._get_lines.get_next_color()
 
@@ -259,13 +259,13 @@ class PopulationDVarPairsConfig:
     """
     Settings related to plotting decision variables from `Population`.
 
-    plot_dominated : bool, optional
+    domination_filt : bool, optional
         Include the dominated individuals, by default True
-    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     hist_bins : int, optional
         Number of bins for histograms on the diagonal, default is 20
-    include_names : bool, optional
+    show_names : bool, optional
         Whether to include variable names on the axes if they exist, default is True
     problem : str/Problem, optional
         The problem for plotting decision variable bounds
@@ -275,10 +275,10 @@ class PopulationDVarPairsConfig:
         Upper bounds for each decision variable
     """
 
-    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
-    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     hist_bins: Optional[int] = None
-    include_names: bool = True
+    show_names: bool = True
     problem: Optional[str] = None
     lower_bounds: Optional[np.ndarray] = None
     upper_bounds: Optional[np.ndarray] = None
@@ -418,7 +418,7 @@ def population_dvar_pairs(
                 plt.setp(ax.get_yticklabels(), visible=False)
 
     # Get variable names or create default ones
-    if population.names_x and settings.include_names:
+    if population.names_x and settings.show_names:
         var_names = [population.names_x[i] for i in var_indices]
     else:
         var_names = [f"x{i+1}" for i in var_indices]
@@ -427,7 +427,7 @@ def population_dvar_pairs(
     bound_props = dict(color="red", linestyle="--", alpha=0.5, linewidth=1)
 
     # Get the point settings for this plot
-    ps = get_per_point_settings_population(population, settings.plot_dominated, settings.plot_feasible)
+    ps = get_per_point_settings_population(population, settings.domination_filt, settings.feasibility_filt)
 
     # Plot on all axes
     base_color = settings.color

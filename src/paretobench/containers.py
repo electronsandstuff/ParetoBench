@@ -250,7 +250,7 @@ class Population(BaseModel):
         f = np.random.rand(pop_size, n_objectives)
         g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
 
-        # Optionally generate names if include_names is True
+        # Optionally generate names if generate_names is True
         names_x = [f"x{i+1}" for i in range(n_decision_vars)] if generate_names else None
         names_f = [f"f{i+1}" for i in range(n_objectives)] if generate_names else None
         names_g = [f"g{i+1}" for i in range(n_constraints)] if generate_names else None

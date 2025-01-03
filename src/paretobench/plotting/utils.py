@@ -18,8 +18,8 @@ class PointSettings:
 
 def get_per_point_settings_population(
     population: Population,
-    plot_dominated: Literal["all", "dominated", "non-dominated"],
-    plot_feasible: Literal["all", "feasible", "infeasible"],
+    domination_filt: Literal["all", "dominated", "non-dominated"],
+    feasibility_filt: Literal["all", "feasible", "infeasible"],
 ):
     """
     Calculate the per-point settings for scatter plots of the population (ie color, marker, which points are visible)
@@ -29,9 +29,9 @@ def get_per_point_settings_population(
     ----------
     population : Population
         Population we are plottings.
-    plot_dominated : {'all', 'dominated', 'non-dominated'}
+    domination_filt : {'all', 'dominated', 'non-dominated'}
         Which points to plot based on domination status.
-    plot_feasible : {'all', 'feasible', 'infeasible'}
+    feasibility_filt : {'all', 'feasible', 'infeasible'}
         Which points to plot based on feasibility status.
 
     Returns
@@ -58,24 +58,24 @@ def get_per_point_settings_population(
     plot_filt = np.ones(len(population), dtype=bool)
 
     # Handle the domination filter
-    if plot_dominated == "all":
+    if domination_filt == "all":
         pass
-    elif plot_dominated == "dominated":
+    elif domination_filt == "dominated":
         plot_filt = np.bitwise_and(plot_filt, ~nd_inds)
-    elif plot_dominated == "non-dominated":
+    elif domination_filt == "non-dominated":
         plot_filt = np.bitwise_and(plot_filt, nd_inds)
     else:
-        raise ValueError(f"Unrecognized option for plot_dominated: {plot_dominated}")
+        raise ValueError(f"Unrecognized option for domination_filt: {domination_filt}")
 
     # Handle the feasibility filter
-    if plot_feasible == "all":
+    if feasibility_filt == "all":
         pass
-    elif plot_feasible == "feasible":
+    elif feasibility_filt == "feasible":
         plot_filt = np.bitwise_and(plot_filt, feas_inds)
-    elif plot_feasible == "infeasible":
+    elif feasibility_filt == "infeasible":
         plot_filt = np.bitwise_and(plot_filt, ~feas_inds)
     else:
-        raise ValueError(f"Unrecognized option for plot_feasible: {plot_feasible}")
+        raise ValueError(f"Unrecognized option for feasibility_filt: {feasibility_filt}")
 
     # Get the domination ranks (of only the visible solutions so we don't end up with a plot of all invisible points)
     ranks = np.zeros(len(population))

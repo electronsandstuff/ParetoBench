@@ -21,9 +21,9 @@ class HistoryObjScatterConfig:
     """
     Settings for plotting the objective functions from a history of populations.
 
-    plot_dominated : bool, optional
+    domination_filt : bool, optional
         Include the dominated individuals, by default True
-    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     show_points : bool
         Whether to plot the points (useful for only showing attainment surface)
@@ -33,9 +33,9 @@ class HistoryObjScatterConfig:
         User-specified Pareto front objectives
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
-    plot_attainment: bool = False
+    show_attainment: bool = False
         Whether to plot attainment surfaces for each generation
-    plot_dominated_area: bool = False
+    show_dominated_area: bool = False
         Whether to plot the dominated area for each generation
     ref_point: Optional[Tuple[float, float]] = None
         Reference point for attainment surface calculation
@@ -54,14 +54,14 @@ class HistoryObjScatterConfig:
         Whether to use report index or function evaluations (fevals) for labels
     """
 
-    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
-    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     show_points: bool = True
     plot_pf: bool = False
     pf_objectives: Optional[np.ndarray] = None
     colormap: str = "viridis"
-    plot_attainment: bool = False
-    plot_dominated_area: bool = False
+    show_attainment: bool = False
+    show_dominated_area: bool = False
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.1
     label: Optional[str] = None
@@ -155,11 +155,11 @@ def history_obj_scatter(
 
     # Create base settings for population_obj_scatter
     obj_settings = PopulationObjScatterConfig(
-        plot_dominated=settings.plot_dominated,
-        plot_feasible=settings.plot_feasible,
+        domination_filt=settings.domination_filt,
+        feasibility_filt=settings.feasibility_filt,
         show_points=settings.show_points,
-        plot_attainment=settings.plot_attainment,
-        plot_dominated_area=settings.plot_dominated_area,
+        show_attainment=settings.show_attainment,
+        show_dominated_area=settings.show_dominated_area,
         pf_objectives=settings.pf_objectives,
         legend_loc=settings.legend_loc,
     )
@@ -229,9 +229,9 @@ class HistoryDVarPairsConfig:
     """
     Settings for plotting the decision variables from a history of populations.
 
-    plot_dominated : Literal['all', 'dominated', 'non-dominated'], optional
+    domination_filt : Literal['all', 'dominated', 'non-dominated'], optional
         Include all, only dominated, or only non-dominated solutions, by default 'all'
-    plot_feasible : Literal['all', 'feasible', 'infeasible'], optional
+    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
@@ -250,8 +250,8 @@ class HistoryDVarPairsConfig:
         Whether to use report index or function evaluations (fevals) for labels
     """
 
-    plot_dominated: Literal["all", "dominated", "non-dominated"] = "all"
-    plot_feasible: Literal["all", "feasible", "infeasible"] = "all"
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     colormap: str = "viridis"
     label: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
@@ -342,8 +342,8 @@ def history_dvar_pairs(
 
     # Create base settings for population_dvar_pairs
     plot_settings = PopulationDVarPairsConfig(
-        plot_dominated=settings.plot_dominated,
-        plot_feasible=settings.plot_feasible,
+        domination_filt=settings.domination_filt,
+        feasibility_filt=settings.feasibility_filt,
     )
 
     if settings.generation_mode == "cumulative":
