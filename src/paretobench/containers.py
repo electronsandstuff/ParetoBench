@@ -8,6 +8,8 @@ import random
 import re
 import string
 
+from .utils import get_nondominated_inds
+
 
 class Population(BaseModel):
     """
@@ -188,28 +190,7 @@ class Population(BaseModel):
         """
         Returns a boolean array of whether or not an individual is non-dominated.
         """
-        # Compare the objectives
-        dom = np.bitwise_and(
-            (self.f[:, None, :] <= self.f[None, :, :]).all(axis=-1),
-            (self.f[:, None, :] < self.f[None, :, :]).any(axis=-1),
-        )
-
-        # If one individual is feasible and the other isn't, set domination
-        feas = self.g >= 0.0
-        ind = np.bitwise_and(feas.all(axis=1)[:, None], ~feas.all(axis=1)[None, :])
-        dom[ind] = True
-        ind = np.bitwise_and(~feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
-        dom[ind] = False
-
-        # If both are infeasible, then the individual with the least constraint violation wins
-        constraint_violation = -np.sum(np.minimum(self.g, 0), axis=1)
-        comp = constraint_violation[:, None] < constraint_violation[None, :]
-        ind = ~np.bitwise_or(feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
-        dom[ind] = comp[ind]
-
-        # Return the nondominated individuals
-        nondominated = np.sum(dom, axis=0) == 0
-        return nondominated
+        return get_nondominated_inds(self.f, self.g)
 
     def get_feasible_indices(self):
         if self.g.shape[1] == 0:
