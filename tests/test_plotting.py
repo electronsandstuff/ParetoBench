@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pytest
 
 from paretobench import Population, EmptyPopulationError
-from paretobench.plotting import population_obj_scatter, PopulationObjScatterConfig
+from paretobench.plotting import population_obj_scatter, PopulationObjScatterConfig, population_dvar_pairs
 from paretobench.plotting.utils import get_per_point_settings_population
 from paretobench.plotting.attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
 
@@ -177,3 +177,69 @@ def test_attainment_surface_3d():
     assert not strong_dom[
         : len(feasible_indices), len(feasible_indices) :
     ].any(), "Found surface points dominated by population points"
+
+
+def test_population_dvar_pairs_basic():
+    """Test basic functionality of decision variable pairs plotting"""
+    # Create a population with known decision variables
+    pop = Population.from_random(n_objectives=2, n_decision_vars=3, n_constraints=1, pop_size=5)
+
+    # Test default settings
+    fig, axes = population_dvar_pairs(pop)
+    assert axes.shape == (3, 3), "Should create 3x3 grid for 3 variables"
+    plt.close(fig)
+
+    # Test single variable selection (should still create a 1x1 grid)
+    fig, axes = population_dvar_pairs(pop, dvars=0)
+    assert axes.shape == (1, 1), "Should create 1x1 grid for single variable"
+    plt.close(fig)
+
+
+def test_population_dvar_pairs_selection():
+    """Test different ways of selecting variables to plot"""
+    pop = Population.from_random(n_objectives=2, n_decision_vars=5, n_constraints=1, pop_size=5)
+
+    # Test integer selection
+    fig, axes = population_dvar_pairs(pop, dvars=2)  # Select third variable
+    assert axes.shape == (1, 1), "Should create 1x1 grid for single integer selection"
+    assert axes[0, 0].get_xlabel() == "x3", "Single plot should have correct label"
+    plt.close(fig)
+
+    # Test slice
+    fig, axes = population_dvar_pairs(pop, dvars=slice(1, 3))
+    assert axes.shape == (2, 2), "Should create 2x2 grid for slice(1,3)"
+    assert axes[-1, 0].get_xlabel() == "x2", "Bottom left plot should have correct label"
+    assert axes[-1, 1].get_xlabel() == "x3", "Bottom right plot should have correct label"
+    plt.close(fig)
+
+    # Test list of indices
+    fig, axes = population_dvar_pairs(pop, dvars=[0, 2, 4])
+    assert axes.shape == (3, 3), "Should create 3x3 grid for 3 selected variables"
+    assert axes[-1, 0].get_xlabel() == "x1", "Should show label for first selected variable"
+    assert axes[-1, 1].get_xlabel() == "x3", "Should show label for second selected variable"
+    assert axes[-1, 2].get_xlabel() == "x5", "Should show label for third selected variable"
+    plt.close(fig)
+
+    # Test tuple range
+    fig, axes = population_dvar_pairs(pop, dvars=(1, 4))
+    assert axes.shape == (3, 3), "Should create 3x3 grid for vars 1:4"
+    assert all(axes[-1, i].get_xlabel() == f"x{i+2}" for i in range(3)), "Should show correct labels for range"
+    plt.close(fig)
+
+
+def test_population_dvar_pairs_errors():
+    """Test error cases"""
+    pop = Population.from_random(n_objectives=2, n_decision_vars=3, n_constraints=1, pop_size=5)
+
+    # Test empty population
+    empty_pop = Population(f=np.empty((0, 4)))
+    with pytest.raises(EmptyPopulationError):
+        population_dvar_pairs(empty_pop)
+
+    # Test invalid selection
+    with pytest.raises(ValueError):
+        population_dvar_pairs(pop, dvars="invalid")
+
+    # Test out of bounds index
+    with pytest.raises(IndexError):
+        population_dvar_pairs(pop, dvars=10)
