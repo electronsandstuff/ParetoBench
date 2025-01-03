@@ -108,6 +108,13 @@ def test_population_obj_scatter_edge_cases():
     assert len(scatter_plots) == 0
     plt.close(fig)
 
+    # No points after filtering
+    settings = PopulationObjScatterConfig(plot_feasible="infeasible")
+    fig, ax = population_obj_scatter(pop, settings=settings)
+    scatter_plots = [c for c in ax.collections if isinstance(c, PathCollection)]
+    assert len(scatter_plots) == 0
+    plt.close(fig)
+
     # Test plotting on existing axes
     fig, ax = plt.subplots()
     fig_return, ax_return = population_obj_scatter(pop, fig=fig, ax=ax)
