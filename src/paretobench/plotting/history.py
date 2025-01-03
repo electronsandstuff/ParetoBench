@@ -27,7 +27,7 @@ class HistoryObjScatterConfig:
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     show_points : bool
         Whether to plot the points (useful for only showing attainment surface)
-    plot_pf : bool, optional
+    show_pf : bool, optional
         Whether to plot the Pareto front, by default True
     pf_objectives : array-like, optional
         User-specified Pareto front objectives
@@ -57,7 +57,7 @@ class HistoryObjScatterConfig:
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
     feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     show_points: bool = True
-    plot_pf: bool = False
+    show_pf: bool = False
     pf_objectives: Optional[np.ndarray] = None
     colormap: str = "viridis"
     show_attainment: bool = False
@@ -181,7 +181,7 @@ def history_obj_scatter(
 
         # Set optional color and plot combined population
         obj_settings.color = settings.single_color  # Will use default if None
-        if settings.plot_pf and history.problem is not None:
+        if settings.show_pf and history.problem is not None:
             obj_settings.problem = history.problem
 
         fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, settings=obj_settings)
@@ -205,7 +205,7 @@ def history_obj_scatter(
             obj_settings.dominated_area_zorder = -2 - plot_idx
 
             # Only plot PF on the last iteration if requested
-            if plot_idx == len(indices) - 1 and settings.plot_pf and history.problem is not None:
+            if plot_idx == len(indices) - 1 and settings.show_pf and history.problem is not None:
                 obj_settings.problem = history.problem
             else:
                 obj_settings.problem = None
