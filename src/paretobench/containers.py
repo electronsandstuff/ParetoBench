@@ -8,7 +8,7 @@ import random
 import re
 import string
 
-from .utils import get_nondominated_inds
+from .utils import get_domination
 
 
 class Population(BaseModel):
@@ -190,7 +190,7 @@ class Population(BaseModel):
         """
         Returns a boolean array of whether or not an individual is non-dominated.
         """
-        return get_nondominated_inds(self.f, self.g)
+        return np.sum(get_domination(self.f, self.g), axis=0) == 0
 
     def get_feasible_indices(self):
         if self.g.shape[1] == 0:
