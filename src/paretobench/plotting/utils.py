@@ -84,7 +84,7 @@ def get_per_point_settings_population(
         ranks[filtered_indices[idx]] = rank
 
     # Compute alpha from the ranks
-    if np.all(rank < 1):
+    if np.all(ranks < 1):
         alpha = np.ones(len(population))
     else:
         alpha = 0.5 - ranks / ranks.max() * 0.3
