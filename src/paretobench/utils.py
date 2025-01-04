@@ -1,6 +1,9 @@
-import numpy as np
 from itertools import combinations, chain, count
 from math import comb
+from typing import Union
+import numpy as np
+
+from .problem import Problem
 
 
 def get_betas(m, p):
@@ -150,3 +153,30 @@ def weighted_chunk_sizes(n, weights):
         else:
             break
     return ns
+
+
+def get_problem_from_obj_or_str(obj_or_str: Union[str, Problem]) -> Problem:
+    """Convert input to Problem instance.
+
+    Parameters
+    ----------
+    obj_or_str : Problem or str
+        Input to convert. If already a Problem instance, returns as-is.
+        If string, creates Problem from line format.
+
+    Returns
+    -------
+    Problem
+        The resulting Problem instance.
+
+    Raises
+    ------
+    ValueError
+        If input is neither Problem nor str type.
+    """
+    if isinstance(obj_or_str, Problem):
+        return obj_or_str
+    elif isinstance(obj_or_str, str):
+        return Problem.from_line_fmt(obj_or_str)
+    else:
+        raise ValueError(f"Unrecognized input type: {type(obj_or_str)}")
