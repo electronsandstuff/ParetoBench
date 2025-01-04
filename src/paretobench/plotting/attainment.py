@@ -5,6 +5,21 @@ from ..utils import get_nondominated_inds
 
 
 def get_reference_point(population: Population, padding=0.1):
+    """Calculate reference point for the attainment surface from all points in the population.
+
+    Parameters
+    ----------
+    population : Population
+        Population to compute reference point for.
+    padding : float, optional
+        Padding factor to extend reference point beyond maximum values.
+        Default is 0.1 (10% extension).
+
+    Returns
+    -------
+    ndarray
+        Reference point coordinates calculated as max values plus padding.
+    """
     min_vals = np.min(population.f, axis=0)
     max_vals = np.max(population.f, axis=0)
     ref_point = max_vals + (max_vals - min_vals) * padding
@@ -13,20 +28,23 @@ def get_reference_point(population: Population, padding=0.1):
 
 def compute_attainment_surface_2d(population: Population, ref_point=None, padding=0.1):
     """
-    Compute the attainment surface for a set of non-dominated points in 2D.
-    The surface consists of horizontal and vertical lines connecting the points,
-    forming a staircase-like pattern.
+    Compute the attainment surface for a set of points in 2D. The surface
+    consists of horizontal and vertical lines connecting the points, forming a
+    staircase-like pattern.
 
     Parameters
     ----------
-    pop : Population
+    population : Population
         The population of individuals to compute the attainment surface for.
+    ref_point : np.ndarray
+        2D reference point for extending surface until
+    padding : float
+        How much padding to apply if we compute ref_point ourselves
 
     Returns
     -------
     np.ndarray
-        Array of points defining the attainment surface, shape (n_segments, 2)
-        Each consecutive pair of points defines a line segment of the surface
+        Array of points defining the attainment surface.
     """
     if population.m != 2:
         raise ValueError("Attainment surface can only be computed for 2D points")
@@ -52,8 +70,7 @@ def compute_attainment_surface_2d(population: Population, ref_point=None, paddin
         )
 
     # Sort points by x coordinate (first objective)
-    sorted_indices = np.argsort(population.f[:, 0])
-    sorted_points = population.f[sorted_indices]
+    sorted_points = population.f[np.argsort(population.f[:, 0])]
 
     # Initialize the surface points list with the first point
     surface = []
@@ -88,10 +105,6 @@ def save_mesh_to_stl(vertices: np.ndarray, triangles: np.ndarray, filename: str)
         triangles: (m,3) array of triangle indices into vertices
         filename: output filename (should end in .stl)
     """
-    # Ensure proper file extension
-    if not filename.endswith(".stl"):
-        filename += ".stl"
-
     with open(filename, "w") as f:
         f.write("solid attainment_surface\n")
 
