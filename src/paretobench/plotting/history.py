@@ -370,6 +370,7 @@ def history_dvar_pairs(
 
 def history_obj_animation(
     history: History,
+    reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     interval: int = 200,
     settings: HistoryObjScatterConfig = HistoryObjScatterConfig(),
     dynamic_scaling: bool = False,
@@ -383,6 +384,13 @@ def history_obj_animation(
     ----------
     history : paretobench History
         The history object containing populations with data to plot
+    reports : int, slice, List[int], or Tuple[int, int], optional
+        Specifies which generations to animate. Can be:
+        - None: All generations (default)
+        - int: Single generation index (negative counts from end)
+        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
+        - List[int]: Explicit list of generation indices
+        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     interval : int, optional
         Delay between frames in milliseconds, by default 200
     settings : HistoryObjScatterConfig, optional
@@ -404,12 +412,18 @@ def history_obj_animation(
     if not history.reports:
         raise ValueError("No populations in history to animate")
 
+    # Handle different types of selection
+    indices = selection_to_indices(reports, len(history.reports))
+
+    if not indices:
+        raise ValueError("No reports selected")
+
     settings = copy(settings)
     if settings.legend_loc is None:
         settings.legend_loc = "upper right"
 
     # Get dimensions from first population
-    n_objectives = history.reports[0].m
+    n_objectives = history.reports[indices[0]].m
     if n_objectives > 3:
         raise ValueError(f"Cannot animate more than three objectives: n_objs={n_objectives}")
 
@@ -422,7 +436,8 @@ def history_obj_animation(
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling and n_objectives == 2:
-        all_f = np.vstack([pop.f for pop in history.reports])
+        selected_reports = [history.reports[idx] for idx in indices]
+        all_f = np.vstack([pop.f for pop in selected_reports])
         xlim = (np.min(all_f[:, 0]), np.max(all_f[:, 0]))
         ylim = (np.min(all_f[:, 1]), np.max(all_f[:, 1]))
         xlim = (xlim[0] - (xlim[1] - xlim[0]) * padding, xlim[1] + (xlim[1] - xlim[0]) * padding)
@@ -432,22 +447,32 @@ def history_obj_animation(
     def update(frame_idx):
         ax.clear()
 
+        # Get the actual generation index from our selected indices
+        gen_idx = indices[frame_idx]
+
         # Configure settings for this frame
         frame_settings = copy(settings)
         frame_settings.generation_mode = "cumulative"
 
-        # Plot using the new history plotting function
+        # Calculate the slice for history_obj_scatter based on cumulative setting
+        if cumulative:
+            # Find all indices up to current frame_idx
+            plot_reports = indices[: frame_idx + 1]
+        else:
+            plot_reports = [gen_idx]
+
+        # Plot using the history plotting function
         history_obj_scatter(
             history,
-            reports=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
+            reports=plot_reports,
             fig=fig,
             ax=ax,
             settings=frame_settings,
         )
 
         # Add generation counter
-        generation = frame_idx + 1
-        fevals = history.reports[frame_idx].fevals
+        generation = gen_idx + 1
+        fevals = history.reports[gen_idx].fevals
         ax.set_title(f"Generation {generation} (Fevals: {fevals})")
 
         if n_objectives == 2:
@@ -459,7 +484,13 @@ def history_obj_animation(
         return (ax,)
 
     # Create and return the animation
-    anim = animation.FuncAnimation(fig=fig, func=update, frames=len(history.reports), interval=interval, blit=False)
+    anim = animation.FuncAnimation(
+        fig=fig,
+        func=update,
+        frames=len(indices),  # Now use length of selected indices
+        interval=interval,
+        blit=False,
+    )
 
     return anim
 
