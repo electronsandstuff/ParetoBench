@@ -210,10 +210,11 @@ def history_obj_scatter(
             # Only plot PF on the last iteration if requested
             if plot_idx == len(indices) - 1 and settings.show_pf and history.problem is not None:
                 obj_settings.problem = history.problem
+            else:
+                obj_settings.problem = None
             if plot_idx == len(indices) - 1 and settings.show_pf and settings.pf_objectives is not None:
                 obj_settings.pf_objectives = settings.pf_objectives
             else:
-                obj_settings.problem = None
                 obj_settings.pf_objectives = None
 
             # Plot this generation
@@ -255,6 +256,10 @@ class HistoryDVarPairsConfig:
         Whether to plot bounds for the problem
     label_mode: Literal['index', 'fevals'] = 'index'
         Whether to use report index or function evaluations (fevals) for labels
+    lower_bounds : array-like, optional
+        Lower bounds for each decision variable
+    upper_bounds : array-like, optional
+        Upper bounds for each decision variable
     """
 
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
@@ -265,6 +270,8 @@ class HistoryDVarPairsConfig:
     single_color: Optional[str] = None
     plot_bounds: bool = False
     label_mode: Literal["index", "fevals"] = "index"
+    lower_bounds: Optional[np.ndarray] = None
+    upper_bounds: Optional[np.ndarray] = None
 
 
 def history_dvar_pairs(
@@ -361,6 +368,10 @@ def history_dvar_pairs(
 
         if settings.plot_bounds and history.problem is not None:
             plot_settings.problem = history.problem
+        if settings.plot_bounds and settings.lower_bounds is not None:
+            plot_settings.lower_bounds = settings.lower_bounds
+        if settings.plot_bounds and settings.upper_bounds is not None:
+            plot_settings.upper_bounds = settings.upper_bounds
 
         # Set optional color and plot combined population
         plot_settings.color = settings.single_color  # Will use default if None
@@ -388,6 +399,14 @@ def history_dvar_pairs(
                 plot_settings.problem = history.problem
             else:
                 plot_settings.problem = None
+            if settings.plot_bounds and settings.lower_bounds is not None:
+                plot_settings.lower_bounds = settings.lower_bounds
+            else:
+                plot_settings.lower_bounds = None
+            if settings.plot_bounds and settings.upper_bounds is not None:
+                plot_settings.upper_bounds = settings.upper_bounds
+            else:
+                plot_settings.upper_bounds = None
 
             # Plot this generation
             fig, axes = population_dvar_pairs(population, dvars=dvars, fig=fig, axes=axes, settings=plot_settings)
