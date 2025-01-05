@@ -21,7 +21,7 @@ class PopulationObjScatterConfig:
     Settings for plotting the objective functions from `Population`.
 
     domination_filt : bool, optional
-        Include the dominated individuals, by default True
+        Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     show_points : bool
@@ -261,7 +261,7 @@ class PopulationDVarPairsConfig:
     Settings related to plotting decision variables from `Population`.
 
     domination_filt : bool, optional
-        Include the dominated individuals, by default True
+        Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     hist_bins : int, optional

@@ -22,7 +22,7 @@ class HistoryObjScatterConfig:
     Settings for plotting the objective functions from a history of populations.
 
     domination_filt : bool, optional
-        Include the dominated individuals, by default True
+        Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     show_points : bool
@@ -230,7 +230,7 @@ class HistoryDVarPairsConfig:
     Settings for plotting the decision variables from a history of populations.
 
     domination_filt : Literal['all', 'dominated', 'non-dominated'], optional
-        Include all, only dominated, or only non-dominated solutions, by default 'all'
+        Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     colormap : str, optional
