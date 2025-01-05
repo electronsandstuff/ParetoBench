@@ -137,7 +137,9 @@ def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwarg
     return points
 
 
-def selection_to_indices(selection: Union[None, int, slice, List[int], np.ndarray, tuple], arr_len: int) -> List[int]:
+def selection_to_indices(
+    selection: Union[None, int, slice, List[int], List[bool], np.ndarray, tuple], arr_len: int
+) -> List[int]:
     """Convert various selection formats into a list of positive indices.
 
     This function handles different ways of selecting elements from an array and converts
@@ -145,12 +147,13 @@ def selection_to_indices(selection: Union[None, int, slice, List[int], np.ndarra
 
     Parameters
     ----------
-    selection : Union[None, int, slice, List[int], np.ndarray, tuple]
+    selection : Union[None, int, slice, List[int], List[bool], np.ndarray, tuple]
         The selection specification. Can be:
         - None: selects all indices
         - int: single index (negative indices count from end)
         - slice: standard Python slice object
-        - List[int] or np.ndarray: array of indices (negative indices allowed)
+        - List[int] or np.ndarray of ints: array of indices (negative indices allowed)
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
         - tuple: (start, end) pair specifying a range
     arr_len : int
         Length of the array being indexed
@@ -175,13 +178,24 @@ def selection_to_indices(selection: Union[None, int, slice, List[int], np.ndarra
         # Slice - get list of indices
         indices = list(range(*selection.indices(arr_len)))
     elif isinstance(selection, (list, np.ndarray)):
-        # List of indices - convert negative to positive
-        indices = []
-        for i in selection:
-            idx = i if i >= 0 else arr_len + i
-            if idx < 0 or idx >= arr_len:
-                raise IndexError(f"Index {i} out of range for array with length {arr_len}")
-            indices.append(idx)
+        if len(selection) == 0:
+            indices = []
+        # Check if it's a boolean array
+        elif isinstance(selection[0], bool) or (isinstance(selection, np.ndarray) and selection.dtype == bool):
+            # Handle boolean mask
+            if len(selection) != arr_len:
+                raise ValueError(f"Boolean mask length {len(selection)} does not match array length {arr_len}")
+            indices = [i for i, selected in enumerate(selection) if selected]
+        else:
+            # List of indices - convert negative to positive
+            indices = []
+            for i in selection:
+                if not isinstance(i, (int, np.integer)):
+                    raise TypeError(f"Invalid index type {type(i)}. Expected integer.")
+                idx = int(i) if i >= 0 else arr_len + int(i)
+                if idx < 0 or idx >= arr_len:
+                    raise IndexError(f"Index {i} out of range for array with length {arr_len}")
+                indices.append(idx)
     elif isinstance(selection, tuple) and len(selection) == 2:
         # Range tuple (start, end)
         start, end = selection

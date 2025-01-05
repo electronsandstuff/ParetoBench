@@ -94,6 +94,7 @@ def history_obj_scatter(
         - int: Single generation index (negative counts from end)
         - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
         - List[int]: Explicit list of generation indices
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
         - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     fig : matplotlib figure, optional
         Figure to plot on, by default None
@@ -269,6 +270,7 @@ def history_dvar_pairs(
         - int: Single generation index (negative counts from end)
         - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
         - List[int]: Explicit list of generation indices
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
         - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
@@ -390,6 +392,7 @@ def history_obj_animation(
         - int: Single generation index (negative counts from end)
         - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
         - List[int]: Explicit list of generation indices
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
         - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     interval : int, optional
         Delay between frames in milliseconds, by default 200
@@ -518,6 +521,7 @@ def history_dvar_animation(
         - int: Single generation index (negative counts from end)
         - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
         - List[int]: Explicit list of generation indices
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
         - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.

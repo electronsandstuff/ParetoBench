@@ -307,6 +307,7 @@ def population_dvar_pairs(
         - int: Single variable index (negative counts from end)
         - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd var)
         - List[int]: Explicit list of variable indices
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
         - Tuple[int, int]: Range of variables as (start, end) where end is exclusive
     fig : matplotlib.figure.Figure, optional
         Figure to plot on. If None and axes is None, creates a new figure.
