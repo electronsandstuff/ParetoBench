@@ -14,6 +14,7 @@ from .population import (
     population_dvar_pairs,
     PopulationDVarPairsConfig,
 )
+from .utils import selection_to_indices
 
 
 @dataclass
@@ -111,38 +112,10 @@ def history_obj_scatter(
         raise ValueError("History contains no reports")
 
     # Handle different types of selection
-    if reports is None:
-        # Select all populations
-        indices = list(range(len(history.reports)))
-    elif isinstance(reports, int):
-        # Single index - convert negative to positive
-        if reports < 0:
-            reports = len(history.reports) + reports
-            if reports < 0:
-                raise IndexError(f"Index {reports} out of range for history with length {len(history.reports)}")
-        indices = [reports]
-    elif isinstance(reports, slice):
-        # Slice - get list of indices
-        indices = list(range(*reports.indices(len(history.reports))))
-    elif isinstance(reports, (list, np.ndarray)):
-        # List of indices - convert negative to positive
-        indices = []
-        for i in reports:
-            idx = i if i >= 0 else len(history.reports) + i
-            if idx < 0 or idx >= len(history.reports):
-                raise IndexError(f"Index {i} out of range for history with length {len(history.reports)}")
-            indices.append(idx)
-    elif isinstance(reports, tuple) and len(reports) == 2:
-        # Range tuple (start, end)
-        start, end = reports
-        if start < 0 or end > len(history.reports):
-            raise IndexError(f"Range {start}:{end} out of bounds for history with length {len(history.reports)}")
-        indices = list(range(start, end))
-    else:
-        raise ValueError(f"Unsupported selection type: {type(reports)}")
+    indices = selection_to_indices(reports, len(history.reports))
 
     if not indices:
-        raise ValueError("No generations selected")
+        raise ValueError("No reports selected")
 
     # Get dimensions from first population
     first_pop = history.reports[0]
@@ -316,35 +289,7 @@ def history_dvar_pairs(
         raise ValueError("History contains no reports")
 
     # Handle different types of selection
-    if reports is None:
-        # Select all populations
-        indices = list(range(len(history.reports)))
-    elif isinstance(reports, int):
-        # Single index - convert negative to positive
-        if reports < 0:
-            reports = len(history.reports) + reports
-            if reports < 0:
-                raise IndexError(f"Index {reports} out of range for history with length {len(history.reports)}")
-        indices = [reports]
-    elif isinstance(reports, slice):
-        # Slice - get list of indices
-        indices = list(range(*reports.indices(len(history.reports))))
-    elif isinstance(reports, (list, np.ndarray)):
-        # List of indices - convert negative to positive
-        indices = []
-        for i in reports:
-            idx = i if i >= 0 else len(history.reports) + i
-            if idx < 0 or idx >= len(history.reports):
-                raise IndexError(f"Index {i} out of range for history with length {len(history.reports)}")
-            indices.append(idx)
-    elif isinstance(reports, tuple) and len(reports) == 2:
-        # Range tuple (start, end)
-        start, end = reports
-        if start < 0 or end > len(history.reports):
-            raise IndexError(f"Range {start}:{end} out of bounds for history with length {len(history.reports)}")
-        indices = list(range(start, end))
-    else:
-        raise ValueError(f"Unsupported selection type: {type(reports)}")
+    indices = selection_to_indices(reports, len(history.reports))
 
     if not indices:
         raise ValueError("No generations selected")

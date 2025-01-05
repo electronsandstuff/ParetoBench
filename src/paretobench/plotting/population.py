@@ -12,7 +12,7 @@ from ..exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectives
 from ..problem import ProblemWithFixedPF, ProblemWithPF
 from ..utils import get_problem_from_obj_or_str
 from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
-from .utils import get_per_point_settings_population, alpha_scatter
+from .utils import get_per_point_settings_population, alpha_scatter, selection_to_indices
 
 
 @dataclass
@@ -329,24 +329,7 @@ def population_dvar_pairs(
         raise NoDecisionVarsError()
 
     # Process the select parameter to get indices of variables to plot
-    all_var_indices = np.arange(population.n)
-    if dvars is None:
-        var_indices = all_var_indices
-    elif isinstance(dvars, int):
-        var_indices = [all_var_indices[dvars]]
-    elif isinstance(dvars, slice):
-        var_indices = all_var_indices[dvars]
-    elif isinstance(dvars, (list, tuple)):
-        if len(dvars) == 2 and all(isinstance(x, int) for x in dvars):
-            # Treat as range tuple (start, end)
-            var_indices = all_var_indices[slice(*dvars)]
-        else:
-            # Treat as explicit list of indices
-            var_indices = [all_var_indices[i] for i in dvars]
-    else:
-        raise ValueError("select must be None, int, slice, List[int], or Tuple[int, int]")
-
-    var_indices = np.array(var_indices)
+    var_indices = np.array(selection_to_indices(dvars, population.n))
     n_vars = len(var_indices)
 
     # Default, don't show bounds

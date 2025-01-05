@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from matplotlib.colors import to_rgb
-from typing import Literal
+from typing import Literal, Union, List
 import numpy as np
 
 from ..containers import Population
@@ -135,3 +135,60 @@ def alpha_scatter(ax, x, y, z=None, color=None, alpha=None, marker=None, **kwarg
             ax.scatter([], [], [], color=(r, g, b), label=label, **kwargs)
 
     return points
+
+
+def selection_to_indices(selection: Union[None, int, slice, List[int], np.ndarray, tuple], arr_len: int) -> List[int]:
+    """Convert various selection formats into a list of positive indices.
+
+    This function handles different ways of selecting elements from an array and converts
+    them into a list of valid positive indices within the array bounds.
+
+    Parameters
+    ----------
+    selection : Union[None, int, slice, List[int], np.ndarray, tuple]
+        The selection specification. Can be:
+        - None: selects all indices
+        - int: single index (negative indices count from end)
+        - slice: standard Python slice object
+        - List[int] or np.ndarray: array of indices (negative indices allowed)
+        - tuple: (start, end) pair specifying a range
+    arr_len : int
+        Length of the array being indexed
+
+    Returns
+    -------
+    List[int]
+        List of valid positive indices corresponding to the selection
+    """
+    # Handle different types of selection
+    if selection is None:
+        # Select all populations
+        indices = list(range(arr_len))
+    elif isinstance(selection, int):
+        # Single index - convert negative to positive
+        if selection < 0:
+            selection = arr_len + selection
+        if selection < 0:
+            raise IndexError(f"Index {selection} out of range for array with length {arr_len}")
+        indices = [selection]
+    elif isinstance(selection, slice):
+        # Slice - get list of indices
+        indices = list(range(*selection.indices(arr_len)))
+    elif isinstance(selection, (list, np.ndarray)):
+        # List of indices - convert negative to positive
+        indices = []
+        for i in selection:
+            idx = i if i >= 0 else arr_len + i
+            if idx < 0 or idx >= arr_len:
+                raise IndexError(f"Index {i} out of range for array with length {arr_len}")
+            indices.append(idx)
+    elif isinstance(selection, tuple) and len(selection) == 2:
+        # Range tuple (start, end)
+        start, end = selection
+        if start < 0 or end > arr_len:
+            raise IndexError(f"Range {start}:{end} out of bounds for array with length {arr_len}")
+        indices = list(range(start, end))
+    else:
+        raise ValueError(f"Unsupported selection type: {type(selection)}")
+
+    return indices
