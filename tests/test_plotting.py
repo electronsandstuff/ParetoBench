@@ -13,7 +13,7 @@ from paretobench.plotting import (
     HistoryDVarPairsConfig,
     HistoryObjScatterConfig,
 )
-from paretobench.plotting.utils import get_per_point_settings_population
+from paretobench.plotting.utils import get_per_point_settings_population, selection_to_indices
 from paretobench.plotting.attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
 
 
@@ -321,3 +321,70 @@ def test_history_dvar_pairs():
     assert axes.shape == (2, 2)  # Should be 2x2 grid for 2 variables
     assert len(fig.get_axes()) == 5  # 4 subplots + 1 colorbar
     plt.close(fig)
+
+
+@pytest.mark.parametrize(
+    "selection,expected",
+    [
+        # None case
+        (None, [0, 1, 2, 3, 4]),
+        # Integer cases
+        (2, [2]),
+        (-1, [4]),
+        (np.int32(2), [2]),
+        (np.int64(-1), [4]),
+        # Slice cases
+        (slice(1, 4), [1, 2, 3]),
+        (slice(None, None, 2), [0, 2, 4]),
+        (slice(-3, None), [2, 3, 4]),
+        # List of integers
+        ([1, 3, 4], [1, 3, 4]),
+        ([0, -1], [0, 4]),
+        # Numpy array of integers
+        (np.array([1, 3, 4]), [1, 3, 4]),
+        (np.array([0, -1]), [0, 4]),
+        # List of booleans
+        ([True, False, True, False, True], [0, 2, 4]),
+        # Numpy array of booleans
+        (np.array([True, False, True, False, True]), [0, 2, 4]),
+        # Empty lists
+        ([], []),
+        (np.array([]), []),
+        # Tuple range
+        ((1, 4), [1, 2, 3]),
+    ],
+)
+def test_valid_selections(selection, expected):
+    arr_len = 5
+    result = selection_to_indices(selection, arr_len)
+    if isinstance(result, np.ndarray):
+        np.testing.assert_array_equal(result, expected)
+    else:
+        assert result == expected
+
+
+@pytest.mark.parametrize(
+    "selection,exception,match",
+    [
+        # Index out of bounds
+        (-6, IndexError, "Index -1 out of range"),
+        (5, IndexError, "Index 5 out of range"),
+        # Invalid boolean mask length
+        ([True, False], ValueError, "Boolean mask length 2 does not match"),
+        (np.array([True, False]), ValueError, "Boolean mask length 2 does not match"),
+        # Invalid index in list
+        ([5], IndexError, "Index 5 out of range"),
+        ([1.5], TypeError, "Invalid index type"),
+        ([None], TypeError, "Invalid index type"),
+        # Invalid tuple range
+        ((1, 6), IndexError, "Range 1:6 out of bounds"),
+        ((-1, 4), IndexError, "Range -1:4 out of bounds"),
+        ((1, 2, 3), ValueError, "Unsupported selection type"),
+        # Invalid types
+        ("invalid", ValueError, "Unsupported selection type"),
+    ],
+)
+def test_invalid_selections(selection, exception, match):
+    arr_len = 5
+    with pytest.raises(exception, match=match):
+        selection_to_indices(selection, arr_len)

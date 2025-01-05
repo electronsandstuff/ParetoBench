@@ -167,12 +167,14 @@ def selection_to_indices(
     if selection is None:
         # Select all populations
         indices = list(range(arr_len))
-    elif isinstance(selection, int):
+    elif isinstance(selection, int) or isinstance(selection, np.integer):
         # Single index - convert negative to positive
         if selection < 0:
             selection = arr_len + selection
         if selection < 0:
             raise IndexError(f"Index {selection} out of range for array with length {arr_len}")
+        if selection >= arr_len:
+            raise IndexError(f"Index {selection} out of range")
         indices = [selection]
     elif isinstance(selection, slice):
         # Slice - get list of indices
