@@ -426,9 +426,10 @@ def history_dvar_pairs(
 def history_obj_animation(
     history: History,
     interval: int = 200,
-    objectives_plot_settings: HistoryObjScatterConfig = HistoryObjScatterConfig(),
+    settings: HistoryObjScatterConfig = HistoryObjScatterConfig(),
     dynamic_scaling: bool = False,
     cumulative: bool = False,
+    padding: float = 0.05,
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the Pareto front evolves across generations.
@@ -439,7 +440,7 @@ def history_obj_animation(
         The history object containing populations with data to plot
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    objectives_plot_settings : HistoryObjScatterConfig, optional
+    settings : HistoryObjScatterConfig, optional
         Settings for plotting objectives
     dynamic_scaling : bool, optional
         If True, axes limits will update based on each frame's data.
@@ -447,6 +448,8 @@ def history_obj_animation(
     cumulative : bool, optional
         If True, shows all points seen up to current frame.
         If False, shows only current frame's points, by default False
+    padding : float, optional
+        Padding used when calculating axis limits w/ dynamic limits
 
     Returns
     -------
@@ -456,12 +459,12 @@ def history_obj_animation(
     if not history.reports:
         raise ValueError("No populations in history to animate")
 
-    settings = copy(objectives_plot_settings)
+    settings = copy(settings)
     if settings.legend_loc is None:
         settings.legend_loc = "upper right"
 
     # Get dimensions from first population
-    n_objectives = history.reports[0].f.shape[1]
+    n_objectives = history.reports[0].m
     if n_objectives > 3:
         raise ValueError(f"Cannot animate more than three objectives: n_objs={n_objectives}")
 
@@ -474,7 +477,6 @@ def history_obj_animation(
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling and n_objectives == 2:
-        padding = 0.05
         all_f = np.vstack([pop.f for pop in history.reports])
         xlim = (np.min(all_f[:, 0]), np.max(all_f[:, 0]))
         ylim = (np.min(all_f[:, 1]), np.max(all_f[:, 1]))
@@ -521,9 +523,10 @@ def history_dvar_animation(
     history: History,
     dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     interval: int = 200,
-    decision_var_plot_settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
+    settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
     dynamic_scaling: bool = False,
     cumulative: bool = False,
+    padding=0.05,
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the decision variables evolve across generations.
@@ -536,7 +539,7 @@ def history_dvar_animation(
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    decision_var_plot_settings : HistoryDVarPairsConfig
+    settings : HistoryDVarPairsConfig
         Settings for the decision variable plots
     dynamic_scaling : bool, optional
         If True, axes limits will update based on each frame's data.
@@ -544,6 +547,8 @@ def history_dvar_animation(
     cumulative : bool, optional
         If True, shows all points seen up to current frame.
         If False, shows only current frame's points, by default False
+    padding : float, optional
+        Padding used when calculating axis limits w/ dynamic limits
 
     Returns
     -------
@@ -553,7 +558,7 @@ def history_dvar_animation(
     if not history.reports:
         raise ValueError("No populations in history to animate")
 
-    settings = copy(decision_var_plot_settings)
+    settings = copy(settings)
 
     # Create initial plot to get figure and axes
     settings.generation_mode = "cumulative"
@@ -561,7 +566,6 @@ def history_dvar_animation(
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling:
-        padding = 0.05
         all_x = np.vstack([pop.x for pop in history.reports])
         n_vars = all_x.shape[1]
 
