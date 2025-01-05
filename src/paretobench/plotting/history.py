@@ -44,6 +44,7 @@ class HistoryObjScatterConfig:
     label: Optional[str] = "Generation"
         Label for colorbar (only used when generation_mode is 'cmap')
     legend_loc: Optional[str] = None
+        Passed to `loc` argument in plt.legend
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
         - 'cmap': Plot each generation separately with colors from colormap
@@ -183,6 +184,8 @@ def history_obj_scatter(
         obj_settings.color = settings.single_color  # Will use default if None
         if settings.show_pf and history.problem is not None:
             obj_settings.problem = history.problem
+        if settings.show_pf and settings.pf_objectives is not None:
+            obj_settings.pf_objectives = settings.pf_objectives
 
         fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, settings=obj_settings)
 
@@ -207,8 +210,11 @@ def history_obj_scatter(
             # Only plot PF on the last iteration if requested
             if plot_idx == len(indices) - 1 and settings.show_pf and history.problem is not None:
                 obj_settings.problem = history.problem
+            if plot_idx == len(indices) - 1 and settings.show_pf and settings.pf_objectives is not None:
+                obj_settings.pf_objectives = settings.pf_objectives
             else:
                 obj_settings.problem = None
+                obj_settings.pf_objectives = None
 
             # Plot this generation
             fig, ax = population_obj_scatter(population, fig=fig, ax=ax, settings=obj_settings)
@@ -238,6 +244,7 @@ class HistoryDVarPairsConfig:
     label: Optional[str] = "Generation"
         Label for colorbar (only used when generation_mode is 'cmap')
     legend_loc: Optional[str] = None
+        Passed to `loc` argument in plt.legend
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
         - 'cmap': Plot each generation separately with colors from colormap
