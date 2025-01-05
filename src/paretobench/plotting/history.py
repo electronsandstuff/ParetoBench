@@ -521,7 +521,6 @@ def history_dvar_animation(
         - int: Single generation index (negative counts from end)
         - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
         - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
         - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
@@ -608,13 +607,15 @@ def history_dvar_animation(
         fig.suptitle(f"Generation {generation} (Fevals: {fevals})")
 
         if not dynamic_scaling:
-            # Apply global limits to all subplots
+            # Apply global limits to all subplots including histograms
             for i, ax in enumerate(axes.flat):
                 row = i // axes.shape[1]
                 col = i % axes.shape[1]
-                if col < row:  # Skip lower triangle
-                    continue
-                if row != col:  # Only for pair plots
+                if row == col:
+                    # For histograms on diagonal
+                    ax.set_xlim(*var_limits[row])
+                else:
+                    # For scatter plots (both upper and lower triangle)
                     ax.set_xlim(*var_limits[col])
                     ax.set_ylim(*var_limits[row])
 
