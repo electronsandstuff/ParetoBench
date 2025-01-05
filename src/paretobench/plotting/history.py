@@ -497,6 +497,7 @@ def history_obj_animation(
 
 def history_dvar_animation(
     history: History,
+    reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     interval: int = 200,
     settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
@@ -511,6 +512,13 @@ def history_dvar_animation(
     ----------
     history : paretobench History
         The history object containing populations with data to plot
+    reports : int, slice, List[int], or Tuple[int, int], optional
+        Specifies which generations to animate. Can be:
+        - None: All generations (default)
+        - int: Single generation index (negative counts from end)
+        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
+        - List[int]: Explicit list of generation indices
+        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     interval : int, optional
@@ -534,15 +542,23 @@ def history_dvar_animation(
     if not history.reports:
         raise ValueError("No populations in history to animate")
 
+    # Handle different types of selection
+    indices = selection_to_indices(reports, len(history.reports))
+
+    if not indices:
+        raise ValueError("No reports selected")
+
     settings = copy(settings)
 
-    # Create initial plot to get figure and axes
+    # Create initial plot to get figure and axes using the first selected generation
     settings.generation_mode = "cumulative"
-    fig, axes = history_dvar_pairs(history, reports=0, dvars=dvars, settings=settings)
+    fig, axes = history_dvar_pairs(history, reports=indices[0], dvars=dvars, settings=settings)
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling:
-        all_x = np.vstack([pop.x for pop in history.reports])
+        # Only use selected generations for calculating limits
+        selected_reports = [history.reports[idx] for idx in indices]
+        all_x = np.vstack([pop.x for pop in selected_reports])
         n_vars = all_x.shape[1]
 
         # Calculate limits for each variable
@@ -558,14 +574,24 @@ def history_dvar_animation(
         for ax in axes.flat:
             ax.clear()
 
+        # Get the actual generation index from our selected indices
+        gen_idx = indices[frame_idx]
+
         # Configure settings for this frame
         frame_settings = copy(settings)
         frame_settings.generation_mode = "cumulative"
 
-        # Plot using the new history plotting function
+        # Calculate the appropriate reports for history_dvar_pairs based on cumulative setting
+        if cumulative:
+            # Find all indices up to current frame_idx
+            plot_reports = indices[: frame_idx + 1]
+        else:
+            plot_reports = [gen_idx]
+
+        # Plot using the history plotting function
         history_dvar_pairs(
             history,
-            reports=slice(0, frame_idx + 1) if cumulative else slice(frame_idx, frame_idx + 1),
+            reports=plot_reports,
             dvars=dvars,
             fig=fig,
             axes=axes,
@@ -573,8 +599,8 @@ def history_dvar_animation(
         )
 
         # Add generation counter
-        generation = frame_idx + 1
-        fevals = history.reports[frame_idx].fevals
+        generation = gen_idx + 1
+        fevals = history.reports[gen_idx].fevals
         fig.suptitle(f"Generation {generation} (Fevals: {fevals})")
 
         if not dynamic_scaling:
@@ -591,6 +617,12 @@ def history_dvar_animation(
         return tuple(axes.flat)
 
     # Create and return the animation
-    anim = animation.FuncAnimation(fig=fig, func=update, frames=len(history.reports), interval=interval, blit=False)
+    anim = animation.FuncAnimation(
+        fig=fig,
+        func=update,
+        frames=len(indices),  # Now use length of selected indices
+        interval=interval,
+        blit=False,
+    )
 
     return anim
