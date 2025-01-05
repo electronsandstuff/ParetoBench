@@ -261,7 +261,7 @@ def mesh_plane(sorted_points, fixed_dim, dim1, dim2, reference, vertex_dict, ver
                 [[vertices_3d[0], vertices_3d[1], vertices_3d[3]], [vertices_3d[0], vertices_3d[3], vertices_3d[2]]]
             )
 
-    return triangles_plane
+    return vertices, triangles_plane
 
 
 def compute_attainment_surface_3d(population: Population, ref_point=None, padding=0.1):
@@ -312,12 +312,12 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
     sorted_by_y = population.f[np.argsort(population.f[:, 1])]  # For XZ plane
 
     # Process XY plane (sorted by Z)
-    triangles.extend(mesh_plane(sorted_by_z, 2, 0, 1, ref_point, vertex_dict, vertices))
+    triangles.extend(mesh_plane(sorted_by_z, 2, 0, 1, ref_point, vertex_dict, vertices)[1])
 
     # Process YZ plane (sorted by X)
-    triangles.extend(mesh_plane(sorted_by_x, 0, 1, 2, ref_point, vertex_dict, vertices))
+    triangles.extend(mesh_plane(sorted_by_x, 0, 1, 2, ref_point, vertex_dict, vertices)[1])
 
     # Process XZ plane (sorted by Y)
-    triangles.extend(mesh_plane(sorted_by_y, 1, 0, 2, ref_point, vertex_dict, vertices))
+    triangles.extend(mesh_plane(sorted_by_y, 1, 0, 2, ref_point, vertex_dict, vertices)[1])
 
     return np.array(vertices), np.array(triangles)
