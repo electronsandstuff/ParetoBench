@@ -125,7 +125,8 @@ def population_obj_scatter(
             raise ValueError("pf_objectives must be a 2D array")
         if pf.shape[1] != population.f.shape[1]:
             raise ValueError(
-                f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives and {population.f.shape[1]} in population"
+                f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives "
+                f"and {population.f.shape[1]} in population"
             )
 
     # Get the point settings for this plot
@@ -161,6 +162,8 @@ def population_obj_scatter(
         if settings.show_attainment:
             ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
         if settings.show_dominated_area:
+            # We plot white first and then the actual color so we can stack dominated areas in the history plot while
+            # correctly desaturating the color so the datapoints (which have the same color) don't blend in.
             plt.fill_between(
                 attainment[:, 0],
                 attainment[:, 1],
