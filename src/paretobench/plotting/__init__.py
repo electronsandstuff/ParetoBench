@@ -1,6 +1,4 @@
 from .population import (
-    PopulationObjScatterConfig,
-    PopulationDVarPairsConfig,
     population_dvar_pairs,
     population_obj_scatter,
 )
@@ -14,8 +12,6 @@ from .history import (
 )
 
 __all__ = [
-    "PopulationObjScatterConfig",
-    "PopulationDVarPairsConfig",
     "population_dvar_pairs",
     "population_obj_scatter",
     "history_dvar_animation",
