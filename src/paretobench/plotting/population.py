@@ -37,6 +37,8 @@ class PopulationObjScatterConfig:
         Whether to plot the attainment surface, by default False
     show_dominated_area : bool, optional
         Plots the dominated region towards the larger values of each decision var
+    dominated_area_zorder : int, optional
+        What "zorder" to draw dominated region at. Mostly used internally to correctly show dominated area in history plots.
     ref_point : Union[str, Tuple[float, float]], optional
         Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
         value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
