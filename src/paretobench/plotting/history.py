@@ -343,7 +343,9 @@ def history_dvar_pairs(
 
         # Set optional color and plot combined population
         plot_settings.color = settings.single_color  # Will use default if None
-        fig, axes = population_dvar_pairs(combined_population, dvars=dvars, fig=fig, axes=axes, settings=plot_settings)
+        fig, axes = population_dvar_pairs(
+            combined_population, dvars=dvars, fig=fig, axes=axes, **plot_settings.__dict__
+        )
 
     elif settings.generation_mode == "cmap":
         if settings.label_mode == "index":
@@ -375,7 +377,7 @@ def history_dvar_pairs(
                 plot_settings.upper_bounds = None
 
             # Plot this generation
-            fig, axes = population_dvar_pairs(population, dvars=dvars, fig=fig, axes=axes, settings=plot_settings)
+            fig, axes = population_dvar_pairs(population, dvars=dvars, fig=fig, axes=axes, **plot_settings.__dict__)
 
         # Add colorbar if label is provided
         if label:

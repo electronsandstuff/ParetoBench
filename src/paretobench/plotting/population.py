@@ -277,24 +277,7 @@ def population_obj_scatter(
 @dataclass
 class PopulationDVarPairsConfig:
     """
-    Settings related to plotting decision variables from `Population`.
-
-    domination_filt : Literal["all", "dominated", "non-dominated"], optional
-        Plot only the dominated/non-dominated solutions, or all. Defaults to all
-    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
-        Plot only the feasible/infeasible solutions, or all. Defaults to all
-    hist_bins : int, optional
-        Number of bins for histograms on the diagonal, default is to let matplotlib choose
-    show_names : bool, optional
-        Whether to include variable names on the axes if they exist, default is True
-    problem : str/Problem, optional
-        The problem for plotting decision variable bounds
-    lower_bounds : array-like, optional
-        Lower bounds for each decision variable
-    upper_bounds : array-like, optional
-        Upper bounds for each decision variable
-    color : str, optional
-        What color should we use for the points. Defaults to selecting from matplotlib color cycler
+    Helper class for history objects to pass arguments to `population_dvar_pairs`
     """
 
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
@@ -312,7 +295,14 @@ def population_dvar_pairs(
     dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     fig=None,
     axes=None,
-    settings: PopulationDVarPairsConfig = PopulationDVarPairsConfig(),
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+    hist_bins: Optional[int] = None,
+    show_names: bool = True,
+    problem: Optional[Union[str, Problem]] = None,
+    lower_bounds: Optional[np.ndarray] = None,
+    upper_bounds: Optional[np.ndarray] = None,
+    color: Optional[str] = None,
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -335,8 +325,22 @@ def population_dvar_pairs(
     axes : numpy.ndarray of matplotlib.axes.Axes, optional
         2D array of axes to plot on. If None and fig is None, creates new axes.
         Must be provided if fig is provided and vice versa.
-    settings : PopulationDVarPairsConfig
-        Settings related to plotting the decision variables
+    domination_filt : Literal["all", "dominated", "non-dominated"], optional
+        Plot only the dominated/non-dominated solutions, or all. Defaults to all
+    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+        Plot only the feasible/infeasible solutions, or all. Defaults to all
+    hist_bins : int, optional
+        Number of bins for histograms on the diagonal, default is to let matplotlib choose
+    show_names : bool, optional
+        Whether to include variable names on the axes if they exist, default is True
+    problem : str/Problem, optional
+        The problem for plotting decision variable bounds
+    lower_bounds : array-like, optional
+        Lower bounds for each decision variable
+    upper_bounds : array-like, optional
+        Upper bounds for each decision variable
+    color : str, optional
+        What color should we use for the points. Defaults to selecting from matplotlib color cycler
 
     Returns
     -------
@@ -359,10 +363,10 @@ def population_dvar_pairs(
     upper_bounds = None
 
     # Handle user specified problem
-    if settings.problem is not None:
-        if (settings.lower_bounds is not None) or (settings.upper_bounds is not None):
+    if problem is not None:
+        if (lower_bounds is not None) or (upper_bounds is not None):
             raise ValueError("Only specify one of problem or the upper/lower bounds")
-        problem = get_problem_from_obj_or_str(settings.problem)
+        problem = get_problem_from_obj_or_str(problem)
         if problem.n != population.n:
             raise ValueError(
                 f"Number of decision vars in problem must match number in population. Got {problem.n} in problem and {population.n} in population"
@@ -371,15 +375,15 @@ def population_dvar_pairs(
         upper_bounds = problem.var_upper_bounds
 
     # Validate and convert bounds to numpy arrays if provided
-    if settings.lower_bounds is not None:
-        lower_bounds = np.asarray(settings.lower_bounds)
+    if lower_bounds is not None:
+        lower_bounds = np.asarray(lower_bounds)
         if len(lower_bounds) != population.n:
             raise ValueError(
                 f"Length of lower_bounds ({len(lower_bounds)}) must match number of variables ({population.n})"
             )
 
-    if settings.upper_bounds is not None:
-        upper_bounds = np.asarray(settings.upper_bounds)
+    if upper_bounds is not None:
+        upper_bounds = np.asarray(upper_bounds)
         if len(upper_bounds) != population.n:
             raise ValueError(
                 f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({population.n})"
@@ -424,7 +428,7 @@ def population_dvar_pairs(
                 plt.setp(ax.get_yticklabels(), visible=False)
 
     # Get variable names or create default ones
-    if population.names_x and settings.show_names:
+    if population.names_x and show_names:
         var_names = [population.names_x[i] for i in var_indices]
     else:
         var_names = [f"x{i+1}" for i in var_indices]
@@ -433,10 +437,10 @@ def population_dvar_pairs(
     bound_props = dict(color="red", linestyle="--", alpha=0.5, linewidth=1)
 
     # Get the point settings for this plot
-    ps = get_per_point_settings_population(population, settings.domination_filt, settings.feasibility_filt)
+    ps = get_per_point_settings_population(population, domination_filt, feasibility_filt)
 
     # Plot on all axes
-    base_color = settings.color
+    base_color = color
     for i in range(n_vars):
         for j in range(n_vars):
             ax = axes[i, j]
@@ -446,7 +450,7 @@ def population_dvar_pairs(
                 # Plot the histogram
                 _, _, patches = ax.hist(
                     population.x[ps.plot_filt, var_indices[i]],
-                    bins=settings.hist_bins,
+                    bins=hist_bins,
                     density=True,
                     alpha=0.7,
                     color=base_color,
