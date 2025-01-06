@@ -7,10 +7,8 @@ from ..containers import History
 from ..exceptions import EmptyPopulationError, NoObjectivesError
 from .attainment import get_reference_point
 from .population import (
-    PopulationObjScatterConfig,
     population_obj_scatter,
     population_dvar_pairs,
-    PopulationDVarPairsConfig,
 )
 from .utils import selection_to_indices
 
@@ -124,7 +122,7 @@ def history_obj_scatter(
         fig = plt.figure()
 
     # Create base settings for population_obj_scatter
-    obj_settings = PopulationObjScatterConfig(
+    obj_settings = dict(
         domination_filt=domination_filt,
         feasibility_filt=feasibility_filt,
         show_points=show_points,
@@ -141,9 +139,9 @@ def history_obj_scatter(
         combined_population = history.reports[indices[0]]
         for idx in indices[1:]:
             combined_population = combined_population + history.reports[idx]
-        obj_settings.ref_point = get_reference_point(combined_population, padding=ref_point_padding)
+        obj_settings["ref_point"] = get_reference_point(combined_population, padding=ref_point_padding)
     else:
-        obj_settings.ref_point = ref_point
+        obj_settings["ref_point"] = ref_point
 
     if generation_mode == "cumulative":
         # Merge all selected populations
@@ -152,13 +150,13 @@ def history_obj_scatter(
             combined_population = combined_population + history.reports[idx]
 
         # Set optional color and plot combined population
-        obj_settings.color = single_color  # Will use default if None
+        obj_settings["color"] = single_color  # Will use default if None
         if show_pf and pf_objectives is not None:
-            obj_settings.pf_objectives = pf_objectives
+            obj_settings["pf_objectives"] = pf_objectives
         elif show_pf and history.problem is not None:
-            obj_settings.problem = history.problem
+            obj_settings["problem"] = history.problem
 
-        fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, **obj_settings.__dict__)
+        fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, **obj_settings)
 
     elif generation_mode == "cmap":
         if label_mode == "index":
@@ -175,20 +173,20 @@ def history_obj_scatter(
         for plot_idx, gen_idx in enumerate(indices):
             population = history.reports[gen_idx]
             norm_value = gen_idx if label_mode == "index" else population.fevals
-            obj_settings.color = cmap(norm(norm_value))
-            obj_settings.dominated_area_zorder = -2 - plot_idx
+            obj_settings["color"] = cmap(norm(norm_value))
+            obj_settings["dominated_area_zorder"] = -2 - plot_idx
 
             # Only plot PF on the last iteration if requested
             if plot_idx == len(indices) - 1 and show_pf and pf_objectives is not None:
-                obj_settings.pf_objectives = pf_objectives
+                obj_settings["pf_objectives"] = pf_objectives
             elif plot_idx == len(indices) - 1 and show_pf and history.problem is not None:
-                obj_settings.problem = history.problem
+                obj_settings["problem"] = history.problem
             else:
-                obj_settings.pf_objectives = None
-                obj_settings.problem = None
+                obj_settings["pf_objectives"] = None
+                obj_settings["problem"] = None
 
             # Plot this generation
-            fig, ax = population_obj_scatter(population, fig=fig, ax=ax, **obj_settings.__dict__)
+            fig, ax = population_obj_scatter(population, fig=fig, ax=ax, **obj_settings)
 
         # Add colorbar if label is provided
         if label:
@@ -295,7 +293,7 @@ def history_dvar_pairs(
     user_specified_bounds = (lower_bounds is not None) or (upper_bounds is not None)
 
     # Create base settings for population_dvar_pairs
-    plot_settings = PopulationDVarPairsConfig(
+    plot_settings = dict(
         domination_filt=domination_filt,
         feasibility_filt=feasibility_filt,
         hist_bins=hist_bins,
@@ -310,16 +308,14 @@ def history_dvar_pairs(
 
         # Deal with passing along the bounds
         if plot_bounds and user_specified_bounds:
-            plot_settings.lower_bounds = lower_bounds
-            plot_settings.upper_bounds = upper_bounds
+            plot_settings["lower_bounds"] = lower_bounds
+            plot_settings["upper_bounds"] = upper_bounds
         elif plot_bounds and history.problem is not None:
-            plot_settings.problem = history.problem
+            plot_settings["problem"] = history.problem
 
         # Set optional color and plot combined population
-        plot_settings.color = single_color  # Will use default if None
-        fig, axes = population_dvar_pairs(
-            combined_population, dvars=dvars, fig=fig, axes=axes, **plot_settings.__dict__
-        )
+        plot_settings["color"] = single_color  # Will use default if None
+        fig, axes = population_dvar_pairs(combined_population, dvars=dvars, fig=fig, axes=axes, **plot_settings)
 
     elif generation_mode == "cmap":
         if label_mode == "index":
@@ -336,22 +332,22 @@ def history_dvar_pairs(
         for plot_idx, gen_idx in enumerate(indices):
             population = history.reports[gen_idx]
             norm_value = gen_idx if label_mode == "index" else population.fevals
-            plot_settings.color = cmap(norm(norm_value))
+            plot_settings["color"] = cmap(norm(norm_value))
 
             # Only plot bounds on the last iteration if requested
             if plot_idx == len(indices) - 1:
                 if plot_bounds and user_specified_bounds:
-                    plot_settings.lower_bounds = lower_bounds
-                    plot_settings.upper_bounds = upper_bounds
+                    plot_settings["lower_bounds"] = lower_bounds
+                    plot_settings["upper_bounds"] = upper_bounds
                 elif plot_bounds and history.problem is not None:
-                    plot_settings.problem = history.problem
+                    plot_settings["problem"] = history.problem
             else:
-                plot_settings.problem = None
-                plot_settings.lower_bounds = None
-                plot_settings.upper_bounds = None
+                plot_settings["problem"] = None
+                plot_settings["lower_bounds"] = None
+                plot_settings["upper_bounds"] = None
 
             # Plot this generation
-            fig, axes = population_dvar_pairs(population, dvars=dvars, fig=fig, axes=axes, **plot_settings.__dict__)
+            fig, axes = population_dvar_pairs(population, dvars=dvars, fig=fig, axes=axes, **plot_settings)
 
         # Add colorbar if label is provided
         if label:

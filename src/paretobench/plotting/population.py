@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from matplotlib.colors import LightSource
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -13,29 +12,6 @@ from ..problem import Problem, ProblemWithFixedPF, ProblemWithPF
 from ..utils import get_problem_from_obj_or_str
 from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
 from .utils import get_per_point_settings_population, alpha_scatter, selection_to_indices
-
-
-@dataclass
-class PopulationObjScatterConfig:
-    """
-    Helper class for passing settings to `population_obj_scatter`
-    """
-
-    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
-    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
-    show_points: bool = True
-    problem: Optional[Union[str, Problem]] = None
-    n_pf: int = 1000
-    pf_objectives: Optional[np.ndarray] = None
-    show_attainment: bool = False
-    show_dominated_area: bool = False
-    dominated_area_zorder: Optional[int] = -2
-    ref_point: Optional[Tuple[float, float]] = None
-    ref_point_padding: float = 0.05
-    label: Optional[str] = None
-    legend_loc: Optional[str] = None
-    show_names: bool = True
-    color: Optional[str] = None
 
 
 def population_obj_scatter(
@@ -272,22 +248,6 @@ def population_obj_scatter(
         plt.legend(loc=legend_loc)
 
     return fig, ax
-
-
-@dataclass
-class PopulationDVarPairsConfig:
-    """
-    Helper class for history objects to pass arguments to `population_dvar_pairs`
-    """
-
-    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
-    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
-    hist_bins: Optional[int] = None
-    show_names: bool = True
-    problem: Optional[Union[str, Problem]] = None
-    lower_bounds: Optional[np.ndarray] = None
-    upper_bounds: Optional[np.ndarray] = None
-    color: Optional[str] = None
 
 
 def population_dvar_pairs(
