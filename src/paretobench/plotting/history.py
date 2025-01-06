@@ -156,10 +156,10 @@ def history_obj_scatter(
 
         # Set optional color and plot combined population
         obj_settings.color = settings.single_color  # Will use default if None
-        if settings.show_pf and history.problem is not None:
-            obj_settings.problem = history.problem
         if settings.show_pf and settings.pf_objectives is not None:
             obj_settings.pf_objectives = settings.pf_objectives
+        elif settings.show_pf and history.problem is not None:
+            obj_settings.problem = history.problem
 
         fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, settings=obj_settings)
 
@@ -182,14 +182,13 @@ def history_obj_scatter(
             obj_settings.dominated_area_zorder = -2 - plot_idx
 
             # Only plot PF on the last iteration if requested
-            if plot_idx == len(indices) - 1 and settings.show_pf and history.problem is not None:
-                obj_settings.problem = history.problem
-            else:
-                obj_settings.problem = None
             if plot_idx == len(indices) - 1 and settings.show_pf and settings.pf_objectives is not None:
                 obj_settings.pf_objectives = settings.pf_objectives
+            elif plot_idx == len(indices) - 1 and settings.show_pf and history.problem is not None:
+                obj_settings.problem = history.problem
             else:
                 obj_settings.pf_objectives = None
+                obj_settings.problem = None
 
             # Plot this generation
             fig, ax = population_obj_scatter(population, fig=fig, ax=ax, settings=obj_settings)
@@ -301,6 +300,9 @@ def history_dvar_pairs(
     if not len(first_pop):
         raise EmptyPopulationError()
 
+    # Check if the user gave us bounds to use
+    user_specified_bounds = (settings.lower_bounds is not None) or (settings.upper_bounds is not None)
+
     # Create base settings for population_dvar_pairs
     plot_settings = PopulationDVarPairsConfig(
         domination_filt=settings.domination_filt,
@@ -313,12 +315,12 @@ def history_dvar_pairs(
         for idx in indices[1:]:
             combined_population = combined_population + history.reports[idx]
 
-        if settings.plot_bounds and history.problem is not None:
-            plot_settings.problem = history.problem
-        if settings.plot_bounds and settings.lower_bounds is not None:
+        # Deal with passing along the bounds
+        if settings.plot_bounds and user_specified_bounds:
             plot_settings.lower_bounds = settings.lower_bounds
-        if settings.plot_bounds and settings.upper_bounds is not None:
             plot_settings.upper_bounds = settings.upper_bounds
+        elif settings.plot_bounds and history.problem is not None:
+            plot_settings.problem = history.problem
 
         # Set optional color and plot combined population
         plot_settings.color = settings.single_color  # Will use default if None
@@ -342,17 +344,15 @@ def history_dvar_pairs(
             plot_settings.color = cmap(norm(norm_value))
 
             # Only plot bounds on the last iteration if requested
-            if plot_idx == len(indices) - 1 and settings.plot_bounds and history.problem is not None:
-                plot_settings.problem = history.problem
+            if plot_idx == len(indices) - 1:
+                if settings.plot_bounds and user_specified_bounds:
+                    plot_settings.lower_bounds = settings.lower_bounds
+                    plot_settings.upper_bounds = settings.upper_bounds
+                elif settings.plot_bounds and history.problem is not None:
+                    plot_settings.problem = history.problem
             else:
                 plot_settings.problem = None
-            if settings.plot_bounds and settings.lower_bounds is not None:
-                plot_settings.lower_bounds = settings.lower_bounds
-            else:
                 plot_settings.lower_bounds = None
-            if settings.plot_bounds and settings.upper_bounds is not None:
-                plot_settings.upper_bounds = settings.upper_bounds
-            else:
                 plot_settings.upper_bounds = None
 
             # Plot this generation
