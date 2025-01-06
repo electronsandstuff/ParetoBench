@@ -65,7 +65,7 @@ class HistoryObjScatterConfig:
     show_attainment: bool = False
     show_dominated_area: bool = False
     ref_point: Optional[Tuple[float, float]] = None
-    ref_point_padding: float = 0.1
+    ref_point_padding: float = 0.05
     label: Optional[str] = None
     legend_loc: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"

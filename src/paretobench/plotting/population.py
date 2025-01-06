@@ -38,8 +38,9 @@ class PopulationObjScatterConfig:
     show_dominated_area : bool, optional
         Plots the dominated region towards the larger values of each decision var
     ref_point : Union[str, Tuple[float, float]], optional
-        Where to stop plotting the dominated region. Must be a point to the upper right (increasing value of objectives in 3D)
-        of all plotted points. By default, will set to right of max of each objective plus padding.
+        Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
+        value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
+        padding.
     ref_point_padding : float
         Amount of padding to apply to the automatic reference point calculation.
     label : str, optional
