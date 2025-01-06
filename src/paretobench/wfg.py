@@ -1,7 +1,7 @@
 import numpy as np
 
 from .problem import Problem, ProblemWithPF
-from .utils import get_hyperplane_points, get_nondominated
+from .utils import get_hyperplane_points, get_nondominated_inds
 from .wfg_utils import (
     shape_linear,
     shape_convex,
@@ -227,7 +227,7 @@ class WFG2(WFGx):
         # Evaluate the objective functions
         f = shape_convex(x)
         f[-1] = shape_disconnected(x, 5, 1, 1)
-        f = f[:, get_nondominated(f)]
+        f = f[:, get_nondominated_inds(f.T)]
         return (f * 2 * np.arange(1, self.m + 1)[:, None]).T
 
 

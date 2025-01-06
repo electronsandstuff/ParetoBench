@@ -8,6 +8,8 @@ import random
 import re
 import string
 
+from .utils import get_domination
+
 
 class Population(BaseModel):
     """
@@ -188,28 +190,12 @@ class Population(BaseModel):
         """
         Returns a boolean array of whether or not an individual is non-dominated.
         """
-        # Compare the objectives
-        dom = np.bitwise_and(
-            (self.f[:, None, :] <= self.f[None, :, :]).all(axis=-1),
-            (self.f[:, None, :] < self.f[None, :, :]).any(axis=-1),
-        )
+        return np.sum(get_domination(self.f, self.g), axis=0) == 0
 
-        # If one individual is feasible and the other isn't, set domination
-        feas = self.g >= 0.0
-        ind = np.bitwise_and(feas.all(axis=1)[:, None], ~feas.all(axis=1)[None, :])
-        dom[ind] = True
-        ind = np.bitwise_and(~feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
-        dom[ind] = False
-
-        # If both are infeasible, then the individual with the least constraint violation wins
-        constraint_violation = -np.sum(np.minimum(self.g, 0), axis=1)
-        comp = constraint_violation[:, None] < constraint_violation[None, :]
-        ind = ~np.bitwise_or(feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
-        dom[ind] = comp[ind]
-
-        # Return the nondominated individuals
-        nondominated = np.sum(dom, axis=0) == 0
-        return nondominated
+    def get_feasible_indices(self):
+        if self.g.shape[1] == 0:
+            return np.ones((len(self)), dtype=bool)
+        return np.all(self.g >= 0.0, axis=1)
 
     def get_nondominated_set(self):
         return self[self.get_nondominated_indices()]
@@ -264,7 +250,7 @@ class Population(BaseModel):
         f = np.random.rand(pop_size, n_objectives)
         g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
 
-        # Optionally generate names if include_names is True
+        # Optionally generate names if generate_names is True
         names_x = [f"x{i+1}" for i in range(n_decision_vars)] if generate_names else None
         names_f = [f"f{i+1}" for i in range(n_objectives)] if generate_names else None
         names_g = [f"g{i+1}" for i in range(n_constraints)] if generate_names else None
@@ -304,6 +290,27 @@ class Population(BaseModel):
         """
         features = np.concatenate((self.x, self.f, self.g), axis=1)
         return np.unique(features.round(decimals=decimals), axis=0).shape[0]
+
+    @property
+    def n(self):
+        """
+        The number of decision variables.
+        """
+        return self.x.shape[1]
+
+    @property
+    def m(self):
+        """
+        The number of objectives.
+        """
+        return self.f.shape[1]
+
+    @property
+    def n_constraints(self):
+        """
+        The number of constraints.
+        """
+        return self.g.shape[1]
 
 
 class History(BaseModel):
