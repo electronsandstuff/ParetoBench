@@ -26,6 +26,9 @@ conda create env -f environment.yml
 pip install -e .
 ```
 
+## Usage
+Please see the code in `example_notebooks` for usage instructions.
+
 # Testing
 Tests are written with the pytest framework. They can be run by calling `pytest` from the base of this repo with the package installed.
 
