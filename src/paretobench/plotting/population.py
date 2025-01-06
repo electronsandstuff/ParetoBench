@@ -49,6 +49,8 @@ class PopulationObjScatterConfig:
         The label for these points, if shown in a legend
     legend_loc : str, optional
         Passed to `loc` argument of plt.legend
+    show_names : bool, optional
+        Whether to show the names of the objectives if provided by population
     color : str, optional
         What color should we use for the points. Defaults to selecting from matplotlib color cycler
     """
@@ -66,6 +68,7 @@ class PopulationObjScatterConfig:
     ref_point_padding: float = 0.05
     label: Optional[str] = None
     legend_loc: Optional[str] = None
+    show_names: bool = True
     color: Optional[str] = None
 
 
@@ -191,7 +194,7 @@ def population_obj_scatter(
             add_legend = True
 
         # Handle the axis labels
-        if population.names_f:
+        if population.names_f and settings.show_names:
             ax.set_xlabel(population.names_f[0])
             ax.set_ylabel(population.names_f[1])
         else:
@@ -245,7 +248,7 @@ def population_obj_scatter(
             ax.add_collection3d(poly3d)
 
         # Handle the axis labels
-        if population.names_f:
+        if population.names_f and settings.show_names:
             ax.set_xlabel(population.names_f[0])
             ax.set_ylabel(population.names_f[1])
             ax.set_zlabel(population.names_f[2])
