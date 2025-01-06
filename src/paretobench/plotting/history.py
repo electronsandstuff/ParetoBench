@@ -378,7 +378,7 @@ def history_obj_animation(
     single_color: Optional[str] = None,
     dynamic_scaling: bool = False,
     cumulative: bool = False,
-    padding: float = 0.05,
+    scale_padding: float = 0.05,
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the Pareto front evolves across generations.
@@ -432,7 +432,7 @@ def history_obj_animation(
     cumulative : bool, optional
         If True, shows all points seen up to current frame.
         If False, shows only current frame's points, by default False
-    padding : float, optional
+    scale_padding : float, optional
         Padding used when calculating axis limits w/ dynamic limits
 
     Returns
@@ -467,8 +467,8 @@ def history_obj_animation(
         all_f = np.vstack([pop.f for pop in selected_reports])
         xlim = (np.min(all_f[:, 0]), np.max(all_f[:, 0]))
         ylim = (np.min(all_f[:, 1]), np.max(all_f[:, 1]))
-        xlim = (xlim[0] - (xlim[1] - xlim[0]) * padding, xlim[1] + (xlim[1] - xlim[0]) * padding)
-        ylim = (ylim[0] - (ylim[1] - ylim[0]) * padding, ylim[1] + (ylim[1] - ylim[0]) * padding)
+        xlim = (xlim[0] - (xlim[1] - xlim[0]) * scale_padding, xlim[1] + (xlim[1] - xlim[0]) * scale_padding)
+        ylim = (ylim[0] - (ylim[1] - ylim[0]) * scale_padding, ylim[1] + (ylim[1] - ylim[0]) * scale_padding)
 
     # Function to update frame for animation
     def update(frame_idx):
@@ -546,7 +546,7 @@ def history_dvar_animation(
     plot_bounds: bool = False,
     dynamic_scaling: bool = False,
     cumulative: bool = False,
-    padding=0.05,
+    scale_padding=0.05,
 ) -> animation.Animation:
     """
     Creates an animated visualization of how the decision variables evolve across generations.
@@ -588,7 +588,7 @@ def history_dvar_animation(
     cumulative : bool, optional
         If True, shows all points seen up to current frame.
         If False, shows only current frame's points, by default False
-    padding : float, optional
+    scale_padding : float, optional
         Padding used when calculating axis limits w/ dynamic limits
 
     Returns
@@ -632,7 +632,7 @@ def history_dvar_animation(
         var_limits = []
         for i in range(n_vars):
             var_min, var_max = np.min(all_x[:, i]), np.max(all_x[:, i])
-            limit = (var_min - (var_max - var_min) * padding, var_max + (var_max - var_min) * padding)
+            limit = (var_min - (var_max - var_min) * scale_padding, var_max + (var_max - var_min) * scale_padding)
             var_limits.append(limit)
 
     # Function to update frame for animation
