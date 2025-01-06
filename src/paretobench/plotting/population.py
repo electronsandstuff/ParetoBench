@@ -110,14 +110,15 @@ def population_obj_scatter(
         problem = get_problem_from_obj_or_str(settings.problem)
         if problem.m != population.f.shape[1]:
             raise ValueError(
-                f"Number of objectives in problem must match number in population. Got {problem.m} in problem and {population.f.shape[1]} in population."
+                f'Number of objectives in problem must match number in population. Got {problem.m} objectives from problem "{problem}" '
+                f"and {population.f.shape[1]} from the population."
             )
         if isinstance(problem, ProblemWithPF):
             pf = problem.get_pareto_front(settings.n_pf)
         elif isinstance(problem, ProblemWithFixedPF):
             pf = problem.get_pareto_front()
         else:
-            raise ValueError(f"Cannot get Pareto front from object of problem: {problem}")
+            raise ValueError(f'Cannot get Pareto front from problem: "{problem}"')
     elif settings.pf_objectives is not None:
         pf = np.asarray(settings.pf_objectives)
         if pf.ndim != 2:
