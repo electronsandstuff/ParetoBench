@@ -72,8 +72,7 @@ def population_obj_scatter(
     settings: PopulationObjScatterConfig = PopulationObjScatterConfig(),
 ):
     """
-    Plot the objectives in 2D and 3D. Optionally add in the Pareto front either from a known problem
-    or from user-specified objectives. User must specify only one of 'problem' or 'pf_objectives'.
+    Plot the objectives in 2D and 3D. See settings object for all of the available plotting options.
 
     Parameters
     ----------
@@ -248,7 +247,7 @@ def population_obj_scatter(
 
     # We can't plot in 4D :(
     else:
-        raise ValueError(f"Cannot plot more than three objectives at the same time: n_objs={population.f.shape[1]}")
+        raise ValueError(f"Plotting supports only 2D and 3D objectives currently: n_objs={population.f.shape[1]}")
 
     if add_legend:
         plt.legend(loc=settings.legend_loc)
