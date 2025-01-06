@@ -27,25 +27,32 @@ class HistoryObjScatterConfig:
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     show_points : bool
-        Whether to plot the points (useful for only showing attainment surface)
+        Whether to actually show the points (useful for only showing attainment surface or dominated region)
+    n_pf : int, optional
+        The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+    pf_objectives : array-like, optional
+        User-specified Pareto front objectives. Should be a 2D array where each row represents a point
+        on the Pareto front and each column represents an objective value.
+    show_attainment : bool, optional
+        Whether to plot the attainment surface, by default False
+    show_dominated_area : bool, optional
+        Plots the dominated region towards the larger values of each decision var
+    ref_point : Union[str, Tuple[float, float]], optional
+        Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
+        value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
+        padding.
+    ref_point_padding : float
+        Amount of padding to apply to the automatic reference point calculation.
+    legend_loc : str, optional
+        Passed to `loc` argument of plt.legend
+    show_names : bool, optional
+        Whether to show the names of the objectives if provided by population
     show_pf : bool, optional
         Whether to plot the Pareto front, by default True
-    pf_objectives : array-like, optional
-        User-specified Pareto front objectives
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
-    show_attainment: bool = False
-        Whether to plot attainment surfaces for each generation
-    show_dominated_area: bool = False
-        Whether to plot the dominated area for each generation
-    ref_point: Optional[Tuple[float, float]] = None
-        Reference point for attainment surface calculation
-    ref_point_padding: float = 0.05
-        Padding for automatic reference point calculation
     label: Optional[str] = "Generation"
         Label for colorbar (only used when generation_mode is 'cmap')
-    legend_loc: Optional[str] = None
-        Passed to `loc` argument in plt.legend
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
         - 'cmap': Plot each generation separately with colors from colormap
@@ -59,15 +66,17 @@ class HistoryObjScatterConfig:
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
     feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     show_points: bool = True
-    show_pf: bool = False
+    n_pf: int = 1000
     pf_objectives: Optional[np.ndarray] = None
-    colormap: str = "viridis"
     show_attainment: bool = False
     show_dominated_area: bool = False
     ref_point: Optional[Tuple[float, float]] = None
     ref_point_padding: float = 0.05
-    label: Optional[str] = None
     legend_loc: Optional[str] = None
+    show_names: bool = True
+    show_pf: bool = False
+    colormap: str = "viridis"
+    label: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
     label_mode: Literal["index", "fevals"] = "index"
@@ -133,6 +142,8 @@ def history_obj_scatter(
         domination_filt=settings.domination_filt,
         feasibility_filt=settings.feasibility_filt,
         show_points=settings.show_points,
+        n_pf=settings.n_pf,
+        show_names=settings.show_names,
         show_attainment=settings.show_attainment,
         show_dominated_area=settings.show_dominated_area,
         pf_objectives=settings.pf_objectives,
