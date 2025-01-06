@@ -51,7 +51,7 @@ class HistoryObjScatterConfig:
         Whether to plot the Pareto front, by default True
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
-    label: Optional[str] = "Generation"
+    cmap_label: Optional[str] = "Generation"
         Label for colorbar (only used when generation_mode is 'cmap')
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
@@ -76,7 +76,7 @@ class HistoryObjScatterConfig:
     show_names: bool = True
     show_pf: bool = False
     colormap: str = "viridis"
-    label: Optional[str] = None
+    cmap_label: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
     label_mode: Literal["index", "fevals"] = "index"
@@ -177,10 +177,10 @@ def history_obj_scatter(
     elif settings.generation_mode == "cmap":
         if settings.label_mode == "index":
             norm_values = indices
-            label = settings.label if settings.label else "Generation"
+            label = settings.cmap_label if settings.cmap_label else "Generation"
         else:  # fevals mode
             norm_values = [history.reports[idx].fevals for idx in indices]
-            label = settings.label if settings.label else "Function Evaluations"
+            label = settings.cmap_label if settings.cmap_label else "Function Evaluations"
 
         cmap = plt.get_cmap(settings.colormap)
         norm = plt.Normalize(min(norm_values), max(norm_values))
@@ -234,7 +234,7 @@ class HistoryDVarPairsConfig:
         Upper bounds for each decision variable
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
-    label: Optional[str] = "Generation"
+    cmap_label: Optional[str] = "Generation"
         Label for colorbar (only used when generation_mode is 'cmap')
     legend_loc: Optional[str] = None
         Passed to `loc` argument in plt.legend
@@ -257,7 +257,7 @@ class HistoryDVarPairsConfig:
     lower_bounds: Optional[np.ndarray] = None
     upper_bounds: Optional[np.ndarray] = None
     colormap: str = "viridis"
-    label: Optional[str] = None
+    cmap_label: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
     plot_bounds: bool = False
@@ -348,10 +348,10 @@ def history_dvar_pairs(
     elif settings.generation_mode == "cmap":
         if settings.label_mode == "index":
             norm_values = indices
-            label = settings.label if settings.label else "Generation"
+            label = settings.cmap_label if settings.cmap_label else "Generation"
         else:  # fevals mode
             norm_values = [history.reports[idx].fevals for idx in indices]
-            label = settings.label if settings.label else "Function Evaluations"
+            label = settings.cmap_label if settings.cmap_label else "Function Evaluations"
 
         cmap = plt.get_cmap(settings.colormap)
         norm = plt.Normalize(min(norm_values), max(norm_values))
