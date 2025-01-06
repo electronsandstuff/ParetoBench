@@ -10,7 +10,6 @@ from paretobench.plotting import (
     history_dvar_pairs,
     history_obj_scatter,
     HistoryDVarPairsConfig,
-    HistoryObjScatterConfig,
 )
 from paretobench.plotting.utils import get_per_point_settings_population, selection_to_indices
 from paretobench.plotting.attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
@@ -274,8 +273,7 @@ def test_history_plots_reports(reports, expected_gens):
     hist = History.from_random(10, 3, 4, 0, 50)
 
     # Test objective scatter plot
-    obj_settings = HistoryObjScatterConfig(generation_mode="cmap")
-    fig, ax = history_obj_scatter(hist, reports=reports, settings=obj_settings)
+    fig, ax = history_obj_scatter(hist, reports=reports, generation_mode="cmap")
     # In cmap mode, each generation gets its own color in the colorbar
     sm = fig.get_axes()[-1].collections[0]  # Get ScalarMappable from colorbar
     assert len(sm.get_cmap().colors) >= expected_gens

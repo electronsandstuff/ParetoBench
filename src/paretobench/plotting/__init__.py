@@ -6,7 +6,6 @@ from .history import (
     history_dvar_animation,
     history_obj_animation,
     HistoryDVarPairsConfig,
-    HistoryObjScatterConfig,
     history_obj_scatter,
     history_dvar_pairs,
 )
@@ -17,7 +16,6 @@ __all__ = [
     "history_dvar_animation",
     "history_obj_animation",
     "HistoryDVarPairsConfig",
-    "HistoryObjScatterConfig",
     "history_obj_scatter",
     "history_dvar_pairs",
 ]

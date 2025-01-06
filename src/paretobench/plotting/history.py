@@ -17,11 +17,49 @@ from .population import (
 from .utils import selection_to_indices
 
 
-@dataclass
-class HistoryObjScatterConfig:
+def history_obj_scatter(
+    history,
+    reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+    fig=None,
+    ax=None,
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+    show_points: bool = True,
+    n_pf: int = 1000,
+    pf_objectives: Optional[np.ndarray] = None,
+    show_attainment: bool = False,
+    show_dominated_area: bool = False,
+    ref_point: Optional[Tuple[float, float]] = None,
+    ref_point_padding: float = 0.05,
+    legend_loc: Optional[str] = None,
+    show_names: bool = True,
+    show_pf: bool = False,
+    colormap: str = "viridis",
+    cmap_label: Optional[str] = None,
+    generation_mode: Literal["cmap", "cumulative"] = "cmap",
+    single_color: Optional[str] = None,
+    label_mode: Literal["index", "fevals"] = "index",
+):
     """
-    Settings for plotting the objective functions from a history of populations.
+    Plot the objectives from a history of populations, using either a colormap for generations
+    or merging all generations into a single population.
 
+    Parameters
+    ----------
+    history : History object
+        The history containing populations to plot
+    reports : int, slice, List[int], or Tuple[int, int], optional
+        Specifies which generations to plot. Can be:
+        - None: All generations (default)
+        - int: Single generation index (negative counts from end)
+        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
+        - List[int]: Explicit list of generation indices
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
+        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+    fig : matplotlib figure, optional
+        Figure to plot on, by default None
+    ax : matplotlib axis, optional
+        Axis to plot on, by default None
     domination_filt : Literal["all", "dominated", "non-dominated"], optional
         Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
@@ -61,56 +99,6 @@ class HistoryObjScatterConfig:
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     label_mode: Literal['index', 'fevals'] = 'index'
         Whether to use report index or function evaluations (fevals) for labels
-    """
-
-    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
-    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
-    show_points: bool = True
-    n_pf: int = 1000
-    pf_objectives: Optional[np.ndarray] = None
-    show_attainment: bool = False
-    show_dominated_area: bool = False
-    ref_point: Optional[Tuple[float, float]] = None
-    ref_point_padding: float = 0.05
-    legend_loc: Optional[str] = None
-    show_names: bool = True
-    show_pf: bool = False
-    colormap: str = "viridis"
-    cmap_label: Optional[str] = None
-    generation_mode: Literal["cmap", "cumulative"] = "cmap"
-    single_color: Optional[str] = None
-    label_mode: Literal["index", "fevals"] = "index"
-
-
-def history_obj_scatter(
-    history,
-    reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
-    fig=None,
-    ax=None,
-    settings: HistoryObjScatterConfig = HistoryObjScatterConfig(),
-):
-    """
-    Plot the objectives from a history of populations, using either a colormap for generations
-    or merging all generations into a single population.
-
-    Parameters
-    ----------
-    history : History object
-        The history containing populations to plot
-    reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to plot. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
-    fig : matplotlib figure, optional
-        Figure to plot on, by default None
-    ax : matplotlib axis, optional
-        Axis to plot on, by default None
-    settings : PlotHistorySettings
-        Settings for the plot
 
     Returns
     -------
@@ -139,63 +127,63 @@ def history_obj_scatter(
 
     # Create base settings for population_obj_scatter
     obj_settings = PopulationObjScatterConfig(
-        domination_filt=settings.domination_filt,
-        feasibility_filt=settings.feasibility_filt,
-        show_points=settings.show_points,
-        n_pf=settings.n_pf,
-        show_names=settings.show_names,
-        show_attainment=settings.show_attainment,
-        show_dominated_area=settings.show_dominated_area,
-        pf_objectives=settings.pf_objectives,
-        legend_loc=settings.legend_loc,
+        domination_filt=domination_filt,
+        feasibility_filt=feasibility_filt,
+        show_points=show_points,
+        n_pf=n_pf,
+        show_names=show_names,
+        show_attainment=show_attainment,
+        show_dominated_area=show_dominated_area,
+        pf_objectives=pf_objectives,
+        legend_loc=legend_loc,
     )
 
     # Calculate global reference point if not provided
-    if settings.ref_point is None:
+    if ref_point is None:
         combined_population = history.reports[indices[0]]
         for idx in indices[1:]:
             combined_population = combined_population + history.reports[idx]
-        obj_settings.ref_point = get_reference_point(combined_population, padding=settings.ref_point_padding)
+        obj_settings.ref_point = get_reference_point(combined_population, padding=ref_point_padding)
     else:
-        obj_settings.ref_point = settings.ref_point
+        obj_settings.ref_point = ref_point
 
-    if settings.generation_mode == "cumulative":
+    if generation_mode == "cumulative":
         # Merge all selected populations
         combined_population = history.reports[indices[0]]
         for idx in indices[1:]:
             combined_population = combined_population + history.reports[idx]
 
         # Set optional color and plot combined population
-        obj_settings.color = settings.single_color  # Will use default if None
-        if settings.show_pf and settings.pf_objectives is not None:
-            obj_settings.pf_objectives = settings.pf_objectives
-        elif settings.show_pf and history.problem is not None:
+        obj_settings.color = single_color  # Will use default if None
+        if show_pf and pf_objectives is not None:
+            obj_settings.pf_objectives = pf_objectives
+        elif show_pf and history.problem is not None:
             obj_settings.problem = history.problem
 
         fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, **obj_settings.__dict__)
 
-    elif settings.generation_mode == "cmap":
-        if settings.label_mode == "index":
+    elif generation_mode == "cmap":
+        if label_mode == "index":
             norm_values = indices
-            label = settings.cmap_label if settings.cmap_label else "Generation"
+            label = cmap_label if cmap_label else "Generation"
         else:  # fevals mode
             norm_values = [history.reports[idx].fevals for idx in indices]
-            label = settings.cmap_label if settings.cmap_label else "Function Evaluations"
+            label = cmap_label if cmap_label else "Function Evaluations"
 
-        cmap = plt.get_cmap(settings.colormap)
+        cmap = plt.get_cmap(colormap)
         norm = plt.Normalize(min(norm_values), max(norm_values))
 
         # Plot each selected generation
         for plot_idx, gen_idx in enumerate(indices):
             population = history.reports[gen_idx]
-            norm_value = gen_idx if settings.label_mode == "index" else population.fevals
+            norm_value = gen_idx if label_mode == "index" else population.fevals
             obj_settings.color = cmap(norm(norm_value))
             obj_settings.dominated_area_zorder = -2 - plot_idx
 
             # Only plot PF on the last iteration if requested
-            if plot_idx == len(indices) - 1 and settings.show_pf and settings.pf_objectives is not None:
-                obj_settings.pf_objectives = settings.pf_objectives
-            elif plot_idx == len(indices) - 1 and settings.show_pf and history.problem is not None:
+            if plot_idx == len(indices) - 1 and show_pf and pf_objectives is not None:
+                obj_settings.pf_objectives = pf_objectives
+            elif plot_idx == len(indices) - 1 and show_pf and history.problem is not None:
                 obj_settings.problem = history.problem
             else:
                 obj_settings.pf_objectives = None
@@ -210,7 +198,7 @@ def history_obj_scatter(
             sm.set_array([])  # Dummy array for the colorbar
             fig.colorbar(sm, ax=ax, label=label)
     else:
-        raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
+        raise ValueError(f"Unrecognized generation mode: {generation_mode}")
 
     return fig, ax
 
@@ -395,7 +383,19 @@ def history_obj_animation(
     history: History,
     reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     interval: int = 200,
-    settings: HistoryObjScatterConfig = HistoryObjScatterConfig(),
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+    show_points: bool = True,
+    n_pf: int = 1000,
+    pf_objectives: Optional[np.ndarray] = None,
+    show_attainment: bool = False,
+    show_dominated_area: bool = False,
+    ref_point: Optional[Tuple[float, float]] = None,
+    ref_point_padding: float = 0.05,
+    legend_loc: Optional[str] = "upper right",
+    show_names: bool = True,
+    show_pf: bool = False,
+    single_color: Optional[str] = None,
     dynamic_scaling: bool = False,
     cumulative: bool = False,
     padding: float = 0.05,
@@ -442,10 +442,6 @@ def history_obj_animation(
     if not indices:
         raise ValueError("No reports selected")
 
-    settings = copy(settings)
-    if settings.legend_loc is None:
-        settings.legend_loc = "upper right"
-
     # Get dimensions from first population
     n_objectives = history.reports[indices[0]].m
     if n_objectives > 3:
@@ -474,10 +470,6 @@ def history_obj_animation(
         # Get the actual generation index from our selected indices
         gen_idx = indices[frame_idx]
 
-        # Configure settings for this frame
-        frame_settings = copy(settings)
-        frame_settings.generation_mode = "cumulative"
-
         # Calculate the slice for history_obj_scatter based on cumulative setting
         if cumulative:
             # Find all indices up to current frame_idx
@@ -491,7 +483,20 @@ def history_obj_animation(
             reports=plot_reports,
             fig=fig,
             ax=ax,
-            settings=frame_settings,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            show_points=show_points,
+            n_pf=n_pf,
+            pf_objectives=pf_objectives,
+            show_attainment=show_attainment,
+            show_dominated_area=show_dominated_area,
+            ref_point=ref_point,
+            ref_point_padding=ref_point_padding,
+            legend_loc=legend_loc,
+            show_names=show_names,
+            show_pf=show_pf,
+            single_color=single_color,
+            generation_mode="cumulative",
         )
 
         # Add generation counter
