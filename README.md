@@ -8,6 +8,7 @@ ParetoBench is a Python library that provides a collection of tools for the benc
 - Container objects for storing and manipulating data from optimization algorithms
 - A standardized file format for saving the results of optimizations on benchmark problems
 - Tools for calculating convergence metrics on results and running statistical analyses on them to compare algorithms
+- Plotting utilities for objectives/decision variables and for both populations and series of populations (history objects)
 
 ## Installation
 Please install our package from pip.
