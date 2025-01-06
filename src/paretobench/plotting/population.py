@@ -47,6 +47,8 @@ class PopulationObjScatterConfig:
         The label for these points, if shown in a legend
     legend_loc : str, optional
         Passed to `loc` argument of plt.legend
+    color : str, optional
+        What color should we use for the points. Defaults to selecting from matplotlib color cycler
     """
 
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
@@ -270,7 +272,7 @@ class PopulationDVarPairsConfig:
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     hist_bins : int, optional
-        Number of bins for histograms on the diagonal, default is 20
+        Number of bins for histograms on the diagonal, default is to let matplotlib choose
     show_names : bool, optional
         Whether to include variable names on the axes if they exist, default is True
     problem : str/Problem, optional
@@ -279,6 +281,8 @@ class PopulationDVarPairsConfig:
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
+    color : str, optional
+        What color should we use for the points. Defaults to selecting from matplotlib color cycler
     """
 
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
