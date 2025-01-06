@@ -1,5 +1,3 @@
-from copy import copy
-from dataclasses import dataclass
 from matplotlib import animation
 from typing import Optional, Tuple, Literal, Union, List
 import matplotlib.pyplot as plt
@@ -203,11 +201,47 @@ def history_obj_scatter(
     return fig, ax
 
 
-@dataclass
-class HistoryDVarPairsConfig:
+def history_dvar_pairs(
+    history: History,
+    reports: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
+    dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+    fig=None,
+    axes=None,
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+    hist_bins: Optional[int] = None,
+    show_names: bool = True,
+    lower_bounds: Optional[np.ndarray] = None,
+    upper_bounds: Optional[np.ndarray] = None,
+    colormap: str = "viridis",
+    cmap_label: Optional[str] = None,
+    generation_mode: Literal["cmap", "cumulative"] = "cmap",
+    single_color: Optional[str] = None,
+    plot_bounds: bool = False,
+    label_mode: Literal["index", "fevals"] = "index",
+):
     """
-    Settings for plotting the decision variables from a history of populations.
+    Plot the decision variables from a history of populations, using either a colormap
+    for generations or merging all generations into a single population.
 
+    Parameters
+    ----------
+    history : History object
+        The history containing populations to plot
+    reports : int, slice, List[int], or Tuple[int, int], optional
+        Specifies which generations to plot. Can be:
+        - None: All generations (default)
+        - int: Single generation index (negative counts from end)
+        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
+        - List[int]: Explicit list of generation indices
+        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
+        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+    dvars : int, slice, List[int], or Tuple[int, int], optional
+        Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
+    fig : matplotlib figure, optional
+        Figure to plot on, by default None
+    axes : array of matplotlib axes, optional
+        Axes to plot on, by default None
     domination_filt : Literal["all", "dominated", "non-dominated"], optional
         Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
@@ -236,54 +270,6 @@ class HistoryDVarPairsConfig:
         Whether to plot bounds for the problem
     label_mode: Literal['index', 'fevals'] = 'index'
         Whether to use report index or function evaluations (fevals) for labels
-    """
-
-    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
-    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
-    hist_bins: Optional[int] = None
-    show_names: bool = True
-    lower_bounds: Optional[np.ndarray] = None
-    upper_bounds: Optional[np.ndarray] = None
-    colormap: str = "viridis"
-    cmap_label: Optional[str] = None
-    generation_mode: Literal["cmap", "cumulative"] = "cmap"
-    single_color: Optional[str] = None
-    plot_bounds: bool = False
-    label_mode: Literal["index", "fevals"] = "index"
-
-
-def history_dvar_pairs(
-    history: History,
-    reports: Optional[Union[int, slice, List[int], tuple[int, int]]] = None,
-    dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
-    fig=None,
-    axes=None,
-    settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
-):
-    """
-    Plot the decision variables from a history of populations, using either a colormap
-    for generations or merging all generations into a single population.
-
-    Parameters
-    ----------
-    history : History object
-        The history containing populations to plot
-    reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to plot. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
-    dvars : int, slice, List[int], or Tuple[int, int], optional
-        Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
-    fig : matplotlib figure, optional
-        Figure to plot on, by default None
-    axes : array of matplotlib axes, optional
-        Axes to plot on, by default None
-    settings : HistoryDVarPairsConfig
-        Settings for the plot
 
     Returns
     -------
@@ -306,58 +292,58 @@ def history_dvar_pairs(
         raise EmptyPopulationError()
 
     # Check if the user gave us bounds to use
-    user_specified_bounds = (settings.lower_bounds is not None) or (settings.upper_bounds is not None)
+    user_specified_bounds = (lower_bounds is not None) or (upper_bounds is not None)
 
     # Create base settings for population_dvar_pairs
     plot_settings = PopulationDVarPairsConfig(
-        domination_filt=settings.domination_filt,
-        feasibility_filt=settings.feasibility_filt,
-        hist_bins=settings.hist_bins,
-        show_names=settings.show_names,
+        domination_filt=domination_filt,
+        feasibility_filt=feasibility_filt,
+        hist_bins=hist_bins,
+        show_names=show_names,
     )
 
-    if settings.generation_mode == "cumulative":
+    if generation_mode == "cumulative":
         # Merge all selected populations
         combined_population = history.reports[indices[0]]
         for idx in indices[1:]:
             combined_population = combined_population + history.reports[idx]
 
         # Deal with passing along the bounds
-        if settings.plot_bounds and user_specified_bounds:
-            plot_settings.lower_bounds = settings.lower_bounds
-            plot_settings.upper_bounds = settings.upper_bounds
-        elif settings.plot_bounds and history.problem is not None:
+        if plot_bounds and user_specified_bounds:
+            plot_settings.lower_bounds = lower_bounds
+            plot_settings.upper_bounds = upper_bounds
+        elif plot_bounds and history.problem is not None:
             plot_settings.problem = history.problem
 
         # Set optional color and plot combined population
-        plot_settings.color = settings.single_color  # Will use default if None
+        plot_settings.color = single_color  # Will use default if None
         fig, axes = population_dvar_pairs(
             combined_population, dvars=dvars, fig=fig, axes=axes, **plot_settings.__dict__
         )
 
-    elif settings.generation_mode == "cmap":
-        if settings.label_mode == "index":
+    elif generation_mode == "cmap":
+        if label_mode == "index":
             norm_values = indices
-            label = settings.cmap_label if settings.cmap_label else "Generation"
+            label = cmap_label if cmap_label else "Generation"
         else:  # fevals mode
             norm_values = [history.reports[idx].fevals for idx in indices]
-            label = settings.cmap_label if settings.cmap_label else "Function Evaluations"
+            label = cmap_label if cmap_label else "Function Evaluations"
 
-        cmap = plt.get_cmap(settings.colormap)
+        cmap = plt.get_cmap(colormap)
         norm = plt.Normalize(min(norm_values), max(norm_values))
 
         # Plot each selected generation
         for plot_idx, gen_idx in enumerate(indices):
             population = history.reports[gen_idx]
-            norm_value = gen_idx if settings.label_mode == "index" else population.fevals
+            norm_value = gen_idx if label_mode == "index" else population.fevals
             plot_settings.color = cmap(norm(norm_value))
 
             # Only plot bounds on the last iteration if requested
             if plot_idx == len(indices) - 1:
-                if settings.plot_bounds and user_specified_bounds:
-                    plot_settings.lower_bounds = settings.lower_bounds
-                    plot_settings.upper_bounds = settings.upper_bounds
-                elif settings.plot_bounds and history.problem is not None:
+                if plot_bounds and user_specified_bounds:
+                    plot_settings.lower_bounds = lower_bounds
+                    plot_settings.upper_bounds = upper_bounds
+                elif plot_bounds and history.problem is not None:
                     plot_settings.problem = history.problem
             else:
                 plot_settings.problem = None
@@ -374,7 +360,7 @@ def history_dvar_pairs(
             # Use ax parameter to let constrained_layout handle the positioning
             fig.colorbar(sm, ax=axes.ravel().tolist(), label=label)
     else:
-        raise ValueError(f"Unrecognized generation mode: {settings.generation_mode}")
+        raise ValueError(f"Unrecognized generation mode: {generation_mode}")
 
     return fig, axes
 
@@ -417,8 +403,35 @@ def history_obj_animation(
         - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    settings : HistoryObjScatterConfig, optional
-        Settings for plotting objectives
+    domination_filt : Literal["all", "dominated", "non-dominated"], optional
+        Plot only the dominated/non-dominated solutions, or all. Defaults to all
+    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+        Plot only the feasible/infeasible solutions, or all. Defaults to all
+    show_points : bool
+        Whether to actually show the points (useful for only showing attainment surface or dominated region)
+    n_pf : int, optional
+        The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+    pf_objectives : array-like, optional
+        User-specified Pareto front objectives. Should be a 2D array where each row represents a point
+        on the Pareto front and each column represents an objective value.
+    show_attainment : bool, optional
+        Whether to plot the attainment surface, by default False
+    show_dominated_area : bool, optional
+        Plots the dominated region towards the larger values of each decision var
+    ref_point : Union[str, Tuple[float, float]], optional
+        Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
+        value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
+        padding.
+    ref_point_padding : float
+        Amount of padding to apply to the automatic reference point calculation.
+    legend_loc : str, optional
+        Passed to `loc` argument of plt.legend
+    show_names : bool, optional
+        Whether to show the names of the objectives if provided by population
+    show_pf : bool, optional
+        Whether to plot the Pareto front, by default True
+    single_color: Optional[str] = None
+        Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     dynamic_scaling : bool, optional
         If True, axes limits will update based on each frame's data.
         If False, axes limits will be fixed based on all data, by default False
@@ -529,7 +542,14 @@ def history_dvar_animation(
     reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
     interval: int = 200,
-    settings: HistoryDVarPairsConfig = HistoryDVarPairsConfig(),
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+    hist_bins: Optional[int] = None,
+    show_names: bool = True,
+    lower_bounds: Optional[np.ndarray] = None,
+    upper_bounds: Optional[np.ndarray] = None,
+    single_color: Optional[str] = None,
+    plot_bounds: bool = False,
     dynamic_scaling: bool = False,
     cumulative: bool = False,
     padding=0.05,
@@ -552,8 +572,24 @@ def history_dvar_animation(
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     interval : int, optional
         Delay between frames in milliseconds, by default 200
-    settings : HistoryDVarPairsConfig
-        Settings for the decision variable plots
+    domination_filt : Literal["all", "dominated", "non-dominated"], optional
+        Plot only the dominated/non-dominated solutions, or all. Defaults to all
+    feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+        Plot only the feasible/infeasible solutions, or all. Defaults to all
+    hist_bins : int, optional
+        Number of bins for histograms on the diagonal, default is to let matplotlib choose
+    show_names : bool, optional
+        Whether to include variable names on the axes if they exist, default is True
+    lower_bounds : array-like, optional
+        Lower bounds for each decision variable
+    upper_bounds : array-like, optional
+        Upper bounds for each decision variable
+    legend_loc: Optional[str] = None
+        Passed to `loc` argument in plt.legend
+    single_color: Optional[str] = None
+        Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+    plot_bounds: bool = False
+        Whether to plot bounds for the problem
     dynamic_scaling : bool, optional
         If True, axes limits will update based on each frame's data.
         If False, axes limits will be fixed based on all data, by default False
@@ -577,11 +613,21 @@ def history_dvar_animation(
     if not indices:
         raise ValueError("No reports selected")
 
-    settings = copy(settings)
-
     # Create initial plot to get figure and axes using the first selected generation
-    settings.generation_mode = "cumulative"
-    fig, axes = history_dvar_pairs(history, reports=indices[0], dvars=dvars, settings=settings)
+    fig, axes = history_dvar_pairs(
+        history,
+        reports=indices[0],
+        dvars=dvars,
+        domination_filt=domination_filt,
+        feasibility_filt=feasibility_filt,
+        hist_bins=hist_bins,
+        show_names=show_names,
+        lower_bounds=lower_bounds,
+        upper_bounds=upper_bounds,
+        single_color=single_color,
+        plot_bounds=plot_bounds,
+        generation_mode="cumulative",
+    )
 
     # Calculate global axis limits if not using dynamic scaling
     if not dynamic_scaling:
@@ -606,10 +652,6 @@ def history_dvar_animation(
         # Get the actual generation index from our selected indices
         gen_idx = indices[frame_idx]
 
-        # Configure settings for this frame
-        frame_settings = copy(settings)
-        frame_settings.generation_mode = "cumulative"
-
         # Calculate the appropriate reports for history_dvar_pairs based on cumulative setting
         if cumulative:
             # Find all indices up to current frame_idx
@@ -624,7 +666,15 @@ def history_dvar_animation(
             dvars=dvars,
             fig=fig,
             axes=axes,
-            settings=frame_settings,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            hist_bins=hist_bins,
+            show_names=show_names,
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
+            single_color=single_color,
+            plot_bounds=plot_bounds,
+            generation_mode="cumulative",
         )
 
         # Add generation counter

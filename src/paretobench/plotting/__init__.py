@@ -5,7 +5,6 @@ from .population import (
 from .history import (
     history_dvar_animation,
     history_obj_animation,
-    HistoryDVarPairsConfig,
     history_obj_scatter,
     history_dvar_pairs,
 )
@@ -15,7 +14,6 @@ __all__ = [
     "population_obj_scatter",
     "history_dvar_animation",
     "history_obj_animation",
-    "HistoryDVarPairsConfig",
     "history_obj_scatter",
     "history_dvar_pairs",
 ]

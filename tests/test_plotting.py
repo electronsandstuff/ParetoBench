@@ -9,7 +9,6 @@ from paretobench.plotting import (
     population_dvar_pairs,
     history_dvar_pairs,
     history_obj_scatter,
-    HistoryDVarPairsConfig,
 )
 from paretobench.plotting.utils import get_per_point_settings_population, selection_to_indices
 from paretobench.plotting.attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
@@ -280,8 +279,7 @@ def test_history_plots_reports(reports, expected_gens):
     plt.close(fig)
 
     # Test decision variable pairs plot
-    dvar_settings = HistoryDVarPairsConfig(generation_mode="cmap")
-    fig, axes = history_dvar_pairs(hist, reports=reports, settings=dvar_settings)
+    fig, axes = history_dvar_pairs(hist, reports=reports, generation_mode="cmap")
     assert axes.shape == (4, 4)  # Should be 4x4 grid for 4 decision vars
     sm = fig.get_axes()[-1].collections[0]  # Get ScalarMappable from colorbar
     assert len(sm.get_cmap().colors) >= expected_gens
@@ -300,15 +298,12 @@ def test_history_dvar_pairs():
     assert len(fig.get_axes()) == 17  # 16 subplots + 1 colorbar
     plt.close(fig)
 
-    # Test report selection with variable selection
-    settings = HistoryDVarPairsConfig(generation_mode="cmap")
-
     # Test with slice of reports and specific variables
     fig, axes = history_dvar_pairs(
         hist,
         reports=slice(0, 3),  # First 3 generations
         dvars=[0, 2],  # First and third variables
-        settings=settings,
+        generation_mode="cmap",
     )
 
     assert axes.shape == (2, 2)  # Should be 2x2 grid for 2 variables
