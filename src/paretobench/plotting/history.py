@@ -172,7 +172,7 @@ def history_obj_scatter(
         elif settings.show_pf and history.problem is not None:
             obj_settings.problem = history.problem
 
-        fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, settings=obj_settings)
+        fig, ax = population_obj_scatter(combined_population, fig=fig, ax=ax, **obj_settings.__dict__)
 
     elif settings.generation_mode == "cmap":
         if settings.label_mode == "index":
@@ -202,7 +202,7 @@ def history_obj_scatter(
                 obj_settings.problem = None
 
             # Plot this generation
-            fig, ax = population_obj_scatter(population, fig=fig, ax=ax, settings=obj_settings)
+            fig, ax = population_obj_scatter(population, fig=fig, ax=ax, **obj_settings.__dict__)
 
         # Add colorbar if label is provided
         if label:

@@ -6,7 +6,6 @@ import pytest
 from paretobench import Population, History, EmptyPopulationError
 from paretobench.plotting import (
     population_obj_scatter,
-    PopulationObjScatterConfig,
     population_dvar_pairs,
     history_dvar_pairs,
     history_obj_scatter,
@@ -111,15 +110,13 @@ def test_population_obj_scatter_edge_cases():
     # Test no points shown
     f = np.array([[1.0, 2.0], [2.0, 1.0]])
     pop = Population(f=f)
-    settings = PopulationObjScatterConfig(show_points=False)
-    fig, ax = population_obj_scatter(pop, settings=settings)
+    fig, ax = population_obj_scatter(pop, show_points=False)
     scatter_plots = [c for c in ax.collections if isinstance(c, PathCollection)]
     assert len(scatter_plots) == 0
     plt.close(fig)
 
     # No points after filtering
-    settings = PopulationObjScatterConfig(feasibility_filt="infeasible")
-    fig, ax = population_obj_scatter(pop, settings=settings)
+    fig, ax = population_obj_scatter(pop, feasibility_filt="infeasible")
     scatter_plots = [c for c in ax.collections if isinstance(c, PathCollection)]
     assert len(scatter_plots) == 0
     plt.close(fig)
@@ -137,10 +134,8 @@ def test_population_obj_scatter_attainment_and_dominated():
     # Create random population
     pop = Population.from_random(n_objectives=2, n_decision_vars=2, n_constraints=1, pop_size=5)
 
-    # Test with both attainment and dominated area enabled
-    settings = PopulationObjScatterConfig(show_attainment=True, show_dominated_area=True)
-
-    fig, ax = population_obj_scatter(pop, settings=settings)
+    # Create scatter plot
+    fig, ax = population_obj_scatter(pop, show_attainment=True, show_dominated_area=True)
 
     # Check for attainment surface line
     lines = ax.get_lines()

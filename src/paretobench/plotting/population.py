@@ -18,8 +18,57 @@ from .utils import get_per_point_settings_population, alpha_scatter, selection_t
 @dataclass
 class PopulationObjScatterConfig:
     """
-    Settings for plotting the objective functions from `Population`.
+    Helper class for passing settings to `population_obj_scatter`
+    """
 
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
+    show_points: bool = True
+    problem: Optional[Union[str, Problem]] = None
+    n_pf: int = 1000
+    pf_objectives: Optional[np.ndarray] = None
+    show_attainment: bool = False
+    show_dominated_area: bool = False
+    dominated_area_zorder: Optional[int] = -2
+    ref_point: Optional[Tuple[float, float]] = None
+    ref_point_padding: float = 0.05
+    label: Optional[str] = None
+    legend_loc: Optional[str] = None
+    show_names: bool = True
+    color: Optional[str] = None
+
+
+def population_obj_scatter(
+    population: Population,
+    fig=None,
+    ax=None,
+    domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+    show_points: bool = True,
+    problem: Optional[Union[str, Problem]] = None,
+    n_pf: int = 1000,
+    pf_objectives: Optional[np.ndarray] = None,
+    show_attainment: bool = False,
+    show_dominated_area: bool = False,
+    dominated_area_zorder: Optional[int] = -2,
+    ref_point: Optional[Tuple[float, float]] = None,
+    ref_point_padding: float = 0.05,
+    label: Optional[str] = None,
+    legend_loc: Optional[str] = None,
+    show_names: bool = True,
+    color: Optional[str] = None,
+):
+    """
+    Plot the objectives in 2D and 3D.
+
+    Parameters
+    ----------
+    population : paretobench Population
+        The population containing data to plot
+    fig : matplotlib figure, optional
+        Figure to plot on, by default None
+    ax : matplotlib axis, optional
+        Axis to plot on, by default None
     domination_filt : Literal["all", "dominated", "non-dominated"], optional
         Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
@@ -53,44 +102,6 @@ class PopulationObjScatterConfig:
         Whether to show the names of the objectives if provided by population
     color : str, optional
         What color should we use for the points. Defaults to selecting from matplotlib color cycler
-    """
-
-    domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
-    feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
-    show_points: bool = True
-    problem: Optional[Union[str, Problem]] = None
-    n_pf: int = 1000
-    pf_objectives: Optional[np.ndarray] = None
-    show_attainment: bool = False
-    show_dominated_area: bool = False
-    dominated_area_zorder: Optional[int] = -2
-    ref_point: Optional[Tuple[float, float]] = None
-    ref_point_padding: float = 0.05
-    label: Optional[str] = None
-    legend_loc: Optional[str] = None
-    show_names: bool = True
-    color: Optional[str] = None
-
-
-def population_obj_scatter(
-    population: Population,
-    fig=None,
-    ax=None,
-    settings: PopulationObjScatterConfig = PopulationObjScatterConfig(),
-):
-    """
-    Plot the objectives in 2D and 3D. See settings object for all of the available plotting options.
-
-    Parameters
-    ----------
-    population : paretobench Population
-        The population containing data to plot
-    fig : matplotlib figure, optional
-        Figure to plot on, by default None
-    ax : matplotlib axis, optional
-        Axis to plot on, by default None
-    settings : PopulationObjScatterConfig
-        Settings for the plot
 
     Returns
     -------
@@ -107,27 +118,27 @@ def population_obj_scatter(
         fig = plt.figure()
 
     # Input validation for Pareto front specification
-    pf_sources_specified = sum(x is not None for x in [settings.problem, settings.pf_objectives])
+    pf_sources_specified = sum(x is not None for x in [problem, pf_objectives])
     if pf_sources_specified > 1:
         raise ValueError("Multiple Pareto front sources specified. Use only one of: 'problem' or 'pf_objectives'")
 
     # Get the Pareto front
     pf = None
-    if settings.problem is not None:
-        problem = get_problem_from_obj_or_str(settings.problem)
+    if problem is not None:
+        problem = get_problem_from_obj_or_str(problem)
         if problem.m != population.f.shape[1]:
             raise ValueError(
                 f'Number of objectives in problem must match number in population. Got {problem.m} objectives from problem "{problem}" '
                 f"and {population.f.shape[1]} from the population."
             )
         if isinstance(problem, ProblemWithPF):
-            pf = problem.get_pareto_front(settings.n_pf)
+            pf = problem.get_pareto_front(n_pf)
         elif isinstance(problem, ProblemWithFixedPF):
             pf = problem.get_pareto_front()
         else:
             raise ValueError(f'Cannot get Pareto front from problem: "{problem}"')
-    elif settings.pf_objectives is not None:
-        pf = np.asarray(settings.pf_objectives)
+    elif pf_objectives is not None:
+        pf = np.asarray(pf_objectives)
         if pf.ndim != 2:
             raise ValueError("pf_objectives must be a 2D array")
         if pf.shape[1] != population.f.shape[1]:
@@ -137,18 +148,18 @@ def population_obj_scatter(
             )
 
     # Get the point settings for this plot
-    ps = get_per_point_settings_population(population, settings.domination_filt, settings.feasibility_filt)
+    ps = get_per_point_settings_population(population, domination_filt, feasibility_filt)
 
     # For 2D problems
     add_legend = False
-    base_color = settings.color
+    base_color = color
     if population.f.shape[1] == 2:
         # Make axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111)
 
         # Plot the data
-        if settings.show_points:
+        if show_points:
             scatter = alpha_scatter(
                 ax,
                 population.f[ps.plot_filt, 0],
@@ -157,18 +168,16 @@ def population_obj_scatter(
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
                 s=15,
-                label=settings.label,
+                label=label,
             )
             if scatter:
                 base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
         # Plot attainment surface if requested (using feasible solutions only)
-        attainment = compute_attainment_surface_2d(
-            population, ref_point=settings.ref_point, padding=settings.ref_point_padding
-        )
-        if settings.show_attainment:
+        attainment = compute_attainment_surface_2d(population, ref_point=ref_point, padding=ref_point_padding)
+        if show_attainment:
             ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
-        if settings.show_dominated_area:
+        if show_dominated_area:
             # We plot white first and then the actual color so we can stack dominated areas in the history plot while
             # correctly desaturating the color so the datapoints (which have the same color) don't blend in.
             plt.fill_between(
@@ -176,7 +185,7 @@ def population_obj_scatter(
                 attainment[:, 1],
                 attainment[0, 1] * np.ones(attainment.shape[0]),
                 color="white",
-                zorder=settings.dominated_area_zorder,
+                zorder=dominated_area_zorder,
             )
             plt.fill_between(
                 attainment[:, 0],
@@ -184,17 +193,17 @@ def population_obj_scatter(
                 attainment[0, 1] * np.ones(attainment.shape[0]),
                 color=base_color,
                 alpha=0.8,
-                zorder=settings.dominated_area_zorder,
+                zorder=dominated_area_zorder,
             )
 
         # Add in Pareto front
         if pf is not None:
             # PF goes on bottom so our points show up on top of it when we have good solutions
-            ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF", zorder=min(-1, settings.dominated_area_zorder) - 1)
+            ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF", zorder=min(-1, dominated_area_zorder) - 1)
             add_legend = True
 
         # Handle the axis labels
-        if population.names_f and settings.show_names:
+        if population.names_f and show_names:
             ax.set_xlabel(population.names_f[0])
             ax.set_ylabel(population.names_f[1])
         else:
@@ -213,7 +222,7 @@ def population_obj_scatter(
             add_legend = True
 
         # Plot the data
-        if settings.show_points:
+        if show_points:
             scatter = alpha_scatter(
                 ax,
                 population.f[ps.plot_filt, 0],
@@ -223,21 +232,19 @@ def population_obj_scatter(
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
                 s=15,
-                label=settings.label,
+                label=label,
             )
             if scatter:
                 base_color = scatter[0].get_facecolor()[0]  # Get the color that matplotlib assigned
 
-        if settings.show_dominated_area:
+        if show_dominated_area:
             raise NotImplementedError("Cannot display dominated volume in 3D :(")
 
-        if settings.show_attainment:
+        if show_attainment:
             if base_color is None:
                 base_color = ax._get_lines.get_next_color()
 
-            vertices, faces = compute_attainment_surface_3d(
-                population, ref_point=settings.ref_point, padding=settings.ref_point_padding
-            )
+            vertices, faces = compute_attainment_surface_3d(population, ref_point=ref_point, padding=ref_point_padding)
             poly3d = Poly3DCollection(
                 [vertices[face] for face in faces],
                 shade=True,
@@ -248,7 +255,7 @@ def population_obj_scatter(
             ax.add_collection3d(poly3d)
 
         # Handle the axis labels
-        if population.names_f and settings.show_names:
+        if population.names_f and show_names:
             ax.set_xlabel(population.names_f[0])
             ax.set_ylabel(population.names_f[1])
             ax.set_zlabel(population.names_f[2])
@@ -262,7 +269,7 @@ def population_obj_scatter(
         raise ValueError(f"Plotting supports only 2D and 3D objectives currently: n_objs={population.f.shape[1]}")
 
     if add_legend:
-        plt.legend(loc=settings.legend_loc)
+        plt.legend(loc=legend_loc)
 
     return fig, ax
 
