@@ -256,8 +256,6 @@ def history_dvar_pairs(
         Name of the colormap to use for generation colors, by default 'viridis'
     cmap_label: Optional[str] = "Generation"
         Label for colorbar (only used when generation_mode is 'cmap')
-    legend_loc: Optional[str] = None
-        Passed to `loc` argument in plt.legend
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
         - 'cmap': Plot each generation separately with colors from colormap
@@ -580,8 +578,6 @@ def history_dvar_animation(
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
-    legend_loc: Optional[str] = None
-        Passed to `loc` argument in plt.legend
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     plot_bounds: bool = False
