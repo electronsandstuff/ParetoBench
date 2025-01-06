@@ -224,6 +224,14 @@ class HistoryDVarPairsConfig:
         Plot only the dominated/non-dominated solutions, or all. Defaults to all
     feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
         Plot only the feasible/infeasible solutions, or all. Defaults to all
+    hist_bins : int, optional
+        Number of bins for histograms on the diagonal, default is to let matplotlib choose
+    show_names : bool, optional
+        Whether to include variable names on the axes if they exist, default is True
+    lower_bounds : array-like, optional
+        Lower bounds for each decision variable
+    upper_bounds : array-like, optional
+        Upper bounds for each decision variable
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
     label: Optional[str] = "Generation"
@@ -240,22 +248,20 @@ class HistoryDVarPairsConfig:
         Whether to plot bounds for the problem
     label_mode: Literal['index', 'fevals'] = 'index'
         Whether to use report index or function evaluations (fevals) for labels
-    lower_bounds : array-like, optional
-        Lower bounds for each decision variable
-    upper_bounds : array-like, optional
-        Upper bounds for each decision variable
     """
 
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
     feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
+    hist_bins: Optional[int] = None
+    show_names: bool = True
+    lower_bounds: Optional[np.ndarray] = None
+    upper_bounds: Optional[np.ndarray] = None
     colormap: str = "viridis"
     label: Optional[str] = None
     generation_mode: Literal["cmap", "cumulative"] = "cmap"
     single_color: Optional[str] = None
     plot_bounds: bool = False
     label_mode: Literal["index", "fevals"] = "index"
-    lower_bounds: Optional[np.ndarray] = None
-    upper_bounds: Optional[np.ndarray] = None
 
 
 def history_dvar_pairs(
@@ -318,6 +324,8 @@ def history_dvar_pairs(
     plot_settings = PopulationDVarPairsConfig(
         domination_filt=settings.domination_filt,
         feasibility_filt=settings.feasibility_filt,
+        hist_bins=settings.hist_bins,
+        show_names=settings.show_names,
     )
 
     if settings.generation_mode == "cumulative":
