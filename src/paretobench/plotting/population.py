@@ -9,7 +9,7 @@ import numpy as np
 
 from ..containers import Population
 from ..exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
-from ..problem import ProblemWithFixedPF, ProblemWithPF
+from ..problem import Problem, ProblemWithFixedPF, ProblemWithPF
 from ..utils import get_problem_from_obj_or_str
 from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
 from .utils import get_per_point_settings_population, alpha_scatter, selection_to_indices
@@ -26,7 +26,7 @@ class PopulationObjScatterConfig:
         Plot only the feasible/infeasible solutions, or all. Defaults to all
     show_points : bool
         Whether to actually show the points (useful for only showing attainment surface or dominated region)
-    problem : str, optional
+    problem : str/Problem, optional
         Name of the problem for Pareto front plotting, by default None
     n_pf : int, optional
         The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
@@ -56,7 +56,7 @@ class PopulationObjScatterConfig:
     domination_filt: Literal["all", "dominated", "non-dominated"] = "all"
     feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     show_points: bool = True
-    problem: Optional[str] = None
+    problem: Optional[Union[str, Problem]] = None
     n_pf: int = 1000
     pf_objectives: Optional[np.ndarray] = None
     show_attainment: bool = False
@@ -291,7 +291,7 @@ class PopulationDVarPairsConfig:
     feasibility_filt: Literal["all", "feasible", "infeasible"] = "all"
     hist_bins: Optional[int] = None
     show_names: bool = True
-    problem: Optional[str] = None
+    problem: Optional[Union[str, Problem]] = None
     lower_bounds: Optional[np.ndarray] = None
     upper_bounds: Optional[np.ndarray] = None
     color: Optional[str] = None
@@ -340,7 +340,7 @@ def population_dvar_pairs(
     if not population.n:
         raise NoDecisionVarsError()
 
-    # Process the select parameter to get indices of variables to plot
+    # Process the reports selection
     var_indices = np.array(selection_to_indices(dvars, population.n))
     n_vars = len(var_indices)
 
