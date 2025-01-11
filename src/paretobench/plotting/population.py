@@ -33,6 +33,7 @@ def population_obj_scatter(
     legend_loc: Optional[str] = None,
     show_names: bool = True,
     color: Optional[str] = None,
+    scale: Optional[np.ndarray] = None,
 ):
     """
     Plot the objectives in 2D and 3D.
@@ -78,6 +79,9 @@ def population_obj_scatter(
         Whether to show the names of the objectives if provided by population
     color : str, optional
         What color should we use for the points. Defaults to selecting from matplotlib color cycler
+    scale : array-like, optional
+        Scale factors for each objective. Must have the same length as the number of objectives.
+        If None, no scaling is applied.
 
     Returns
     -------
@@ -89,6 +93,16 @@ def population_obj_scatter(
         raise EmptyPopulationError()
     if not population.m:
         raise NoObjectivesError()
+
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != population.m:
+            raise ValueError(
+                f"Length of scale must match number of objectives. Got scale factors with shape {scale.shape}"
+                f"and {population.f.shape[1]} objectives."
+            )
+    else:
+        scale = np.ones(population.m)
 
     if fig is None:
         fig = plt.figure()
@@ -138,8 +152,8 @@ def population_obj_scatter(
         if show_points:
             scatter = alpha_scatter(
                 ax,
-                population.f[ps.plot_filt, 0],
-                population.f[ps.plot_filt, 1],
+                scale[0] * population.f[ps.plot_filt, 0],
+                scale[1] * population.f[ps.plot_filt, 1],
                 alpha=ps.alpha[ps.plot_filt],
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
@@ -152,21 +166,21 @@ def population_obj_scatter(
         # Plot attainment surface if requested (using feasible solutions only)
         attainment = compute_attainment_surface_2d(population, ref_point=ref_point, padding=ref_point_padding)
         if show_attainment:
-            ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
+            ax.plot(scale[0] * attainment[:, 0], scale[1] * attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
         if show_dominated_area:
             # We plot white first and then the actual color so we can stack dominated areas in the history plot while
             # correctly desaturating the color so the datapoints (which have the same color) don't blend in.
             plt.fill_between(
-                attainment[:, 0],
-                attainment[:, 1],
-                attainment[0, 1] * np.ones(attainment.shape[0]),
+                scale[0] * attainment[:, 0],
+                scale[1] * attainment[:, 1],
+                scale[1] * attainment[0, 1] * np.ones(attainment.shape[0]),
                 color="white",
                 zorder=dominated_area_zorder,
             )
             plt.fill_between(
-                attainment[:, 0],
-                attainment[:, 1],
-                attainment[0, 1] * np.ones(attainment.shape[0]),
+                scale[0] * attainment[:, 0],
+                scale[1] * attainment[:, 1],
+                scale[1] * attainment[0, 1] * np.ones(attainment.shape[0]),
                 color=base_color,
                 alpha=0.8,
                 zorder=dominated_area_zorder,
@@ -175,7 +189,14 @@ def population_obj_scatter(
         # Add in Pareto front
         if pf is not None:
             # PF goes on bottom so our points show up on top of it when we have good solutions
-            ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF", zorder=min(-1, dominated_area_zorder) - 1)
+            ax.scatter(
+                scale[0] * pf[:, 0],
+                scale[1] * pf[:, 1],
+                c="k",
+                s=10,
+                label="PF",
+                zorder=min(-1, dominated_area_zorder) - 1,
+            )
             add_legend = True
 
         # Handle the axis labels
@@ -194,16 +215,18 @@ def population_obj_scatter(
 
         # Add in Pareto front
         if pf is not None:
-            ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF", alpha=0.75)
+            ax.scatter(
+                scale[0] * pf[:, 0], scale[1] * pf[:, 1], scale[2] * pf[:, 2], c="k", s=10, label="PF", alpha=0.75
+            )
             add_legend = True
 
         # Plot the data
         if show_points:
             scatter = alpha_scatter(
                 ax,
-                population.f[ps.plot_filt, 0],
-                population.f[ps.plot_filt, 1],
-                population.f[ps.plot_filt, 2],
+                scale[0] * population.f[ps.plot_filt, 0],
+                scale[1] * population.f[ps.plot_filt, 1],
+                scale[2] * population.f[ps.plot_filt, 2],
                 alpha=ps.alpha[ps.plot_filt],
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
@@ -222,7 +245,7 @@ def population_obj_scatter(
 
             vertices, faces = compute_attainment_surface_3d(population, ref_point=ref_point, padding=ref_point_padding)
             poly3d = Poly3DCollection(
-                [vertices[face] for face in faces],
+                [scale[None, :] * vertices[face] for face in faces],
                 shade=True,
                 facecolors=base_color,
                 edgecolors=base_color,
