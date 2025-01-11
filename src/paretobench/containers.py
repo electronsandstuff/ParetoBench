@@ -551,6 +551,9 @@ class History(BaseModel):
     def __str__(self):
         return self.__repr__()
 
+    def __len__(self):
+        return len(self.reports)
+
 
 class Experiment(BaseModel):
     """
