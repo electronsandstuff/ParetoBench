@@ -28,6 +28,7 @@ def history_obj_scatter(
     ref_point: Optional[Tuple[float, float]] = None,
     ref_point_padding: float = 0.05,
     legend_loc: Optional[str] = None,
+    scale: Optional[np.ndarray] = None,
     show_names: bool = True,
     show_pf: bool = False,
     colormap: str = "viridis",
@@ -79,6 +80,9 @@ def history_obj_scatter(
         Amount of padding to apply to the automatic reference point calculation.
     legend_loc : str, optional
         Passed to `loc` argument of plt.legend
+    scale : array-like, optional
+        Scale factors for each objective. Must have the same length as the number of objectives.
+        If None, no scaling is applied.
     show_names : bool, optional
         Whether to show the names of the objectives if provided by population
     show_pf : bool, optional
@@ -132,6 +136,7 @@ def history_obj_scatter(
         show_dominated_area=show_dominated_area,
         pf_objectives=pf_objectives,
         legend_loc=legend_loc,
+        scale=scale,
     )
 
     # Calculate global reference point if not provided
