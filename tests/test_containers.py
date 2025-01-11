@@ -49,6 +49,7 @@ def test_empty_history():
 
         # Load the experiment from the file and compare with original
         loaded_experiment = Experiment.load(file_path)
+        assert len(experiment.runs[0]) == 0
         assert experiment == loaded_experiment, "The loaded experiment is not equal to the original experiment."
 
 
