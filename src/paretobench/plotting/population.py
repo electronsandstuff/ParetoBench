@@ -448,7 +448,6 @@ def population_dvar_pairs(
                 _, _, patches = ax.hist(
                     scale[var_indices[i]] * population.x[ps.plot_filt, var_indices[i]],
                     bins=hist_bins,
-                    density=True,
                     alpha=0.7,
                     color=base_color,
                 )
