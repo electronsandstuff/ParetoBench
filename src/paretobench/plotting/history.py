@@ -216,6 +216,7 @@ def history_dvar_pairs(
     show_names: bool = True,
     lower_bounds: Optional[np.ndarray] = None,
     upper_bounds: Optional[np.ndarray] = None,
+    scale: Optional[np.ndarray] = None,
     colormap: str = "viridis",
     cmap_label: Optional[str] = None,
     generation_mode: Literal["cmap", "cumulative"] = "cmap",
@@ -257,6 +258,9 @@ def history_dvar_pairs(
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
+    scale : array-like, optional
+        Scale factors for each variable. Must have the same length as the number of decision vars.
+        If None, no scaling is applied.
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
     cmap_label: Optional[str] = "Generation"
@@ -301,6 +305,7 @@ def history_dvar_pairs(
         feasibility_filt=feasibility_filt,
         hist_bins=hist_bins,
         show_names=show_names,
+        scale=scale,
     )
 
     if generation_mode == "cumulative":
