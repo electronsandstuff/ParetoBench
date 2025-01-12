@@ -99,7 +99,7 @@ def population_obj_scatter(
         if len(scale.shape) != 1 or scale.shape[0] != population.m:
             raise ValueError(
                 f"Length of scale must match number of objectives. Got scale factors with shape {scale.shape}"
-                f"and {population.f.shape[1]} objectives."
+                f" and {population.f.shape[1]} objectives."
             )
     else:
         scale = np.ones(population.m)
@@ -286,6 +286,7 @@ def population_dvar_pairs(
     lower_bounds: Optional[np.ndarray] = None,
     upper_bounds: Optional[np.ndarray] = None,
     color: Optional[str] = None,
+    scale: Optional[np.ndarray] = None,
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -324,6 +325,9 @@ def population_dvar_pairs(
         Upper bounds for each decision variable
     color : str, optional
         What color should we use for the points. Defaults to selecting from matplotlib color cycler
+    scale : array-like, optional
+        Scale factors for each variable. Must have the same length as the number of decision vars.
+        If None, no scaling is applied.
 
     Returns
     -------
@@ -336,6 +340,16 @@ def population_dvar_pairs(
         raise EmptyPopulationError()
     if not population.n:
         raise NoDecisionVarsError()
+
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != population.n:
+            raise ValueError(
+                f"Length of scale must match number of decision vars. Got scale factors with shape {scale.shape}"
+                f" and {population.x.shape[1]} decision vars."
+            )
+    else:
+        scale = np.ones(population.n)
 
     # Process the reports selection
     var_indices = np.array(selection_to_indices(dvars, population.n))
@@ -432,7 +446,7 @@ def population_dvar_pairs(
             if i == j:
                 # Plot the histogram
                 _, _, patches = ax.hist(
-                    population.x[ps.plot_filt, var_indices[i]],
+                    scale[var_indices[i]] * population.x[ps.plot_filt, var_indices[i]],
                     bins=hist_bins,
                     density=True,
                     alpha=0.7,
@@ -443,17 +457,17 @@ def population_dvar_pairs(
 
                 # Add vertical bound lines to histograms
                 if lower_bounds is not None:
-                    ax.axvline(lower_bounds[var_indices[i]], **bound_props)
+                    ax.axvline(scale[var_indices[i]] * lower_bounds[var_indices[i]], **bound_props)
                 if upper_bounds is not None:
-                    ax.axvline(upper_bounds[var_indices[i]], **bound_props)
+                    ax.axvline(scale[var_indices[i]] * upper_bounds[var_indices[i]], **bound_props)
 
             # Off-diagonal plots (scatter plots)
             else:
                 # Plot the decision vars
                 scatter = alpha_scatter(
                     ax,
-                    population.x[ps.plot_filt, var_indices[j]],
-                    population.x[ps.plot_filt, var_indices[i]],
+                    scale[var_indices[j]] * population.x[ps.plot_filt, var_indices[j]],
+                    scale[var_indices[i]] * population.x[ps.plot_filt, var_indices[i]],
                     alpha=ps.alpha[ps.plot_filt],
                     color=base_color,
                     s=15,
@@ -464,11 +478,11 @@ def population_dvar_pairs(
 
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
-                    ax.axvline(lower_bounds[var_indices[j]], **bound_props)  # x-axis bound
-                    ax.axhline(lower_bounds[var_indices[i]], **bound_props)  # y-axis bound
+                    ax.axvline(scale[var_indices[j]] * lower_bounds[var_indices[j]], **bound_props)  # x-axis bound
+                    ax.axhline(scale[var_indices[i]] * lower_bounds[var_indices[i]], **bound_props)  # y-axis bound
                 if upper_bounds is not None:
-                    ax.axvline(upper_bounds[var_indices[j]], **bound_props)  # x-axis bound
-                    ax.axhline(upper_bounds[var_indices[i]], **bound_props)  # y-axis bound
+                    ax.axvline(scale[var_indices[j]] * upper_bounds[var_indices[j]], **bound_props)  # x-axis bound
+                    ax.axhline(scale[var_indices[i]] * upper_bounds[var_indices[i]], **bound_props)  # y-axis bound
             if i == n_vars - 1:
                 ax.set_xlabel(var_names[j])
             if j == 0:
