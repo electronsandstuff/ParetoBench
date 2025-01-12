@@ -386,21 +386,48 @@ def population_dvar_pairs(
                 f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({population.n})"
             )
 
+    # # Handle figure and axes creation/validation
+    # if fig is None and axes is None:
+    #     # Create new figure and axes
+    #     fig, axes = plt.subplots(
+    #         n_vars,
+    #         n_vars,
+    #         figsize=(2 * n_vars, 2 * n_vars),
+    #         gridspec_kw={"wspace": 0.05, "hspace": 0.05},
+    #         layout="constrained",
+    #         sharex="col",
+    #     )
+
     # Handle figure and axes creation/validation
     if fig is None and axes is None:
-        # Create new figure and axes
-        fig, axes = plt.subplots(
-            n_vars,
-            n_vars,
-            figsize=(2 * n_vars, 2 * n_vars),
-            gridspec_kw={"wspace": 0.05, "hspace": 0.05},
-            layout="constrained",
-            sharex="col",
-        )
+        # Create new figure
+        fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars))
 
-        # Convert axes to 2D array if only one variable is selected
-        if n_vars == 1:
-            axes = np.array([[axes]])
+        # Create a grid of subplots with appropriate spacing
+        gs = fig.add_gridspec(n_vars, n_vars, wspace=0.15, hspace=0.15)
+        axes = np.empty((n_vars, n_vars), dtype=object)
+
+        # Create reference scatter plots first (non-diagonal plots in row 0)
+        for j in range(n_vars):
+            if j != 0:  # Skip the diagonal for now
+                axes[0, j] = fig.add_subplot(gs[0, j], sharey=axes[0, 1] if j > 1 else None)
+
+        # Create the rest of the axes
+        for i in range(n_vars):
+            for j in range(n_vars):
+                if axes[i, j] is not None:  # Skip already created plots
+                    continue
+
+                if i == j:  # Diagonal plots (histograms)
+                    # For row 0, no sharing. For other rows, share x with scatter plot above
+                    share_x = None if i == 0 else axes[0, j]
+                    axes[i, j] = fig.add_subplot(gs[i, j], sharex=share_x)
+                else:  # Off-diagonal plots (scatter)
+                    if i == 0:  # First row was already handled
+                        continue
+                    # Share x with top scatter, share y with leftmost scatter in row
+                    first_row_idx = 0 if j != 0 else 1  # Use first non-diagonal in row
+                    axes[i, j] = fig.add_subplot(gs[i, j], sharex=axes[0, j], sharey=axes[i, first_row_idx])
 
     elif (fig is None) != (axes is None):  # XOR operation
         raise ValueError("Either both fig and axes must be provided or neither must be provided")
