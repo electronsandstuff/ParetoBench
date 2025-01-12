@@ -389,10 +389,10 @@ def population_dvar_pairs(
     # Handle figure and axes creation/validation
     if fig is None and axes is None:
         # Create new figure
-        fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars))
+        fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars), layout="constrained")
 
         # Create a grid of subplots with appropriate spacing
-        gs = fig.add_gridspec(n_vars, n_vars, wspace=0.15, hspace=0.15)
+        gs = fig.add_gridspec(n_vars, n_vars, wspace=0.1, hspace=0.1)
         axes = np.empty((n_vars, n_vars), dtype=object)
 
         # Create reference scatter plots first (non-diagonal plots in row 0)
