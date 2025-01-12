@@ -34,6 +34,7 @@ def population_obj_scatter(
     show_names: bool = True,
     color: Optional[str] = None,
     scale: Optional[np.ndarray] = None,
+    flip_objs: bool = False,
 ):
     """
     Plot the objectives in 2D and 3D.
@@ -82,6 +83,8 @@ def population_obj_scatter(
     scale : array-like, optional
         Scale factors for each objective. Must have the same length as the number of objectives.
         If None, no scaling is applied.
+    flip_objs : bool, optional
+        Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
 
     Returns
     -------
@@ -140,6 +143,14 @@ def population_obj_scatter(
     # Get the point settings for this plot
     ps = get_per_point_settings_population(population, domination_filt, feasibility_filt)
 
+    # Get indices of which objectives to plot
+    obj_idx = list(range(0, population.m))
+    if flip_objs:
+        obj_idx = list(reversed(obj_idx))
+
+    # Get the labels
+    labels = population.names_f if population.names_f else [rf"$f_{idx}$" for idx in range(population.m)]
+
     # For 2D problems
     add_legend = False
     base_color = color
@@ -152,8 +163,8 @@ def population_obj_scatter(
         if show_points:
             scatter = alpha_scatter(
                 ax,
-                scale[0] * population.f[ps.plot_filt, 0],
-                scale[1] * population.f[ps.plot_filt, 1],
+                scale[obj_idx[0]] * population.f[ps.plot_filt, obj_idx[0]],
+                scale[obj_idx[1]] * population.f[ps.plot_filt, obj_idx[1]],
                 alpha=ps.alpha[ps.plot_filt],
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
@@ -166,21 +177,28 @@ def population_obj_scatter(
         # Plot attainment surface if requested (using feasible solutions only)
         attainment = compute_attainment_surface_2d(population, ref_point=ref_point, padding=ref_point_padding)
         if show_attainment:
-            ax.plot(scale[0] * attainment[:, 0], scale[1] * attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
+            ax.plot(
+                scale[obj_idx[0]] * attainment[:, obj_idx[0]],
+                scale[obj_idx[1]] * attainment[:, obj_idx[1]],
+                color=base_color,
+                alpha=0.5,
+                zorder=-1,
+            )
         if show_dominated_area:
             # We plot white first and then the actual color so we can stack dominated areas in the history plot while
             # correctly desaturating the color so the datapoints (which have the same color) don't blend in.
+            ref_y = attainment[-obj_idx[0], obj_idx[1]]  # Get y coordinate of reference point
             plt.fill_between(
-                scale[0] * attainment[:, 0],
-                scale[1] * attainment[:, 1],
-                scale[1] * attainment[0, 1] * np.ones(attainment.shape[0]),
+                scale[obj_idx[0]] * attainment[:, obj_idx[0]],
+                scale[obj_idx[1]] * attainment[:, obj_idx[1]],
+                scale[obj_idx[1]] * ref_y * np.ones(attainment.shape[0]),
                 color="white",
                 zorder=dominated_area_zorder,
             )
             plt.fill_between(
-                scale[0] * attainment[:, 0],
-                scale[1] * attainment[:, 1],
-                scale[1] * attainment[0, 1] * np.ones(attainment.shape[0]),
+                scale[obj_idx[0]] * attainment[:, obj_idx[0]],
+                scale[obj_idx[1]] * attainment[:, obj_idx[1]],
+                scale[obj_idx[1]] * ref_y * np.ones(attainment.shape[0]),
                 color=base_color,
                 alpha=0.8,
                 zorder=dominated_area_zorder,
@@ -190,8 +208,8 @@ def population_obj_scatter(
         if pf is not None:
             # PF goes on bottom so our points show up on top of it when we have good solutions
             ax.scatter(
-                scale[0] * pf[:, 0],
-                scale[1] * pf[:, 1],
+                scale[obj_idx[0]] * pf[:, obj_idx[0]],
+                scale[obj_idx[1]] * pf[:, obj_idx[1]],
                 c="k",
                 s=10,
                 label="PF",
@@ -200,12 +218,9 @@ def population_obj_scatter(
             add_legend = True
 
         # Handle the axis labels
-        if population.names_f and show_names:
-            ax.set_xlabel(population.names_f[0])
-            ax.set_ylabel(population.names_f[1])
-        else:
-            ax.set_xlabel(r"$f_1$")
-            ax.set_ylabel(r"$f_2$")
+        if show_names:
+            ax.set_xlabel(labels[obj_idx[0]])
+            ax.set_ylabel(labels[obj_idx[1]])
 
     # For 3D problems
     elif population.f.shape[1] == 3:
@@ -216,7 +231,13 @@ def population_obj_scatter(
         # Add in Pareto front
         if pf is not None:
             ax.scatter(
-                scale[0] * pf[:, 0], scale[1] * pf[:, 1], scale[2] * pf[:, 2], c="k", s=10, label="PF", alpha=0.75
+                scale[obj_idx[0]] * pf[:, obj_idx[0]],
+                scale[obj_idx[1]] * pf[:, obj_idx[1]],
+                scale[obj_idx[2]] * pf[:, obj_idx[2]],
+                c="k",
+                s=10,
+                label="PF",
+                alpha=0.75,
             )
             add_legend = True
 
@@ -224,9 +245,9 @@ def population_obj_scatter(
         if show_points:
             scatter = alpha_scatter(
                 ax,
-                scale[0] * population.f[ps.plot_filt, 0],
-                scale[1] * population.f[ps.plot_filt, 1],
-                scale[2] * population.f[ps.plot_filt, 2],
+                scale[obj_idx[0]] * population.f[ps.plot_filt, obj_idx[0]],
+                scale[obj_idx[1]] * population.f[ps.plot_filt, obj_idx[1]],
+                scale[obj_idx[2]] * population.f[ps.plot_filt, obj_idx[2]],
                 alpha=ps.alpha[ps.plot_filt],
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
@@ -245,7 +266,7 @@ def population_obj_scatter(
 
             vertices, faces = compute_attainment_surface_3d(population, ref_point=ref_point, padding=ref_point_padding)
             poly3d = Poly3DCollection(
-                [scale[None, :] * vertices[face] for face in faces],
+                [scale[None, obj_idx] * vertices[face][:, obj_idx] for face in faces],
                 shade=True,
                 facecolors=base_color,
                 edgecolors=base_color,
@@ -254,14 +275,10 @@ def population_obj_scatter(
             ax.add_collection3d(poly3d)
 
         # Handle the axis labels
-        if population.names_f and show_names:
-            ax.set_xlabel(population.names_f[0])
-            ax.set_ylabel(population.names_f[1])
-            ax.set_zlabel(population.names_f[2])
-        else:
-            ax.set_xlabel(r"$f_1$")
-            ax.set_ylabel(r"$f_2$")
-            ax.set_zlabel(r"$f_3$")
+        if show_names:
+            ax.set_xlabel(labels[obj_idx[0]])
+            ax.set_ylabel(labels[obj_idx[1]])
+            ax.set_zlabel(labels[obj_idx[1]])
 
     # We can't plot in 4D :(
     else:
