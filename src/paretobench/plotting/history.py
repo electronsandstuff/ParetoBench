@@ -87,8 +87,8 @@ def history_obj_scatter(
         Label for colorbar (only used when generation_mode is 'cmap')
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
-        - 'cmap': Plot each generation separately with colors from colormap
-        - 'cumulative': Merge all selected generations into single population
+        'cmap': Plot each generation separately with colors from colormap
+        'cumulative': Merge all selected generations into single population
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     label_mode: Literal['index', 'fevals'] = 'index'
@@ -255,8 +255,8 @@ def history_dvar_pairs(
         Label for colorbar (only used when generation_mode is 'cmap')
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
-        - 'cmap': Plot each generation separately with colors from colormap
-        - 'cumulative': Merge all selected generations into single population
+        'cmap': Plot each generation separately with colors from colormap
+        'cumulative': Merge all selected generations into single population
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     plot_bounds: bool = False
