@@ -436,7 +436,9 @@ def population_dvar_pairs(
             # Hide x-axis labels and ticks for all rows except the bottom row
             if i != n_vars - 1:
                 plt.setp(ax.get_xticklabels(), visible=False)
-            if j != 0:
+
+            # Similarly for y axis labels (also for histogram plot in top left)
+            if j != 0 or (i == 0 and j == 0):
                 plt.setp(ax.get_yticklabels(), visible=False)
 
     # Get variable names or create default ones
