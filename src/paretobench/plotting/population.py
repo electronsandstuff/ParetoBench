@@ -386,18 +386,6 @@ def population_dvar_pairs(
                 f"Length of upper_bounds ({len(upper_bounds)}) must match number of variables ({population.n})"
             )
 
-    # # Handle figure and axes creation/validation
-    # if fig is None and axes is None:
-    #     # Create new figure and axes
-    #     fig, axes = plt.subplots(
-    #         n_vars,
-    #         n_vars,
-    #         figsize=(2 * n_vars, 2 * n_vars),
-    #         gridspec_kw={"wspace": 0.05, "hspace": 0.05},
-    #         layout="constrained",
-    #         sharex="col",
-    #     )
-
     # Handle figure and axes creation/validation
     if fig is None and axes is None:
         # Create new figure

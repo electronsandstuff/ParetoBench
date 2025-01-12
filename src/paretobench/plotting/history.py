@@ -383,6 +383,7 @@ def history_obj_animation(
     ref_point: Optional[Tuple[float, float]] = None,
     ref_point_padding: float = 0.05,
     legend_loc: Optional[str] = "upper right",
+    scale: Optional[np.ndarray] = None,
     show_names: bool = True,
     show_pf: bool = False,
     single_color: Optional[str] = None,
@@ -430,6 +431,9 @@ def history_obj_animation(
         Amount of padding to apply to the automatic reference point calculation.
     legend_loc : str, optional
         Passed to `loc` argument of plt.legend
+    scale : array-like, optional
+        Scale factors for each objective. Must have the same length as the number of objectives.
+        If None, no scaling is applied.
     show_names : bool, optional
         Whether to show the names of the objectives if provided by population
     show_pf : bool, optional
@@ -452,6 +456,16 @@ def history_obj_animation(
     """
     if not history.reports:
         raise ValueError("No populations in history to animate")
+
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != history.reports[0].m:
+            raise ValueError(
+                f"Length of scale must match number of objectives. Got scale factors with shape {scale.shape}"
+                f" and {history.reports[0].f.shape[1]} objectives."
+            )
+    else:
+        scale = np.ones(history.reports[0].m)
 
     # Handle different types of selection
     indices = selection_to_indices(reports, len(history.reports))
@@ -510,6 +524,7 @@ def history_obj_animation(
             ref_point=ref_point,
             ref_point_padding=ref_point_padding,
             legend_loc=legend_loc,
+            scale=scale,
             show_names=show_names,
             show_pf=show_pf,
             single_color=single_color,
@@ -524,8 +539,8 @@ def history_obj_animation(
         if n_objectives == 2:
             if not dynamic_scaling:
                 # Use global limits
-                ax.set_xlim(*xlim)
-                ax.set_ylim(*ylim)
+                ax.set_xlim(scale[0] * xlim[0], scale[0] * xlim[1])
+                ax.set_ylim(scale[1] * ylim[0], scale[1] * ylim[1])
 
         return (ax,)
 
