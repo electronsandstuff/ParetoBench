@@ -29,6 +29,7 @@ def history_obj_scatter(
     ref_point_padding: float = 0.05,
     legend_loc: Optional[str] = None,
     scale: Optional[np.ndarray] = None,
+    flip_objs: bool = False,
     show_names: bool = True,
     show_pf: bool = False,
     colormap: str = "viridis",
@@ -77,6 +78,8 @@ def history_obj_scatter(
     scale : array-like, optional
         Scale factors for each objective. Must have the same length as the number of objectives.
         If None, no scaling is applied.
+    flip_objs : bool, optional
+        Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
     show_names : bool, optional
         Whether to show the names of the objectives if provided by population
     show_pf : bool, optional
@@ -131,6 +134,7 @@ def history_obj_scatter(
         pf_objectives=pf_objectives,
         legend_loc=legend_loc,
         scale=scale,
+        flip_objs=flip_objs,
     )
 
     # Calculate global reference point if not provided
@@ -372,6 +376,7 @@ def history_obj_animation(
     ref_point_padding: float = 0.05,
     legend_loc: Optional[str] = "upper right",
     scale: Optional[np.ndarray] = None,
+    flip_objs: bool = False,
     show_names: bool = True,
     show_pf: bool = False,
     single_color: Optional[str] = None,
@@ -416,6 +421,8 @@ def history_obj_animation(
     scale : array-like, optional
         Scale factors for each objective. Must have the same length as the number of objectives.
         If None, no scaling is applied.
+    flip_objs : bool, optional
+        Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
     show_names : bool, optional
         Whether to show the names of the objectives if provided by population
     show_pf : bool, optional
@@ -507,6 +514,7 @@ def history_obj_animation(
             ref_point_padding=ref_point_padding,
             legend_loc=legend_loc,
             scale=scale,
+            flip_objs=flip_objs,
             show_names=show_names,
             show_pf=show_pf,
             single_color=single_color,
@@ -521,8 +529,10 @@ def history_obj_animation(
         if n_objectives == 2:
             if not dynamic_scaling:
                 # Use global limits
-                ax.set_xlim(scale[0] * xlim[0], scale[0] * xlim[1])
-                ax.set_ylim(scale[1] * ylim[0], scale[1] * ylim[1])
+                lim_idx = [1, 0] if flip_objs else [0, 1]
+                lims = [ylim, xlim] if flip_objs else [xlim, ylim]
+                ax.set_xlim(scale[lim_idx[0]] * lims[0][0], scale[lim_idx[0]] * lims[0][1])
+                ax.set_ylim(scale[lim_idx[1]] * lims[1][0], scale[lim_idx[1]] * lims[1][1])
 
         return (ax,)
 
