@@ -145,16 +145,18 @@ def selection_to_indices(
     This function handles different ways of selecting elements from an array and converts
     them into a list of valid positive indices within the array bounds.
 
+    The supported types for `selection` are:
+    - None: selects all indices
+    - int: single index (negative indices count from end)
+    - slice: standard Python slice object
+    - List[int] or np.ndarray of ints: array of indices (negative indices allowed)
+    - List[bool] or np.ndarray of bools: boolean mask where True selects the index
+    - tuple: (start, end) pair specifying a range
+
     Parameters
     ----------
     selection : Union[None, int, slice, List[int], List[bool], np.ndarray, tuple]
-        The selection specification. Can be:
-        - None: selects all indices
-        - int: single index (negative indices count from end)
-        - slice: standard Python slice object
-        - List[int] or np.ndarray of ints: array of indices (negative indices allowed)
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - tuple: (start, end) pair specifying a range
+        The selection specification. See body of docstring for details.
     arr_len : int
         Length of the array being indexed
 

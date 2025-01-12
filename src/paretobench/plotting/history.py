@@ -46,13 +46,7 @@ def history_obj_scatter(
     history : History object
         The history containing populations to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to plot. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to plot. See `selection_to_indices` for more details.
     fig : matplotlib figure, optional
         Figure to plot on, by default None
     ax : matplotlib axis, optional
@@ -233,13 +227,7 @@ def history_dvar_pairs(
     history : History object
         The history containing populations to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to plot. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to plot. See `selection_to_indices` for more details.
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     fig : matplotlib figure, optional
@@ -399,13 +387,7 @@ def history_obj_animation(
     history : paretobench History
         The history object containing populations with data to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to animate. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to animate. See `selection_to_indices` for more details.
     interval : int, optional
         Delay between frames in milliseconds, by default 200
     domination_filt : Literal["all", "dominated", "non-dominated"], optional
@@ -582,12 +564,7 @@ def history_dvar_animation(
     history : paretobench History
         The history object containing populations with data to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to animate. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to animate. See `selection_to_indices` for more details.
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     interval : int, optional

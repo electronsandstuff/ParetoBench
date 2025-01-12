@@ -297,13 +297,7 @@ def population_dvar_pairs(
     population : paretobench Population
         The population containing data to plot
     dvars : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which decision variables to plot. Can be:
-        - None: All variables (default)
-        - int: Single variable index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd var)
-        - List[int]: Explicit list of variable indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of variables as (start, end) where end is exclusive
+        Specifies which decision variables to plot. See `selection_to_indices` for more details.
     fig : matplotlib.figure.Figure, optional
         Figure to plot on. If None and axes is None, creates a new figure.
     axes : numpy.ndarray of matplotlib.axes.Axes, optional
