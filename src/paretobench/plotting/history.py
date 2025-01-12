@@ -567,6 +567,7 @@ def history_dvar_animation(
     show_names: bool = True,
     lower_bounds: Optional[np.ndarray] = None,
     upper_bounds: Optional[np.ndarray] = None,
+    scale: Optional[np.ndarray] = None,
     single_color: Optional[str] = None,
     plot_bounds: bool = False,
     dynamic_scaling: bool = False,
@@ -603,6 +604,9 @@ def history_dvar_animation(
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
+    scale : array-like, optional
+        Scale factors for each variable. Must have the same length as the number of decision vars.
+        If None, no scaling is applied.
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     plot_bounds: bool = False
@@ -624,6 +628,16 @@ def history_dvar_animation(
     if not history.reports:
         raise ValueError("No populations in history to animate")
 
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != history.reports[0].n:
+            raise ValueError(
+                f"Length of scale must match number of decision vars. Got scale factors with shape {scale.shape}"
+                f" and {history.reports[0].x.shape[1]} decision vars."
+            )
+    else:
+        scale = np.ones(history.reports[0].n)
+
     # Handle different types of selection
     indices = selection_to_indices(reports, len(history.reports))
 
@@ -641,6 +655,7 @@ def history_dvar_animation(
         show_names=show_names,
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,
+        scale=scale,
         single_color=single_color,
         plot_bounds=plot_bounds,
         generation_mode="cumulative",
@@ -689,6 +704,7 @@ def history_dvar_animation(
             show_names=show_names,
             lower_bounds=lower_bounds,
             upper_bounds=upper_bounds,
+            scale=scale,
             single_color=single_color,
             plot_bounds=plot_bounds,
             generation_mode="cumulative",
@@ -706,11 +722,11 @@ def history_dvar_animation(
                 col = i % axes.shape[1]
                 if row == col:
                     # For histograms on diagonal
-                    ax.set_xlim(*var_limits[row])
+                    ax.set_xlim(scale[row] * var_limits[row][0], scale[row] * var_limits[row][1])
                 else:
                     # For scatter plots (both upper and lower triangle)
-                    ax.set_xlim(*var_limits[col])
-                    ax.set_ylim(*var_limits[row])
+                    ax.set_xlim(scale[col] * var_limits[col][0], scale[col] * var_limits[col][1])
+                    ax.set_ylim(scale[row] * var_limits[row][0], scale[row] * var_limits[row][1])
 
         return tuple(axes.flat)
 
