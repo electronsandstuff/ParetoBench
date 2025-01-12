@@ -149,7 +149,7 @@ def population_obj_scatter(
         obj_idx = list(reversed(obj_idx))
 
     # Get the labels
-    labels = population.names_f if population.names_f else [rf"$f_{idx}$" for idx in range(population.m)]
+    labels = population.names_f if population.names_f else [rf"$f_{idx+1}$" for idx in range(population.m)]
 
     # For 2D problems
     add_legend = False
