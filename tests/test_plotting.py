@@ -340,6 +340,9 @@ def test_history_dvar_pairs():
         (np.array([]), []),
         # Tuple range
         ((1, 4), [1, 2, 3]),
+        ((1, -1), [1, 2, 3]),
+        ((-3, 5), [2, 3, 4]),
+        ((-3, -2), [2]),
     ],
 )
 def test_valid_selections(selection, expected):
@@ -365,8 +368,6 @@ def test_valid_selections(selection, expected):
         ([1.5], TypeError, "Invalid index type"),
         ([None], TypeError, "Invalid index type"),
         # Invalid tuple range
-        ((1, 6), IndexError, "Range 1:6 out of bounds"),
-        ((-1, 4), IndexError, "Range -1:4 out of bounds"),
         ((1, 2, 3), ValueError, "Unsupported selection type"),
         # Invalid types
         ("invalid", ValueError, "Unsupported selection type"),

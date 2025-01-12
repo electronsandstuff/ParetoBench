@@ -163,6 +163,10 @@ def selection_to_indices(
     List[int]
         List of valid positive indices corresponding to the selection
     """
+    # Convert tuples to slices
+    if isinstance(selection, tuple) and len(selection) == 2:
+        selection = slice(selection[0], selection[1])
+
     # Handle different types of selection
     if selection is None:
         # Select all populations
@@ -198,12 +202,6 @@ def selection_to_indices(
                 if idx < 0 or idx >= arr_len:
                     raise IndexError(f"Index {i} out of range for array with length {arr_len}")
                 indices.append(idx)
-    elif isinstance(selection, tuple) and len(selection) == 2:
-        # Range tuple (start, end)
-        start, end = selection
-        if start < 0 or end > arr_len:
-            raise IndexError(f"Range {start}:{end} out of bounds for array with length {arr_len}")
-        indices = list(range(start, end))
     else:
         raise ValueError(f"Unsupported selection type: {type(selection)}")
 
