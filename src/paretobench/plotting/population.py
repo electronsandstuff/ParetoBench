@@ -149,7 +149,10 @@ def population_obj_scatter(
         obj_idx = list(reversed(obj_idx))
 
     # Get the labels
-    labels = population.names_f if population.names_f else [rf"$f_{idx+1}$" for idx in range(population.m)]
+    if population.names_f and show_names:
+        labels = population.names_f
+    else:
+        labels = [rf"$f_{idx+1}$" for idx in range(population.m)]
 
     # For 2D problems
     add_legend = False
@@ -218,9 +221,8 @@ def population_obj_scatter(
             add_legend = True
 
         # Handle the axis labels
-        if show_names:
-            ax.set_xlabel(labels[obj_idx[0]])
-            ax.set_ylabel(labels[obj_idx[1]])
+        ax.set_xlabel(labels[obj_idx[0]])
+        ax.set_ylabel(labels[obj_idx[1]])
 
     # For 3D problems
     elif population.f.shape[1] == 3:
@@ -275,10 +277,9 @@ def population_obj_scatter(
             ax.add_collection3d(poly3d)
 
         # Handle the axis labels
-        if show_names:
-            ax.set_xlabel(labels[obj_idx[0]])
-            ax.set_ylabel(labels[obj_idx[1]])
-            ax.set_zlabel(labels[obj_idx[1]])
+        ax.set_xlabel(labels[obj_idx[0]])
+        ax.set_ylabel(labels[obj_idx[1]])
+        ax.set_zlabel(labels[obj_idx[2]])
 
     # We can't plot in 4D :(
     else:
