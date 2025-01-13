@@ -28,6 +28,8 @@ def history_obj_scatter(
     ref_point: Optional[Tuple[float, float]] = None,
     ref_point_padding: float = 0.05,
     legend_loc: Optional[str] = None,
+    scale: Optional[np.ndarray] = None,
+    flip_objs: bool = False,
     show_names: bool = True,
     show_pf: bool = False,
     colormap: str = "viridis",
@@ -45,13 +47,7 @@ def history_obj_scatter(
     history : History object
         The history containing populations to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to plot. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to plot. See `selection_to_indices` for more details.
     fig : matplotlib figure, optional
         Figure to plot on, by default None
     ax : matplotlib axis, optional
@@ -79,6 +75,11 @@ def history_obj_scatter(
         Amount of padding to apply to the automatic reference point calculation.
     legend_loc : str, optional
         Passed to `loc` argument of plt.legend
+    scale : array-like, optional
+        Scale factors for each objective. Must have the same length as the number of objectives.
+        If None, no scaling is applied.
+    flip_objs : bool, optional
+        Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
     show_names : bool, optional
         Whether to show the names of the objectives if provided by population
     show_pf : bool, optional
@@ -89,8 +90,8 @@ def history_obj_scatter(
         Label for colorbar (only used when generation_mode is 'cmap')
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
-        - 'cmap': Plot each generation separately with colors from colormap
-        - 'cumulative': Merge all selected generations into single population
+        'cmap': Plot each generation separately with colors from colormap
+        'cumulative': Merge all selected generations into single population
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     label_mode: Literal['index', 'fevals'] = 'index'
@@ -132,6 +133,8 @@ def history_obj_scatter(
         show_dominated_area=show_dominated_area,
         pf_objectives=pf_objectives,
         legend_loc=legend_loc,
+        scale=scale,
+        flip_objs=flip_objs,
     )
 
     # Calculate global reference point if not provided
@@ -211,6 +214,7 @@ def history_dvar_pairs(
     show_names: bool = True,
     lower_bounds: Optional[np.ndarray] = None,
     upper_bounds: Optional[np.ndarray] = None,
+    scale: Optional[np.ndarray] = None,
     colormap: str = "viridis",
     cmap_label: Optional[str] = None,
     generation_mode: Literal["cmap", "cumulative"] = "cmap",
@@ -227,13 +231,7 @@ def history_dvar_pairs(
     history : History object
         The history containing populations to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to plot. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to plot. See `selection_to_indices` for more details.
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     fig : matplotlib figure, optional
@@ -252,14 +250,17 @@ def history_dvar_pairs(
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
+    scale : array-like, optional
+        Scale factors for each variable. Must have the same length as the number of decision vars.
+        If None, no scaling is applied.
     colormap : str, optional
         Name of the colormap to use for generation colors, by default 'viridis'
     cmap_label: Optional[str] = "Generation"
         Label for colorbar (only used when generation_mode is 'cmap')
     generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
         How to handle multiple generations:
-        - 'cmap': Plot each generation separately with colors from colormap
-        - 'cumulative': Merge all selected generations into single population
+        'cmap': Plot each generation separately with colors from colormap
+        'cumulative': Merge all selected generations into single population
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     plot_bounds: bool = False
@@ -296,6 +297,7 @@ def history_dvar_pairs(
         feasibility_filt=feasibility_filt,
         hist_bins=hist_bins,
         show_names=show_names,
+        scale=scale,
     )
 
     if generation_mode == "cumulative":
@@ -373,6 +375,8 @@ def history_obj_animation(
     ref_point: Optional[Tuple[float, float]] = None,
     ref_point_padding: float = 0.05,
     legend_loc: Optional[str] = "upper right",
+    scale: Optional[np.ndarray] = None,
+    flip_objs: bool = False,
     show_names: bool = True,
     show_pf: bool = False,
     single_color: Optional[str] = None,
@@ -388,13 +392,7 @@ def history_obj_animation(
     history : paretobench History
         The history object containing populations with data to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to animate. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to animate. See `selection_to_indices` for more details.
     interval : int, optional
         Delay between frames in milliseconds, by default 200
     domination_filt : Literal["all", "dominated", "non-dominated"], optional
@@ -420,6 +418,11 @@ def history_obj_animation(
         Amount of padding to apply to the automatic reference point calculation.
     legend_loc : str, optional
         Passed to `loc` argument of plt.legend
+    scale : array-like, optional
+        Scale factors for each objective. Must have the same length as the number of objectives.
+        If None, no scaling is applied.
+    flip_objs : bool, optional
+        Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
     show_names : bool, optional
         Whether to show the names of the objectives if provided by population
     show_pf : bool, optional
@@ -442,6 +445,16 @@ def history_obj_animation(
     """
     if not history.reports:
         raise ValueError("No populations in history to animate")
+
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != history.reports[0].m:
+            raise ValueError(
+                f"Length of scale must match number of objectives. Got scale factors with shape {scale.shape}"
+                f" and {history.reports[0].f.shape[1]} objectives."
+            )
+    else:
+        scale = np.ones(history.reports[0].m)
 
     # Handle different types of selection
     indices = selection_to_indices(reports, len(history.reports))
@@ -500,6 +513,8 @@ def history_obj_animation(
             ref_point=ref_point,
             ref_point_padding=ref_point_padding,
             legend_loc=legend_loc,
+            scale=scale,
+            flip_objs=flip_objs,
             show_names=show_names,
             show_pf=show_pf,
             single_color=single_color,
@@ -514,8 +529,10 @@ def history_obj_animation(
         if n_objectives == 2:
             if not dynamic_scaling:
                 # Use global limits
-                ax.set_xlim(*xlim)
-                ax.set_ylim(*ylim)
+                lim_idx = [1, 0] if flip_objs else [0, 1]
+                lims = [ylim, xlim] if flip_objs else [xlim, ylim]
+                ax.set_xlim(scale[lim_idx[0]] * lims[0][0], scale[lim_idx[0]] * lims[0][1])
+                ax.set_ylim(scale[lim_idx[1]] * lims[1][0], scale[lim_idx[1]] * lims[1][1])
 
         return (ax,)
 
@@ -542,6 +559,7 @@ def history_dvar_animation(
     show_names: bool = True,
     lower_bounds: Optional[np.ndarray] = None,
     upper_bounds: Optional[np.ndarray] = None,
+    scale: Optional[np.ndarray] = None,
     single_color: Optional[str] = None,
     plot_bounds: bool = False,
     dynamic_scaling: bool = False,
@@ -556,12 +574,7 @@ def history_dvar_animation(
     history : paretobench History
         The history object containing populations with data to plot
     reports : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which generations to animate. Can be:
-        - None: All generations (default)
-        - int: Single generation index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd gen)
-        - List[int]: Explicit list of generation indices
-        - Tuple[int, int]: Range of generations as (start, end) where end is exclusive
+        Specifies which generations to animate. See `selection_to_indices` for more details.
     dvars : int, slice, List[int], or Tuple[int, int], optional
         Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
     interval : int, optional
@@ -578,6 +591,9 @@ def history_dvar_animation(
         Lower bounds for each decision variable
     upper_bounds : array-like, optional
         Upper bounds for each decision variable
+    scale : array-like, optional
+        Scale factors for each variable. Must have the same length as the number of decision vars.
+        If None, no scaling is applied.
     single_color: Optional[str] = None
         Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
     plot_bounds: bool = False
@@ -599,6 +615,16 @@ def history_dvar_animation(
     if not history.reports:
         raise ValueError("No populations in history to animate")
 
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != history.reports[0].n:
+            raise ValueError(
+                f"Length of scale must match number of decision vars. Got scale factors with shape {scale.shape}"
+                f" and {history.reports[0].x.shape[1]} decision vars."
+            )
+    else:
+        scale = np.ones(history.reports[0].n)
+
     # Handle different types of selection
     indices = selection_to_indices(reports, len(history.reports))
 
@@ -616,6 +642,7 @@ def history_dvar_animation(
         show_names=show_names,
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,
+        scale=scale,
         single_color=single_color,
         plot_bounds=plot_bounds,
         generation_mode="cumulative",
@@ -664,6 +691,7 @@ def history_dvar_animation(
             show_names=show_names,
             lower_bounds=lower_bounds,
             upper_bounds=upper_bounds,
+            scale=scale,
             single_color=single_color,
             plot_bounds=plot_bounds,
             generation_mode="cumulative",
@@ -681,11 +709,11 @@ def history_dvar_animation(
                 col = i % axes.shape[1]
                 if row == col:
                     # For histograms on diagonal
-                    ax.set_xlim(*var_limits[row])
+                    ax.set_xlim(scale[row] * var_limits[row][0], scale[row] * var_limits[row][1])
                 else:
                     # For scatter plots (both upper and lower triangle)
-                    ax.set_xlim(*var_limits[col])
-                    ax.set_ylim(*var_limits[row])
+                    ax.set_xlim(scale[col] * var_limits[col][0], scale[col] * var_limits[col][1])
+                    ax.set_ylim(scale[row] * var_limits[row][0], scale[row] * var_limits[row][1])
 
         return tuple(axes.flat)
 

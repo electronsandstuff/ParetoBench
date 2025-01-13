@@ -145,16 +145,18 @@ def selection_to_indices(
     This function handles different ways of selecting elements from an array and converts
     them into a list of valid positive indices within the array bounds.
 
+    The supported types for `selection` are:
+    - None: selects all indices
+    - int: single index (negative indices count from end)
+    - slice: standard Python slice object
+    - List[int] or np.ndarray of ints: array of indices (negative indices allowed)
+    - List[bool] or np.ndarray of bools: boolean mask where True selects the index
+    - tuple: (start, end) pair specifying a range
+
     Parameters
     ----------
     selection : Union[None, int, slice, List[int], List[bool], np.ndarray, tuple]
-        The selection specification. Can be:
-        - None: selects all indices
-        - int: single index (negative indices count from end)
-        - slice: standard Python slice object
-        - List[int] or np.ndarray of ints: array of indices (negative indices allowed)
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - tuple: (start, end) pair specifying a range
+        The selection specification. See body of docstring for details.
     arr_len : int
         Length of the array being indexed
 
@@ -163,6 +165,10 @@ def selection_to_indices(
     List[int]
         List of valid positive indices corresponding to the selection
     """
+    # Convert tuples to slices
+    if isinstance(selection, tuple) and len(selection) == 2:
+        selection = slice(selection[0], selection[1])
+
     # Handle different types of selection
     if selection is None:
         # Select all populations
@@ -198,12 +204,6 @@ def selection_to_indices(
                 if idx < 0 or idx >= arr_len:
                     raise IndexError(f"Index {i} out of range for array with length {arr_len}")
                 indices.append(idx)
-    elif isinstance(selection, tuple) and len(selection) == 2:
-        # Range tuple (start, end)
-        start, end = selection
-        if start < 0 or end > arr_len:
-            raise IndexError(f"Range {start}:{end} out of bounds for array with length {arr_len}")
-        indices = list(range(start, end))
     else:
         raise ValueError(f"Unsupported selection type: {type(selection)}")
 

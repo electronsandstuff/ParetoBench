@@ -33,6 +33,8 @@ def population_obj_scatter(
     legend_loc: Optional[str] = None,
     show_names: bool = True,
     color: Optional[str] = None,
+    scale: Optional[np.ndarray] = None,
+    flip_objs: bool = False,
 ):
     """
     Plot the objectives in 2D and 3D.
@@ -78,6 +80,11 @@ def population_obj_scatter(
         Whether to show the names of the objectives if provided by population
     color : str, optional
         What color should we use for the points. Defaults to selecting from matplotlib color cycler
+    scale : array-like, optional
+        Scale factors for each objective. Must have the same length as the number of objectives.
+        If None, no scaling is applied.
+    flip_objs : bool, optional
+        Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
 
     Returns
     -------
@@ -89,6 +96,16 @@ def population_obj_scatter(
         raise EmptyPopulationError()
     if not population.m:
         raise NoObjectivesError()
+
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != population.m:
+            raise ValueError(
+                f"Length of scale must match number of objectives. Got scale factors with shape {scale.shape}"
+                f" and {population.f.shape[1]} objectives."
+            )
+    else:
+        scale = np.ones(population.m)
 
     if fig is None:
         fig = plt.figure()
@@ -126,6 +143,17 @@ def population_obj_scatter(
     # Get the point settings for this plot
     ps = get_per_point_settings_population(population, domination_filt, feasibility_filt)
 
+    # Get indices of which objectives to plot
+    obj_idx = list(range(0, population.m))
+    if flip_objs:
+        obj_idx = list(reversed(obj_idx))
+
+    # Get the labels
+    if population.names_f and show_names:
+        labels = population.names_f
+    else:
+        labels = [rf"$f_{idx+1}$" for idx in range(population.m)]
+
     # For 2D problems
     add_legend = False
     base_color = color
@@ -138,8 +166,8 @@ def population_obj_scatter(
         if show_points:
             scatter = alpha_scatter(
                 ax,
-                population.f[ps.plot_filt, 0],
-                population.f[ps.plot_filt, 1],
+                scale[obj_idx[0]] * population.f[ps.plot_filt, obj_idx[0]],
+                scale[obj_idx[1]] * population.f[ps.plot_filt, obj_idx[1]],
                 alpha=ps.alpha[ps.plot_filt],
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
@@ -152,21 +180,28 @@ def population_obj_scatter(
         # Plot attainment surface if requested (using feasible solutions only)
         attainment = compute_attainment_surface_2d(population, ref_point=ref_point, padding=ref_point_padding)
         if show_attainment:
-            ax.plot(attainment[:, 0], attainment[:, 1], color=base_color, alpha=0.5, zorder=-1)
+            ax.plot(
+                scale[obj_idx[0]] * attainment[:, obj_idx[0]],
+                scale[obj_idx[1]] * attainment[:, obj_idx[1]],
+                color=base_color,
+                alpha=0.5,
+                zorder=-1,
+            )
         if show_dominated_area:
             # We plot white first and then the actual color so we can stack dominated areas in the history plot while
             # correctly desaturating the color so the datapoints (which have the same color) don't blend in.
+            ref_y = attainment[-obj_idx[0], obj_idx[1]]  # Get y coordinate of reference point
             plt.fill_between(
-                attainment[:, 0],
-                attainment[:, 1],
-                attainment[0, 1] * np.ones(attainment.shape[0]),
+                scale[obj_idx[0]] * attainment[:, obj_idx[0]],
+                scale[obj_idx[1]] * attainment[:, obj_idx[1]],
+                scale[obj_idx[1]] * ref_y * np.ones(attainment.shape[0]),
                 color="white",
                 zorder=dominated_area_zorder,
             )
             plt.fill_between(
-                attainment[:, 0],
-                attainment[:, 1],
-                attainment[0, 1] * np.ones(attainment.shape[0]),
+                scale[obj_idx[0]] * attainment[:, obj_idx[0]],
+                scale[obj_idx[1]] * attainment[:, obj_idx[1]],
+                scale[obj_idx[1]] * ref_y * np.ones(attainment.shape[0]),
                 color=base_color,
                 alpha=0.8,
                 zorder=dominated_area_zorder,
@@ -175,16 +210,19 @@ def population_obj_scatter(
         # Add in Pareto front
         if pf is not None:
             # PF goes on bottom so our points show up on top of it when we have good solutions
-            ax.scatter(pf[:, 0], pf[:, 1], c="k", s=10, label="PF", zorder=min(-1, dominated_area_zorder) - 1)
+            ax.scatter(
+                scale[obj_idx[0]] * pf[:, obj_idx[0]],
+                scale[obj_idx[1]] * pf[:, obj_idx[1]],
+                c="k",
+                s=10,
+                label="PF",
+                zorder=min(-1, dominated_area_zorder) - 1,
+            )
             add_legend = True
 
         # Handle the axis labels
-        if population.names_f and show_names:
-            ax.set_xlabel(population.names_f[0])
-            ax.set_ylabel(population.names_f[1])
-        else:
-            ax.set_xlabel(r"$f_1$")
-            ax.set_ylabel(r"$f_2$")
+        ax.set_xlabel(labels[obj_idx[0]])
+        ax.set_ylabel(labels[obj_idx[1]])
 
     # For 3D problems
     elif population.f.shape[1] == 3:
@@ -194,16 +232,24 @@ def population_obj_scatter(
 
         # Add in Pareto front
         if pf is not None:
-            ax.scatter(pf[:, 0], pf[:, 1], pf[:, 2], c="k", s=10, label="PF", alpha=0.75)
+            ax.scatter(
+                scale[obj_idx[0]] * pf[:, obj_idx[0]],
+                scale[obj_idx[1]] * pf[:, obj_idx[1]],
+                scale[obj_idx[2]] * pf[:, obj_idx[2]],
+                c="k",
+                s=10,
+                label="PF",
+                alpha=0.75,
+            )
             add_legend = True
 
         # Plot the data
         if show_points:
             scatter = alpha_scatter(
                 ax,
-                population.f[ps.plot_filt, 0],
-                population.f[ps.plot_filt, 1],
-                population.f[ps.plot_filt, 2],
+                scale[obj_idx[0]] * population.f[ps.plot_filt, obj_idx[0]],
+                scale[obj_idx[1]] * population.f[ps.plot_filt, obj_idx[1]],
+                scale[obj_idx[2]] * population.f[ps.plot_filt, obj_idx[2]],
                 alpha=ps.alpha[ps.plot_filt],
                 marker=ps.markers[ps.plot_filt],
                 color=base_color,
@@ -222,7 +268,7 @@ def population_obj_scatter(
 
             vertices, faces = compute_attainment_surface_3d(population, ref_point=ref_point, padding=ref_point_padding)
             poly3d = Poly3DCollection(
-                [vertices[face] for face in faces],
+                [scale[None, obj_idx] * vertices[face][:, obj_idx] for face in faces],
                 shade=True,
                 facecolors=base_color,
                 edgecolors=base_color,
@@ -231,14 +277,9 @@ def population_obj_scatter(
             ax.add_collection3d(poly3d)
 
         # Handle the axis labels
-        if population.names_f and show_names:
-            ax.set_xlabel(population.names_f[0])
-            ax.set_ylabel(population.names_f[1])
-            ax.set_zlabel(population.names_f[2])
-        else:
-            ax.set_xlabel(r"$f_1$")
-            ax.set_ylabel(r"$f_2$")
-            ax.set_zlabel(r"$f_3$")
+        ax.set_xlabel(labels[obj_idx[0]])
+        ax.set_ylabel(labels[obj_idx[1]])
+        ax.set_zlabel(labels[obj_idx[2]])
 
     # We can't plot in 4D :(
     else:
@@ -263,6 +304,7 @@ def population_dvar_pairs(
     lower_bounds: Optional[np.ndarray] = None,
     upper_bounds: Optional[np.ndarray] = None,
     color: Optional[str] = None,
+    scale: Optional[np.ndarray] = None,
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -273,13 +315,7 @@ def population_dvar_pairs(
     population : paretobench Population
         The population containing data to plot
     dvars : int, slice, List[int], or Tuple[int, int], optional
-        Specifies which decision variables to plot. Can be:
-        - None: All variables (default)
-        - int: Single variable index (negative counts from end)
-        - slice: Range with optional step (e.g., slice(0, 10, 2) for every 2nd var)
-        - List[int]: Explicit list of variable indices
-        - List[bool] or np.ndarray of bools: boolean mask where True selects the index
-        - Tuple[int, int]: Range of variables as (start, end) where end is exclusive
+        Specifies which decision variables to plot. See `selection_to_indices` for more details.
     fig : matplotlib.figure.Figure, optional
         Figure to plot on. If None and axes is None, creates a new figure.
     axes : numpy.ndarray of matplotlib.axes.Axes, optional
@@ -301,6 +337,9 @@ def population_dvar_pairs(
         Upper bounds for each decision variable
     color : str, optional
         What color should we use for the points. Defaults to selecting from matplotlib color cycler
+    scale : array-like, optional
+        Scale factors for each variable. Must have the same length as the number of decision vars.
+        If None, no scaling is applied.
 
     Returns
     -------
@@ -313,6 +352,16 @@ def population_dvar_pairs(
         raise EmptyPopulationError()
     if not population.n:
         raise NoDecisionVarsError()
+
+    if scale is not None:
+        scale = np.asarray(scale)
+        if len(scale.shape) != 1 or scale.shape[0] != population.n:
+            raise ValueError(
+                f"Length of scale must match number of decision vars. Got scale factors with shape {scale.shape}"
+                f" and {population.x.shape[1]} decision vars."
+            )
+    else:
+        scale = np.ones(population.n)
 
     # Process the reports selection
     var_indices = np.array(selection_to_indices(dvars, population.n))
@@ -351,19 +400,34 @@ def population_dvar_pairs(
 
     # Handle figure and axes creation/validation
     if fig is None and axes is None:
-        # Create new figure and axes
-        fig, axes = plt.subplots(
-            n_vars,
-            n_vars,
-            figsize=(2 * n_vars, 2 * n_vars),
-            gridspec_kw={"wspace": 0.05, "hspace": 0.05},
-            layout="constrained",
-            sharex="col",
-        )
+        # Create new figure
+        fig = plt.figure(figsize=(2 * n_vars, 2 * n_vars), layout="constrained")
 
-        # Convert axes to 2D array if only one variable is selected
-        if n_vars == 1:
-            axes = np.array([[axes]])
+        # Create a grid of subplots with appropriate spacing
+        gs = fig.add_gridspec(n_vars, n_vars, wspace=0.1, hspace=0.1)
+        axes = np.empty((n_vars, n_vars), dtype=object)
+
+        # Create reference scatter plots first (non-diagonal plots in row 0)
+        for j in range(n_vars):
+            if j != 0:  # Skip the diagonal for now
+                axes[0, j] = fig.add_subplot(gs[0, j], sharey=axes[0, 1] if j > 1 else None)
+
+        # Create the rest of the axes
+        for i in range(n_vars):
+            for j in range(n_vars):
+                if axes[i, j] is not None:  # Skip already created plots
+                    continue
+
+                if i == j:  # Diagonal plots (histograms)
+                    # For row 0, no sharing. For other rows, share x with scatter plot above
+                    share_x = None if i == 0 else axes[0, j]
+                    axes[i, j] = fig.add_subplot(gs[i, j], sharex=share_x)
+                else:  # Off-diagonal plots (scatter)
+                    if i == 0:  # First row was already handled
+                        continue
+                    # Share x with top scatter, share y with leftmost scatter in row
+                    first_row_idx = 0 if j != 0 else 1  # Use first non-diagonal in row
+                    axes[i, j] = fig.add_subplot(gs[i, j], sharex=axes[0, j], sharey=axes[i, first_row_idx])
 
     elif (fig is None) != (axes is None):  # XOR operation
         raise ValueError("Either both fig and axes must be provided or neither must be provided")
@@ -384,7 +448,9 @@ def population_dvar_pairs(
             # Hide x-axis labels and ticks for all rows except the bottom row
             if i != n_vars - 1:
                 plt.setp(ax.get_xticklabels(), visible=False)
-            if j != 0:
+
+            # Similarly for y axis labels (also for histogram plot in top left)
+            if j != 0 or (i == 0 and j == 0):
                 plt.setp(ax.get_yticklabels(), visible=False)
 
     # Get variable names or create default ones
@@ -409,9 +475,8 @@ def population_dvar_pairs(
             if i == j:
                 # Plot the histogram
                 _, _, patches = ax.hist(
-                    population.x[ps.plot_filt, var_indices[i]],
+                    scale[var_indices[i]] * population.x[ps.plot_filt, var_indices[i]],
                     bins=hist_bins,
-                    density=True,
                     alpha=0.7,
                     color=base_color,
                 )
@@ -420,17 +485,17 @@ def population_dvar_pairs(
 
                 # Add vertical bound lines to histograms
                 if lower_bounds is not None:
-                    ax.axvline(lower_bounds[var_indices[i]], **bound_props)
+                    ax.axvline(scale[var_indices[i]] * lower_bounds[var_indices[i]], **bound_props)
                 if upper_bounds is not None:
-                    ax.axvline(upper_bounds[var_indices[i]], **bound_props)
+                    ax.axvline(scale[var_indices[i]] * upper_bounds[var_indices[i]], **bound_props)
 
             # Off-diagonal plots (scatter plots)
             else:
                 # Plot the decision vars
                 scatter = alpha_scatter(
                     ax,
-                    population.x[ps.plot_filt, var_indices[j]],
-                    population.x[ps.plot_filt, var_indices[i]],
+                    scale[var_indices[j]] * population.x[ps.plot_filt, var_indices[j]],
+                    scale[var_indices[i]] * population.x[ps.plot_filt, var_indices[i]],
                     alpha=ps.alpha[ps.plot_filt],
                     color=base_color,
                     s=15,
@@ -441,11 +506,11 @@ def population_dvar_pairs(
 
                 # Add bound lines to scatter plots
                 if lower_bounds is not None:
-                    ax.axvline(lower_bounds[var_indices[j]], **bound_props)  # x-axis bound
-                    ax.axhline(lower_bounds[var_indices[i]], **bound_props)  # y-axis bound
+                    ax.axvline(scale[var_indices[j]] * lower_bounds[var_indices[j]], **bound_props)  # x-axis bound
+                    ax.axhline(scale[var_indices[i]] * lower_bounds[var_indices[i]], **bound_props)  # y-axis bound
                 if upper_bounds is not None:
-                    ax.axvline(upper_bounds[var_indices[j]], **bound_props)  # x-axis bound
-                    ax.axhline(upper_bounds[var_indices[i]], **bound_props)  # y-axis bound
+                    ax.axvline(scale[var_indices[j]] * upper_bounds[var_indices[j]], **bound_props)  # x-axis bound
+                    ax.axhline(scale[var_indices[i]] * upper_bounds[var_indices[i]], **bound_props)  # y-axis bound
             if i == n_vars - 1:
                 ax.set_xlabel(var_names[j])
             if j == 0:
