@@ -20,10 +20,10 @@ def get_reference_point(population: Population, padding=0.1):
     ndarray
         Reference point coordinates calculated as max values plus padding.
     """
-    min_vals = np.min(population.f, axis=0)
-    max_vals = np.max(population.f, axis=0)
+    min_vals = np.min(population.f_canonical, axis=0)
+    max_vals = np.max(population.f_canonical, axis=0)
     ref_point = max_vals + (max_vals - min_vals) * padding
-    return ref_point
+    return ref_point * np.where(population.maximize_f, -1, 1)
 
 
 def compute_attainment_surface_2d(population: Population, ref_point=None, padding=0.1):
@@ -58,19 +58,21 @@ def compute_attainment_surface_2d(population: Population, ref_point=None, paddin
     # Handle missing ref-point
     if ref_point is None:
         ref_point = get_reference_point(population, padding=padding)
-    ref_point = np.asarray(ref_point)
+    ref_point = np.asarray(ref_point) * np.where(population.maximize_f, -1, 1)
 
     # Get only nondominated points
     population = population.get_nondominated_set()
 
-    if not np.all(ref_point >= np.max(population.f, axis=0)):
+    # Check reference point is reasonable
+    max_canonical = np.max(population.f_canonical, axis=0)
+    if not np.all(ref_point >= max_canonical):
         raise ValueError(
-            f"Reference point coordinates must exceed all points in non-dominated set "
-            f"(ref_point={ref_point}, max_pf=({np.max(population.f[:, 0])}, {np.max(population.f[:, 1])}))"
+            f"Reference point must be dominated by all points in non-dominated set "
+            f"(ref_point={ref_point}, max_non_dominated_canonical=({max_canonical[0]}, {max_canonical[1]}))"
         )
 
-    # Sort points by x coordinate (first objective)
-    sorted_points = population.f[np.argsort(population.f[:, 0])]
+    # Sort points by x coordinate (first one) with canonical objectives
+    sorted_points = population.f_canonical[np.argsort(population.f_canonical[:, 0])]
 
     # Initialize the surface points list with the first point
     surface = []
@@ -86,7 +88,9 @@ def compute_attainment_surface_2d(population: Population, ref_point=None, paddin
         # Add the next point
         surface.append(next_point)
     surface = np.array(surface)
-    return np.concatenate(
+
+    # Add "arms" going out to reference point boundary to surface
+    surface = np.concatenate(
         (
             [[surface[0, 0], ref_point[1]]],
             surface,
@@ -94,6 +98,9 @@ def compute_attainment_surface_2d(population: Population, ref_point=None, paddin
         ),
         axis=0,
     )
+
+    # Do inverse transformation from canonical objectives to actual objectives
+    return surface * np.where(population.maximize_f, -1, 1)[None, :]
 
 
 def save_mesh_to_stl(vertices: np.ndarray, triangles: np.ndarray, filename: str):
@@ -294,9 +301,9 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
     # If no reference point provided, compute one
     if ref_point is None:
         ref_point = get_reference_point(population, padding=padding)
-    ref_point = np.asarray(ref_point)
+    ref_point = np.asarray(ref_point) * np.where(population.maximize_f, -1, 1)
 
-    if not np.all(ref_point >= np.max(population.f, axis=0)):
+    if not np.all(ref_point >= np.max(population.f_canonical, axis=0)):
         raise ValueError("Reference point must dominate all points")
 
     # Get the nondominated points
@@ -307,9 +314,9 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
     vertex_dict = {}
 
     # Sort points in each dimension
-    sorted_by_z = population.f[np.argsort(population.f[:, 2])]  # For XY plane
-    sorted_by_x = population.f[np.argsort(population.f[:, 0])]  # For YZ plane
-    sorted_by_y = population.f[np.argsort(population.f[:, 1])]  # For XZ plane
+    sorted_by_z = population.f_canonical[np.argsort(population.f_canonical[:, 2])]  # For XY plane
+    sorted_by_x = population.f_canonical[np.argsort(population.f_canonical[:, 0])]  # For YZ plane
+    sorted_by_y = population.f_canonical[np.argsort(population.f_canonical[:, 1])]  # For XZ plane
 
     # Process XY plane (sorted by Z)
     triangles.extend(mesh_plane(sorted_by_z, 2, 0, 1, ref_point, vertex_dict, vertices)[1])
@@ -320,4 +327,8 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
     # Process XZ plane (sorted by Y)
     triangles.extend(mesh_plane(sorted_by_y, 1, 0, 2, ref_point, vertex_dict, vertices)[1])
 
-    return np.array(vertices), np.array(triangles)
+    # Convert to numpy arrays and correct for canonicalized objectives
+    vertices = np.array(vertices) * np.where(population.maximize_f, -1, 1)[None, :]
+    triangles = np.array(triangles)
+
+    return vertices, triangles

@@ -451,7 +451,7 @@ def history_obj_animation(
         if len(scale.shape) != 1 or scale.shape[0] != history.reports[0].m:
             raise ValueError(
                 f"Length of scale must match number of objectives. Got scale factors with shape {scale.shape}"
-                f" and {history.reports[0].f.shape[1]} objectives."
+                f" and {history.reports[0].m} objectives."
             )
     else:
         scale = np.ones(history.reports[0].m)
