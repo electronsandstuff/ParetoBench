@@ -526,6 +526,12 @@ class History(BaseModel):
         if self.reports and self.reports[0].names_g is not None:
             g["g"].attrs["names"] = self.reports[0].names_g
 
+        # Save the configuration data
+        if self.reports:
+            g["f"].attrs["maximize"] = self.reports[0].maximize_f
+            g["g"].attrs["less_than"] = self.reports[0].less_than_g
+            g["g"].attrs["boundary"] = self.reports[0].boundary_g
+
     @classmethod
     def _from_h5py_group(cls, grp: h5py.Group):
         """
@@ -547,6 +553,11 @@ class History(BaseModel):
         g = grp["g"][()]
 
         # Get the names
+        maximize_f = grp["f"].attrs.get("maximize", None)
+        less_than_g = grp["g"].attrs.get("less_than", None)
+        boundary_g = grp["g"].attrs.get("boundary", None)
+
+        # Get the objective / constraint settings
         names_x = grp["x"].attrs.get("names", None)
         names_f = grp["f"].attrs.get("names", None)
         names_g = grp["g"].attrs.get("names", None)
@@ -564,6 +575,9 @@ class History(BaseModel):
                     names_x=names_x,
                     names_f=names_f,
                     names_g=names_g,
+                    maximize_f=maximize_f,
+                    less_than_g=less_than_g,
+                    boundary_g=boundary_g,
                 )
             )
             start_idx += pop_size
@@ -631,7 +645,7 @@ class Experiment(BaseModel):
     software_version: str = ""
     comment: str = ""
     creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    file_version: str = "1.0.0"
+    file_version: str = "1.1.0"
 
     def __eq__(self, other):
         if not isinstance(other, Experiment):
