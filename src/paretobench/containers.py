@@ -159,7 +159,9 @@ class Population(BaseModel):
         """
         Return constraints transformed such that g[...] >= 0 are the feasible solutions.
         """
-        return np.where(self.less_than_g, -1, 1)[None, :] * self.g - self.boundary_g[None, :]
+        gc = np.where(self.less_than_g, -1, 1)[None, :] * self.g
+        gc += np.where(self.less_than_g, 1, -1)[None, :] * self.boundary_g[None, :]
+        return gc
 
     def __add__(self, other: "Population") -> "Population":
         """
