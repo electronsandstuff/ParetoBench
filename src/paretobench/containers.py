@@ -106,12 +106,22 @@ class Population(BaseModel):
         """
         Checks that the settings for objectives and constraints match with the dimensions of each.
         """
-        if len(self.maximize_f) != self.f.shape[1]:
-            raise ValueError("Length of maximize_f must match number of objectives in f.")
-        if len(self.less_than_g) != self.g.shape[1]:
-            raise ValueError("Length of less_than_g must match number of constraints in g.")
-        if len(self.boundary_g) != self.g.shape[1]:
-            raise ValueError("Length of boundary_g must match number of constraints in g.")
+        for attr, arrlen, propname, dtype in [
+            ("maximize_f", self.m, "objectives", np.bool),
+            ("less_than_g", self.g.shape[1], "constraints", np.bool),
+            ("boundary_g", self.g.shape[1], "constraints", np.float64),
+        ]:
+            if not isinstance(getattr(self, attr), np.ndarray):
+                raise ValueError(f"maximize_f must be a numpy array, got: {type(getattr(self, attr))}")
+            if len(getattr(self, attr).shape) != 1:
+                raise ValueError(f"maximize_f must be 1D, shape was: {getattr(self, attr).shape}")
+            if len(getattr(self, attr)) != arrlen:
+                raise ValueError(
+                    f"Length of maximize_f must match number of {propname} in f. Got {len(getattr(self, attr))} "
+                    f"elements and {arrlen} {propname} from f"
+                )
+            if getattr(self, attr).dtype != dtype:
+                raise ValueError(f"maximize_f dtype must be {dtype}. Got {getattr(self, attr).dtype}")
         return self
 
     @field_validator("x", "f", "g")
