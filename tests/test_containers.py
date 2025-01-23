@@ -3,8 +3,36 @@ import numpy as np
 import os
 import pytest
 import tempfile
+from pathlib import Path
 
+from paretobench.analyze_metrics import normalize_problem_name
 from paretobench.containers import Experiment, Population, History
+
+
+def get_test_files():
+    test_dir = Path(__file__).parent / "legacy_file_formats"
+    return [f for f in test_dir.glob("*.h5")]
+
+
+@pytest.mark.parametrize("test_file", get_test_files())
+def test_load_legacy_files(test_file):
+    """
+    Test loading different versions of saved experiment files for backwards compatibility.
+    """
+    exp = Experiment.load(test_file)
+
+    # Some basic checks
+    assert len(exp.runs) == 6
+    for run in exp.runs:
+        assert len(run) == 8
+        assert len(run.reports[0]) == 50
+        assert run.reports[0].m == 2
+        assert run.reports[0].n == 5
+        assert run.reports[0].g.shape[1] == 0
+
+    # Check problems are right
+    probs = set(normalize_problem_name(x.problem) for x in exp.runs)
+    assert probs == {"ZDT2 (n=5)", "ZDT4 (n=5)", "ZDT6 (n=5)"}
 
 
 @pytest.mark.parametrize("generate_names", [False, True])
