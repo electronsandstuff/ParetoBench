@@ -34,6 +34,11 @@ class Population(BaseModel):
     names_f: Optional[List[str]] = None
     names_g: Optional[List[str]] = None
 
+    maximize_f: np.ndarray
+
+    less_than_g: np.ndarray
+    boundary_g: np.ndarray
+
     @model_validator(mode="before")
     @classmethod
     def set_default_vals(cls, values):
@@ -57,6 +62,14 @@ class Population(BaseModel):
             values["f"] = np.empty((batch_size, 0), dtype=np.float64)
         if values.get("g") is None:
             values["g"] = np.empty((batch_size, 0), dtype=np.float64)
+
+        # Handle objectives / constraints settings (default to canonical problem)
+        if values.get("maximize_f") is None:
+            values["maximize_f"] = np.zeros(values["f"].shape[1], dtype=bool)
+        if values.get("less_than_g") is None:
+            values["less_than_g"] = np.zeros(values["g"].shape[1], dtype=bool)
+        if values.get("boundary_g") is None:
+            values["boundary_g"] = np.zeros(values["g"].shape[1], dtype=float)
 
         # Set fevals to number of individuals if not included
         if values.get("fevals") is None:
@@ -86,6 +99,19 @@ class Population(BaseModel):
             raise ValueError("Length of names_f must match the number of objectives in f.")
         if self.names_g and len(self.names_g) != self.g.shape[1]:
             raise ValueError("Length of names_g must match the number of constraints in g.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_obj_constraint_settings(self):
+        """
+        Checks that the settings for objectives and constraints match with the dimensions of each.
+        """
+        if len(self.maximize_f) != self.f.shape[1]:
+            raise ValueError("Length of maximize_f must match number of objectives in f.")
+        if len(self.less_than_g) != self.g.shape[1]:
+            raise ValueError("Length of less_than_g must match number of constraints in g.")
+        if len(self.boundary_g) != self.g.shape[1]:
+            raise ValueError("Length of boundary_g must match number of constraints in g.")
         return self
 
     @field_validator("x", "f", "g")
@@ -121,6 +147,20 @@ class Population(BaseModel):
             and self.names_g == other.names_g
         )
 
+    @property
+    def f_canonical(self):
+        """
+        Return the objectives transformed so that we are a minimization problem.
+        """
+        return np.where(self.maximize_f, -1, 1)[None, :] * self.f
+
+    @property
+    def g_canonical(self):
+        """
+        Return constraints transformed such that g[...] >= 0 are the feasible solutions.
+        """
+        return np.where(self.less_than_g, -1, 1)[None, :] * self.g - self.boundary_g[None, :]
+
     def __add__(self, other: "Population") -> "Population":
         """
         The sum of two populations is defined here as the population containing all unique individuals from both (set union).
@@ -129,13 +169,19 @@ class Population(BaseModel):
         if not isinstance(other, Population):
             raise TypeError("Operands must be instances of Population")
 
-        # Check that the names are consistent
+        # Check that the names/settings are consistent
         if self.names_x != other.names_x:
             raise ValueError("names_x are inconsistent between populations")
         if self.names_f != other.names_f:
             raise ValueError("names_f are inconsistent between populations")
         if self.names_g != other.names_g:
             raise ValueError("names_g are inconsistent between populations")
+        if not np.array_equal(self.maximize_f, other.maximize_f):
+            raise ValueError("maximize_f are inconsistent between populations")
+        if not np.array_equal(self.less_than_g, other.less_than_g):
+            raise ValueError("less_than_g are inconsistent between populations")
+        if not np.array_equal(self.boundary_g, other.boundary_g):
+            raise ValueError("boundary_g are inconsistent between populations")
 
         # Concatenate the arrays along the batch dimension (axis=0)
         new_x = np.concatenate((self.x, other.x), axis=0)
@@ -160,6 +206,9 @@ class Population(BaseModel):
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g,
+            maximize_f=self.maximize_f,
+            less_than_g=self.less_than_g,
+            boundary_g=self.boundary_g,
         )
 
     def __getitem__(self, idx: Union[slice, np.ndarray, List[int]]) -> "Population":
@@ -184,18 +233,21 @@ class Population(BaseModel):
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g,
+            maximize_f=self.maximize_f,
+            less_than_g=self.less_than_g,
+            boundary_g=self.boundary_g,
         )
 
     def get_nondominated_indices(self):
         """
         Returns a boolean array of whether or not an individual is non-dominated.
         """
-        return np.sum(get_domination(self.f, self.g), axis=0) == 0
+        return np.sum(get_domination(self.f_canonical, self.g_canonical), axis=0) == 0
 
     def get_feasible_indices(self):
         if self.g.shape[1] == 0:
             return np.ones((len(self)), dtype=bool)
-        return np.all(self.g >= 0.0, axis=1)
+        return np.all(self.g_canonical >= 0.0, axis=1)
 
     def get_nondominated_set(self):
         return self[self.get_nondominated_indices()]
@@ -320,7 +372,7 @@ class History(BaseModel):
 
     Assumptions:
      - All reports must have a consistent number of objectives, decision variables, and constraints.
-     - Names, if used, must be consistent across populations
+     - Objective/constraint settings and ames, if used, must be consistent across populations
     """
 
     reports: List[Population]
@@ -355,6 +407,17 @@ class History(BaseModel):
             raise ValueError(f"Inconsistent names for objectives in reports: {names_f}")
         if names_g and len(set(names_g)) != 1:
             raise ValueError(f"Inconsistent names for constraints in reports: {names_g}")
+
+        # Check settings for objectives and constraints
+        maximize_f = [tuple(x.maximize_f) for x in self.reports]
+        less_than_g = [tuple(x.less_than_g) for x in self.reports]
+        boundary_g = [tuple(x.boundary_g) for x in self.reports]
+        if maximize_f and len(set(maximize_f)) != 1:
+            raise ValueError(f"Inconsistent maximize_f in reports: {maximize_f}")
+        if less_than_g and len(set(less_than_g)) != 1:
+            raise ValueError(f"Inconsistent less_than_g in reports: {less_than_g}")
+        if boundary_g and len(set(boundary_g)) != 1:
+            raise ValueError(f"Inconsistent boundary_g in reports: {boundary_g}")
 
         return self
 
