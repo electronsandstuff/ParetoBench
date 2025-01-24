@@ -339,8 +339,8 @@ class Population(BaseModel):
 
         # Create randomized settings for objectives/constraints
         if generate_obj_constraint_settings:
-            obj_directions = np.random.randint(0, 1, size=n_objectives, dtype=bool)
-            constraint_directions = np.random.randint(0, 1, size=n_constraints, dtype=bool)
+            obj_directions = np.random.randint(0, 2, size=n_objectives, dtype=bool)
+            constraint_directions = np.random.randint(0, 2, size=n_constraints, dtype=bool)
             constraint_targets = np.random.rand(n_constraints)
         else:
             obj_directions = None
@@ -534,8 +534,8 @@ class History(BaseModel):
 
         # Create randomized settings for objectives/constraints (must be consistent between objects)
         if generate_obj_constraint_settings:
-            obj_directions = np.random.randint(0, 1, size=n_objectives, dtype=bool)
-            constraint_directions = np.random.randint(0, 1, size=n_constraints, dtype=bool)
+            obj_directions = np.random.randint(0, 2, size=n_objectives, dtype=bool)
+            constraint_directions = np.random.randint(0, 2, size=n_constraints, dtype=bool)
             constraint_targets = np.random.rand(n_constraints)
             for report in reports:
                 report.obj_directions = obj_directions
