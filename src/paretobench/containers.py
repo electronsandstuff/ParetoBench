@@ -19,7 +19,8 @@ class Population(BaseModel):
 
     Whether each objective is being minimized or maximized is set by the boolean array obj_directions. Constraints are configured
     by the boolean array constraint_directions which sets whether it is a "less than" or "greater than" constraint and
-    constraint_targets which sets the boundary of the constraint.
+    constraint_targets which sets the boundary of the constraint. True in the boolean arrays means maximization or greater-than
+    and False means minimization or less-than.
 
     All arrays must have the same size batch dimension even if they are empty. In this case the non-batch dimension will be
     zero length. Names may be associated with decision variables, objectives, or constraints in the form of lists.
