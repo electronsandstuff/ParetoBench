@@ -73,6 +73,11 @@ class Population(BaseModel):
         if values.get("boundary_g") is None:
             values["boundary_g"] = np.zeros(values["g"].shape[1], dtype=float)
 
+        # Support lists being passed to us (cast into numpy array)
+        for attr, dtype in [("maximize_f", bool), ("less_than_g", bool), ("boundary_g", float)]:
+            if isinstance(values[attr], list):
+                values[attr] = np.array(values[attr], dtype=dtype)
+
         # Set fevals to number of individuals if not included
         if values.get("fevals") is None:
             values["fevals"] = batch_size

@@ -419,3 +419,29 @@ def test_get_feasible_indices():
     # No constraints
     pop4 = Population(x=np.empty((3, 0)), f=np.empty((3, 0)), g=np.empty((3, 0)))
     assert np.array_equal(pop4.get_feasible_indices(), np.array([True, True, True]))
+
+
+def test_list_settings_conversion():
+    pop = Population(
+        x=np.empty((3, 0)),
+        f=np.zeros((3, 2)),
+        g=np.zeros((3, 3)),
+        maximize_f=[True, False],
+        less_than_g=[True, False, True],
+        boundary_g=[1, 2, -1],
+    )
+
+    # Check types
+    assert isinstance(pop.maximize_f, np.ndarray)
+    assert isinstance(pop.less_than_g, np.ndarray)
+    assert isinstance(pop.boundary_g, np.ndarray)
+
+    # Check values preserved
+    assert np.array_equal(pop.maximize_f, np.array([True, False]))
+    assert np.array_equal(pop.less_than_g, np.array([True, False, True]))
+    assert np.array_equal(pop.boundary_g, np.array([1.0, 2.0, -1.0]))
+
+    # Check dtypes
+    assert pop.maximize_f.dtype == bool
+    assert pop.less_than_g.dtype == bool
+    assert pop.boundary_g.dtype == np.float64
