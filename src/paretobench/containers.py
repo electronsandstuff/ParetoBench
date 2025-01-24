@@ -363,8 +363,28 @@ class Population(BaseModel):
     def __len__(self):
         return self.x.shape[0]
 
+    def _get_obj_direction_str(self) -> str:
+        # Create a list of +/- symbols
+        return "[" + ",".join("+" if d else "-" for d in self.obj_directions) + "]"
+
+    def _get_constraint_direction_str(self) -> str:
+        # Create a list of >/< symbols with their targets
+        return (
+            "["
+            + ",".join(
+                f"{'<=' if d else '>='}{t:.1e}" for d, t in zip(self.constraint_directions, self.constraint_targets)
+            )
+            + "]"
+        )
+
     def __repr__(self) -> str:
-        return f"Population(size={len(self)}, vars={self.x.shape[1]}, objs={self.f.shape[1]}, cons={self.g.shape[1]}, fevals={self.fevals})"
+        return (
+            f"Population(size={len(self)}, "
+            f"vars={self.x.shape[1]}, "
+            f"objs={self._get_obj_direction_str()}, "
+            f"cons={self._get_constraint_direction_str()}, "
+            f"fevals={self.fevals})"
+        )
 
     def __str__(self):
         return self.__repr__()
