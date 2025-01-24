@@ -49,6 +49,7 @@ def test_experiment_save_load(generate_names):
         n_constraints=2,
         pop_size=50,
         generate_names=generate_names,
+        generate_obj_constraint_settings=True,
     )
 
     # Use a temporary directory to save the file

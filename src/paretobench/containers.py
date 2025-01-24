@@ -155,6 +155,9 @@ class Population(BaseModel):
             and self.names_x == other.names_x
             and self.names_f == other.names_f
             and self.names_g == other.names_g
+            and np.array_equal(self.maximize_f, other.maximize_f)
+            and np.array_equal(self.less_than_g, other.less_than_g)
+            and np.array_equal(self.boundary_g, other.boundary_g)
         )
 
     @property
@@ -273,6 +276,7 @@ class Population(BaseModel):
         pop_size: int,
         fevals: int = 0,
         generate_names: bool = False,
+        generate_obj_constraint_settings: bool = False,
     ) -> "Population":
         """
         Generate a randomized instance of the Population class.
@@ -291,6 +295,8 @@ class Population(BaseModel):
             The number of evaluations of the objective functions performed to reach this state, by default 0.
         generate_names : bool, optional
             Whether to include names for the decision variables, objectives, and constraints, by default False.
+        generate_obj_constraint_settings : bool, optional
+            Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
 
         Returns
         -------
@@ -315,9 +321,24 @@ class Population(BaseModel):
         g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
 
         # Optionally generate names if generate_names is True
-        names_x = [f"x{i+1}" for i in range(n_decision_vars)] if generate_names else None
-        names_f = [f"f{i+1}" for i in range(n_objectives)] if generate_names else None
-        names_g = [f"g{i+1}" for i in range(n_constraints)] if generate_names else None
+        if generate_names:
+            names_x = [f"x{i+1}" for i in range(n_decision_vars)]
+            names_f = [f"f{i+1}" for i in range(n_objectives)]
+            names_g = [f"g{i+1}" for i in range(n_constraints)]
+        else:
+            names_x = None
+            names_f = None
+            names_g = None
+
+        # Create randomized settings for objectives/constraints
+        if generate_obj_constraint_settings:
+            maximize_f = np.random.randint(0, 1, size=n_objectives, dtype=bool)
+            less_than_g = np.random.randint(0, 1, size=n_constraints, dtype=bool)
+            boundary_g = np.random.rand(n_constraints)
+        else:
+            maximize_f = None
+            less_than_g = None
+            boundary_g = None
 
         return cls(
             x=x,
@@ -327,6 +348,9 @@ class Population(BaseModel):
             names_x=names_x,
             names_f=names_f,
             names_g=names_g,
+            maximize_f=maximize_f,
+            less_than_g=less_than_g,
+            boundary_g=boundary_g,
         )
 
     def __len__(self):
@@ -447,6 +471,7 @@ class History(BaseModel):
         n_constraints: int,
         pop_size: int,
         generate_names: bool = False,
+        generate_obj_constraint_settings: bool = False,
     ) -> "History":
         """
         Generate a randomized instance of the History class, including random problem name and metadata.
@@ -465,6 +490,8 @@ class History(BaseModel):
             The number of individuals in each population.
         generate_names : bool, optional
             Whether to include names for the decision variables, objectives, and constraints, by default False.
+        generate_obj_constraint_settings : bool, optional
+            Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
 
         Returns
         -------
@@ -497,6 +524,16 @@ class History(BaseModel):
             )
             for i in range(n_populations)
         ]
+
+        # Create randomized settings for objectives/constraints (must be consistent between objects)
+        if generate_obj_constraint_settings:
+            maximize_f = np.random.randint(0, 1, size=n_objectives, dtype=bool)
+            less_than_g = np.random.randint(0, 1, size=n_constraints, dtype=bool)
+            boundary_g = np.random.rand(n_constraints)
+            for report in reports:
+                report.maximize_f = maximize_f
+                report.less_than_g = less_than_g
+                report.boundary_g = boundary_g
 
         return cls(reports=reports, problem=problem, metadata=metadata)
 
@@ -698,6 +735,7 @@ class Experiment(BaseModel):
         n_constraints: int,
         pop_size: int,
         generate_names: bool = False,
+        generate_obj_constraint_settings: bool = False,
     ) -> "Experiment":
         """
         Generate a randomized instance of the Experiment class.
@@ -718,6 +756,8 @@ class Experiment(BaseModel):
             The number of individuals in each population.
         generate_names : bool, optional
             Whether to include names for the decision variables, objectives, and constraints, by default False.
+        generate_obj_constraint_settings : bool, optional
+            Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
 
         Returns
         -------
@@ -733,6 +773,7 @@ class Experiment(BaseModel):
                 n_constraints,
                 pop_size,
                 generate_names=generate_names,
+                generate_obj_constraint_settings=generate_obj_constraint_settings,
             )
             for _ in range(n_histories)
         ]
