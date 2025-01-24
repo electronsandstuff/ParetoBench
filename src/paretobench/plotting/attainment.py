@@ -23,7 +23,7 @@ def get_reference_point(population: Population, padding=0.1):
     min_vals = np.min(population.f_canonical, axis=0)
     max_vals = np.max(population.f_canonical, axis=0)
     ref_point = max_vals + (max_vals - min_vals) * padding
-    return ref_point * np.where(population.maximize_f, -1, 1)
+    return ref_point * np.where(population.obj_directions, -1, 1)
 
 
 def compute_attainment_surface_2d(population: Population, ref_point=None, padding=0.1):
@@ -58,7 +58,7 @@ def compute_attainment_surface_2d(population: Population, ref_point=None, paddin
     # Handle missing ref-point
     if ref_point is None:
         ref_point = get_reference_point(population, padding=padding)
-    ref_point = np.asarray(ref_point) * np.where(population.maximize_f, -1, 1)
+    ref_point = np.asarray(ref_point) * np.where(population.obj_directions, -1, 1)
 
     # Get only nondominated points
     population = population.get_nondominated_set()
@@ -100,7 +100,7 @@ def compute_attainment_surface_2d(population: Population, ref_point=None, paddin
     )
 
     # Do inverse transformation from canonical objectives to actual objectives
-    return surface * np.where(population.maximize_f, -1, 1)[None, :]
+    return surface * np.where(population.obj_directions, -1, 1)[None, :]
 
 
 def save_mesh_to_stl(vertices: np.ndarray, triangles: np.ndarray, filename: str):
@@ -301,7 +301,7 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
     # If no reference point provided, compute one
     if ref_point is None:
         ref_point = get_reference_point(population, padding=padding)
-    ref_point = np.asarray(ref_point) * np.where(population.maximize_f, -1, 1)
+    ref_point = np.asarray(ref_point) * np.where(population.obj_directions, -1, 1)
 
     if not np.all(ref_point >= np.max(population.f_canonical, axis=0)):
         raise ValueError("Reference point must dominate all points")
@@ -328,7 +328,7 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
     triangles.extend(mesh_plane(sorted_by_y, 1, 0, 2, ref_point, vertex_dict, vertices)[1])
 
     # Convert to numpy arrays and correct for canonicalized objectives
-    vertices = np.array(vertices) * np.where(population.maximize_f, -1, 1)[None, :]
+    vertices = np.array(vertices) * np.where(population.obj_directions, -1, 1)[None, :]
     triangles = np.array(triangles)
 
     return vertices, triangles

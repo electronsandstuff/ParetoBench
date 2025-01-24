@@ -17,9 +17,9 @@ class Population(BaseModel):
     the decision variables (x), the objectives (f), and inequality constraints (g). The first dimension of each array is the
     batch dimension. The number of evaluations of the objective functions performed to reach this state is also recorded.
 
-    Whether each objective is being minimized or maximized is set by the boolean array maximize_f. Constraints are configured
-    by the boolean array less_than_g which sets whether it is a "less than" or "greater than" constraint and boundary_g which
-    sets the boundary of the constraint.
+    Whether each objective is being minimized or maximized is set by the boolean array obj_directions. Constraints are configured
+    by the boolean array constraint_directions which sets whether it is a "less than" or "greater than" constraint and
+    constraint_targets which sets the boundary of the constraint.
 
     All arrays must have the same size batch dimension even if they are empty. In this case the non-batch dimension will be
     zero length. Names may be associated with decision variables, objectives, or constraints in the form of lists.
@@ -37,9 +37,9 @@ class Population(BaseModel):
     names_g: Optional[List[str]] = None
 
     # Configuration of objectives/constraints (minimization or maximization problem, direction of and boundary of constraint)
-    maximize_f: np.ndarray
-    less_than_g: np.ndarray
-    boundary_g: np.ndarray
+    obj_directions: np.ndarray
+    constraint_directions: np.ndarray
+    constraint_targets: np.ndarray
 
     @model_validator(mode="before")
     @classmethod
@@ -66,15 +66,15 @@ class Population(BaseModel):
             values["g"] = np.empty((batch_size, 0), dtype=np.float64)
 
         # Handle objectives / constraints settings (default to canonical problem)
-        if values.get("maximize_f") is None:
-            values["maximize_f"] = np.zeros(values["f"].shape[1], dtype=bool)
-        if values.get("less_than_g") is None:
-            values["less_than_g"] = np.zeros(values["g"].shape[1], dtype=bool)
-        if values.get("boundary_g") is None:
-            values["boundary_g"] = np.zeros(values["g"].shape[1], dtype=float)
+        if values.get("obj_directions") is None:
+            values["obj_directions"] = np.zeros(values["f"].shape[1], dtype=bool)
+        if values.get("constraint_directions") is None:
+            values["constraint_directions"] = np.zeros(values["g"].shape[1], dtype=bool)
+        if values.get("constraint_targets") is None:
+            values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
 
         # Support lists being passed to us (cast into numpy array)
-        for attr, dtype in [("maximize_f", bool), ("less_than_g", bool), ("boundary_g", float)]:
+        for attr, dtype in [("obj_directions", bool), ("constraint_directions", bool), ("constraint_targets", float)]:
             if isinstance(values[attr], list):
                 values[attr] = np.array(values[attr], dtype=dtype)
 
@@ -114,21 +114,21 @@ class Population(BaseModel):
         Checks that the settings for objectives and constraints match with the dimensions of each.
         """
         for attr, arrlen, propname, dtype in [
-            ("maximize_f", self.m, "objectives", np.bool),
-            ("less_than_g", self.g.shape[1], "constraints", np.bool),
-            ("boundary_g", self.g.shape[1], "constraints", np.float64),
+            ("obj_directions", self.m, "objectives", np.bool),
+            ("constraint_directions", self.g.shape[1], "constraints", np.bool),
+            ("constraint_targets", self.g.shape[1], "constraints", np.float64),
         ]:
             if not isinstance(getattr(self, attr), np.ndarray):
-                raise ValueError(f"maximize_f must be a numpy array, got: {type(getattr(self, attr))}")
+                raise ValueError(f"obj_directions must be a numpy array, got: {type(getattr(self, attr))}")
             if len(getattr(self, attr).shape) != 1:
-                raise ValueError(f"maximize_f must be 1D, shape was: {getattr(self, attr).shape}")
+                raise ValueError(f"obj_directions must be 1D, shape was: {getattr(self, attr).shape}")
             if len(getattr(self, attr)) != arrlen:
                 raise ValueError(
-                    f"Length of maximize_f must match number of {propname} in f. Got {len(getattr(self, attr))} "
+                    f"Length of obj_directions must match number of {propname} in f. Got {len(getattr(self, attr))} "
                     f"elements and {arrlen} {propname} from f"
                 )
             if getattr(self, attr).dtype != dtype:
-                raise ValueError(f"maximize_f dtype must be {dtype}. Got {getattr(self, attr).dtype}")
+                raise ValueError(f"obj_directions dtype must be {dtype}. Got {getattr(self, attr).dtype}")
         return self
 
     @field_validator("x", "f", "g")
@@ -162,9 +162,9 @@ class Population(BaseModel):
             and self.names_x == other.names_x
             and self.names_f == other.names_f
             and self.names_g == other.names_g
-            and np.array_equal(self.maximize_f, other.maximize_f)
-            and np.array_equal(self.less_than_g, other.less_than_g)
-            and np.array_equal(self.boundary_g, other.boundary_g)
+            and np.array_equal(self.obj_directions, other.obj_directions)
+            and np.array_equal(self.constraint_directions, other.constraint_directions)
+            and np.array_equal(self.constraint_targets, other.constraint_targets)
         )
 
     @property
@@ -172,15 +172,15 @@ class Population(BaseModel):
         """
         Return the objectives transformed so that we are a minimization problem.
         """
-        return np.where(self.maximize_f, -1, 1)[None, :] * self.f
+        return np.where(self.obj_directions, -1, 1)[None, :] * self.f
 
     @property
     def g_canonical(self):
         """
         Return constraints transformed such that g[...] >= 0 are the feasible solutions.
         """
-        gc = np.where(self.less_than_g, -1, 1)[None, :] * self.g
-        gc += np.where(self.less_than_g, 1, -1)[None, :] * self.boundary_g[None, :]
+        gc = np.where(self.constraint_directions, -1, 1)[None, :] * self.g
+        gc += np.where(self.constraint_directions, 1, -1)[None, :] * self.constraint_targets[None, :]
         return gc
 
     def __add__(self, other: "Population") -> "Population":
@@ -198,12 +198,12 @@ class Population(BaseModel):
             raise ValueError("names_f are inconsistent between populations")
         if self.names_g != other.names_g:
             raise ValueError("names_g are inconsistent between populations")
-        if not np.array_equal(self.maximize_f, other.maximize_f):
-            raise ValueError("maximize_f are inconsistent between populations")
-        if not np.array_equal(self.less_than_g, other.less_than_g):
-            raise ValueError("less_than_g are inconsistent between populations")
-        if not np.array_equal(self.boundary_g, other.boundary_g):
-            raise ValueError("boundary_g are inconsistent between populations")
+        if not np.array_equal(self.obj_directions, other.obj_directions):
+            raise ValueError("obj_directions are inconsistent between populations")
+        if not np.array_equal(self.constraint_directions, other.constraint_directions):
+            raise ValueError("constraint_directions are inconsistent between populations")
+        if not np.array_equal(self.constraint_targets, other.constraint_targets):
+            raise ValueError("constraint_targets are inconsistent between populations")
 
         # Concatenate the arrays along the batch dimension (axis=0)
         new_x = np.concatenate((self.x, other.x), axis=0)
@@ -228,9 +228,9 @@ class Population(BaseModel):
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g,
-            maximize_f=self.maximize_f,
-            less_than_g=self.less_than_g,
-            boundary_g=self.boundary_g,
+            obj_directions=self.obj_directions,
+            constraint_directions=self.constraint_directions,
+            constraint_targets=self.constraint_targets,
         )
 
     def __getitem__(self, idx: Union[slice, np.ndarray, List[int]]) -> "Population":
@@ -255,9 +255,9 @@ class Population(BaseModel):
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g,
-            maximize_f=self.maximize_f,
-            less_than_g=self.less_than_g,
-            boundary_g=self.boundary_g,
+            obj_directions=self.obj_directions,
+            constraint_directions=self.constraint_directions,
+            constraint_targets=self.constraint_targets,
         )
 
     def get_nondominated_indices(self):
@@ -339,13 +339,13 @@ class Population(BaseModel):
 
         # Create randomized settings for objectives/constraints
         if generate_obj_constraint_settings:
-            maximize_f = np.random.randint(0, 1, size=n_objectives, dtype=bool)
-            less_than_g = np.random.randint(0, 1, size=n_constraints, dtype=bool)
-            boundary_g = np.random.rand(n_constraints)
+            obj_directions = np.random.randint(0, 1, size=n_objectives, dtype=bool)
+            constraint_directions = np.random.randint(0, 1, size=n_constraints, dtype=bool)
+            constraint_targets = np.random.rand(n_constraints)
         else:
-            maximize_f = None
-            less_than_g = None
-            boundary_g = None
+            obj_directions = None
+            constraint_directions = None
+            constraint_targets = None
 
         return cls(
             x=x,
@@ -355,9 +355,9 @@ class Population(BaseModel):
             names_x=names_x,
             names_f=names_f,
             names_g=names_g,
-            maximize_f=maximize_f,
-            less_than_g=less_than_g,
-            boundary_g=boundary_g,
+            obj_directions=obj_directions,
+            constraint_directions=constraint_directions,
+            constraint_targets=constraint_targets,
         )
 
     def __len__(self):
@@ -452,15 +452,15 @@ class History(BaseModel):
             raise ValueError(f"Inconsistent names for constraints in reports: {names_g}")
 
         # Check settings for objectives and constraints
-        maximize_f = [tuple(x.maximize_f) for x in self.reports]
-        less_than_g = [tuple(x.less_than_g) for x in self.reports]
-        boundary_g = [tuple(x.boundary_g) for x in self.reports]
-        if maximize_f and len(set(maximize_f)) != 1:
-            raise ValueError(f"Inconsistent maximize_f in reports: {maximize_f}")
-        if less_than_g and len(set(less_than_g)) != 1:
-            raise ValueError(f"Inconsistent less_than_g in reports: {less_than_g}")
-        if boundary_g and len(set(boundary_g)) != 1:
-            raise ValueError(f"Inconsistent boundary_g in reports: {boundary_g}")
+        obj_directions = [tuple(x.obj_directions) for x in self.reports]
+        constraint_directions = [tuple(x.constraint_directions) for x in self.reports]
+        constraint_targets = [tuple(x.constraint_targets) for x in self.reports]
+        if obj_directions and len(set(obj_directions)) != 1:
+            raise ValueError(f"Inconsistent obj_directions in reports: {obj_directions}")
+        if constraint_directions and len(set(constraint_directions)) != 1:
+            raise ValueError(f"Inconsistent constraint_directions in reports: {constraint_directions}")
+        if constraint_targets and len(set(constraint_targets)) != 1:
+            raise ValueError(f"Inconsistent constraint_targets in reports: {constraint_targets}")
 
         return self
 
@@ -534,13 +534,13 @@ class History(BaseModel):
 
         # Create randomized settings for objectives/constraints (must be consistent between objects)
         if generate_obj_constraint_settings:
-            maximize_f = np.random.randint(0, 1, size=n_objectives, dtype=bool)
-            less_than_g = np.random.randint(0, 1, size=n_constraints, dtype=bool)
-            boundary_g = np.random.rand(n_constraints)
+            obj_directions = np.random.randint(0, 1, size=n_objectives, dtype=bool)
+            constraint_directions = np.random.randint(0, 1, size=n_constraints, dtype=bool)
+            constraint_targets = np.random.rand(n_constraints)
             for report in reports:
-                report.maximize_f = maximize_f
-                report.less_than_g = less_than_g
-                report.boundary_g = boundary_g
+                report.obj_directions = obj_directions
+                report.constraint_directions = constraint_directions
+                report.constraint_targets = constraint_targets
 
         return cls(reports=reports, problem=problem, metadata=metadata)
 
@@ -584,9 +584,9 @@ class History(BaseModel):
 
         # Save the configuration data
         if self.reports:
-            g["f"].attrs["maximize"] = self.reports[0].maximize_f
-            g["g"].attrs["less_than"] = self.reports[0].less_than_g
-            g["g"].attrs["boundary"] = self.reports[0].boundary_g
+            g["f"].attrs["directions"] = self.reports[0].obj_directions
+            g["g"].attrs["directions"] = self.reports[0].constraint_directions
+            g["g"].attrs["targets"] = self.reports[0].constraint_targets
 
     @classmethod
     def _from_h5py_group(cls, grp: h5py.Group):
@@ -609,9 +609,9 @@ class History(BaseModel):
         g = grp["g"][()]
 
         # Get the names
-        maximize_f = grp["f"].attrs.get("maximize", None)
-        less_than_g = grp["g"].attrs.get("less_than", None)
-        boundary_g = grp["g"].attrs.get("boundary", None)
+        obj_directions = grp["f"].attrs.get("directions", None)
+        constraint_directions = grp["g"].attrs.get("directions", None)
+        constraint_targets = grp["g"].attrs.get("targets", None)
 
         # Get the objective / constraint settings
         names_x = grp["x"].attrs.get("names", None)
@@ -631,9 +631,9 @@ class History(BaseModel):
                     names_x=names_x,
                     names_f=names_f,
                     names_g=names_g,
-                    maximize_f=maximize_f,
-                    less_than_g=less_than_g,
-                    boundary_g=boundary_g,
+                    obj_directions=obj_directions,
+                    constraint_directions=constraint_directions,
+                    constraint_targets=constraint_targets,
                 )
             )
             start_idx += pop_size

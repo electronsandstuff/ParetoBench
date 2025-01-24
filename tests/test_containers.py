@@ -364,8 +364,8 @@ def test_get_feasible_indices():
         x=np.empty((3, 0)),
         f=np.empty((3, 0)),
         g=np.array([[0.5], [1.5], [1.0]]),
-        less_than_g=np.array([True]),
-        boundary_g=np.array([1.0]),
+        constraint_directions=np.array([True]),
+        constraint_targets=np.array([1.0]),
     )
     assert np.array_equal(pop1.get_feasible_indices(), np.array([True, False, True]))
 
@@ -374,8 +374,8 @@ def test_get_feasible_indices():
         x=np.empty((3, 0)),
         f=np.empty((3, 0)),
         g=np.array([[0.5], [1.5], [1.0]]),
-        less_than_g=np.array([False]),
-        boundary_g=np.array([1.0]),
+        constraint_directions=np.array([False]),
+        constraint_targets=np.array([1.0]),
     )
     assert np.array_equal(pop2.get_feasible_indices(), np.array([False, True, True]))
 
@@ -384,8 +384,8 @@ def test_get_feasible_indices():
         x=np.empty((3, 0)),
         f=np.empty((3, 0)),
         g=np.array([[-0.5], [-1.5], [-1.0]]),
-        less_than_g=np.array([True]),
-        boundary_g=np.array([-1.0]),
+        constraint_directions=np.array([True]),
+        constraint_targets=np.array([-1.0]),
     )
     assert np.array_equal(pop1.get_feasible_indices(), np.array([False, True, True]))
 
@@ -394,8 +394,8 @@ def test_get_feasible_indices():
         x=np.empty((3, 0)),
         f=np.empty((3, 0)),
         g=np.array([[-0.5], [-1.5], [-1.0]]),
-        less_than_g=np.array([False]),
-        boundary_g=np.array([-1.0]),
+        constraint_directions=np.array([False]),
+        constraint_targets=np.array([-1.0]),
     )
     assert np.array_equal(pop2.get_feasible_indices(), np.array([True, False, True]))
 
@@ -411,8 +411,8 @@ def test_get_feasible_indices():
                 [0.1, 2.0],
             ]
         ),
-        less_than_g=np.array([True, False]),
-        boundary_g=np.array([0.0, 1.0]),
+        constraint_directions=np.array([True, False]),
+        constraint_targets=np.array([0.0, 1.0]),
     )
     assert np.array_equal(pop3.get_feasible_indices(), np.array([True, False, True, False]))
 
@@ -426,22 +426,22 @@ def test_list_settings_conversion():
         x=np.empty((3, 0)),
         f=np.zeros((3, 2)),
         g=np.zeros((3, 3)),
-        maximize_f=[True, False],
-        less_than_g=[True, False, True],
-        boundary_g=[1, 2, -1],
+        obj_directions=[True, False],
+        constraint_directions=[True, False, True],
+        constraint_targets=[1, 2, -1],
     )
 
     # Check types
-    assert isinstance(pop.maximize_f, np.ndarray)
-    assert isinstance(pop.less_than_g, np.ndarray)
-    assert isinstance(pop.boundary_g, np.ndarray)
+    assert isinstance(pop.obj_directions, np.ndarray)
+    assert isinstance(pop.constraint_directions, np.ndarray)
+    assert isinstance(pop.constraint_targets, np.ndarray)
 
     # Check values preserved
-    assert np.array_equal(pop.maximize_f, np.array([True, False]))
-    assert np.array_equal(pop.less_than_g, np.array([True, False, True]))
-    assert np.array_equal(pop.boundary_g, np.array([1.0, 2.0, -1.0]))
+    assert np.array_equal(pop.obj_directions, np.array([True, False]))
+    assert np.array_equal(pop.constraint_directions, np.array([True, False, True]))
+    assert np.array_equal(pop.constraint_targets, np.array([1.0, 2.0, -1.0]))
 
     # Check dtypes
-    assert pop.maximize_f.dtype == bool
-    assert pop.less_than_g.dtype == bool
-    assert pop.boundary_g.dtype == np.float64
+    assert pop.obj_directions.dtype == bool
+    assert pop.constraint_directions.dtype == bool
+    assert pop.constraint_targets.dtype == np.float64
