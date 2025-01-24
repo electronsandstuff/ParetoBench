@@ -16,8 +16,10 @@ class Population(BaseModel):
     Stores the individuals in a population for one reporting interval in a genetic algorithm. Conventional names are used for
     the decision variables (x), the objectives (f), and inequality constraints (g). The first dimension of each array is the
     batch dimension. The number of evaluations of the objective functions performed to reach this state is also recorded.
-    Objectives are assumed to be part of a minimization problem and constraints are set such that individuals with g_i > 0 are
-    feasible.
+
+    Whether each objective is being minimized or maximized is set by the boolean array maximize_f. Constraints are configured
+    by the boolean array less_than_g which sets whether it is a "less than" or "greater than" constraint and boundary_g which
+    sets the boundary of the constraint.
 
     All arrays must have the same size batch dimension even if they are empty. In this case the non-batch dimension will be
     zero length. Names may be associated with decision variables, objectives, or constraints in the form of lists.
@@ -34,8 +36,8 @@ class Population(BaseModel):
     names_f: Optional[List[str]] = None
     names_g: Optional[List[str]] = None
 
+    # Configuration of objectives/constraints (minimization or maximization problem, direction of and boundary of constraint)
     maximize_f: np.ndarray
-
     less_than_g: np.ndarray
     boundary_g: np.ndarray
 
