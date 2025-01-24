@@ -37,8 +37,8 @@ class Population(BaseModel):
     names_g: Optional[List[str]] = None
 
     # Configuration of objectives/constraints (minimization or maximization problem, direction of and boundary of constraint)
-    obj_directions: np.ndarray
-    constraint_directions: np.ndarray
+    obj_directions: np.ndarray  # True is maximize, False is minimize
+    constraint_directions: np.ndarray  # True is greater-than, False is Less-Than
     constraint_targets: np.ndarray
 
     @model_validator(mode="before")
@@ -69,7 +69,7 @@ class Population(BaseModel):
         if values.get("obj_directions") is None:
             values["obj_directions"] = np.zeros(values["f"].shape[1], dtype=bool)
         if values.get("constraint_directions") is None:
-            values["constraint_directions"] = np.zeros(values["g"].shape[1], dtype=bool)
+            values["constraint_directions"] = np.ones(values["g"].shape[1], dtype=bool)
         if values.get("constraint_targets") is None:
             values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
 
@@ -179,8 +179,8 @@ class Population(BaseModel):
         """
         Return constraints transformed such that g[...] >= 0 are the feasible solutions.
         """
-        gc = np.where(self.constraint_directions, -1, 1)[None, :] * self.g
-        gc += np.where(self.constraint_directions, 1, -1)[None, :] * self.constraint_targets[None, :]
+        gc = np.where(self.constraint_directions, 1, -1)[None, :] * self.g
+        gc += np.where(self.constraint_directions, -1, 1)[None, :] * self.constraint_targets[None, :]
         return gc
 
     def __add__(self, other: "Population") -> "Population":
@@ -372,7 +372,7 @@ class Population(BaseModel):
         return (
             "["
             + ",".join(
-                f"{'<=' if d else '>='}{t:.1e}" for d, t in zip(self.constraint_directions, self.constraint_targets)
+                f"{'>=' if d else '<='}{t:.1e}" for d, t in zip(self.constraint_directions, self.constraint_targets)
             )
             + "]"
         )
