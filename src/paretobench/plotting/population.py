@@ -102,7 +102,7 @@ def population_obj_scatter(
         if len(scale.shape) != 1 or scale.shape[0] != population.m:
             raise ValueError(
                 f"Length of scale must match number of objectives. Got scale factors with shape {scale.shape}"
-                f" and {population.f.shape[1]} objectives."
+                f" and {population.m} objectives."
             )
     else:
         scale = np.ones(population.m)
@@ -119,10 +119,10 @@ def population_obj_scatter(
     pf = None
     if problem is not None:
         problem = get_problem_from_obj_or_str(problem)
-        if problem.m != population.f.shape[1]:
+        if problem.m != population.m:
             raise ValueError(
                 f'Number of objectives in problem must match number in population. Got {problem.m} objectives from problem "{problem}" '
-                f"and {population.f.shape[1]} from the population."
+                f"and {population.m} from the population."
             )
         if isinstance(problem, ProblemWithPF):
             pf = problem.get_pareto_front(n_pf)
@@ -134,10 +134,10 @@ def population_obj_scatter(
         pf = np.asarray(pf_objectives)
         if pf.ndim != 2:
             raise ValueError("pf_objectives must be a 2D array")
-        if pf.shape[1] != population.f.shape[1]:
+        if pf.shape[1] != population.m:
             raise ValueError(
                 f"Number of objectives in pf_objectives must match number in population. Got {pf.shape[1]} in pf_objectives "
-                f"and {population.f.shape[1]} in population"
+                f"and {population.m} in population"
             )
 
     # Get the point settings for this plot
@@ -157,7 +157,7 @@ def population_obj_scatter(
     # For 2D problems
     add_legend = False
     base_color = color
-    if population.f.shape[1] == 2:
+    if population.m == 2:
         # Make axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111)
@@ -225,7 +225,7 @@ def population_obj_scatter(
         ax.set_ylabel(labels[obj_idx[1]])
 
     # For 3D problems
-    elif population.f.shape[1] == 3:
+    elif population.m == 3:
         # Get an axis if not supplied
         if ax is None:
             ax = fig.add_subplot(111, projection="3d")
@@ -283,7 +283,7 @@ def population_obj_scatter(
 
     # We can't plot in 4D :(
     else:
-        raise ValueError(f"Plotting supports only 2D and 3D objectives currently: n_objs={population.f.shape[1]}")
+        raise ValueError(f"Plotting supports only 2D and 3D objectives currently: n_objs={population.m}")
 
     if add_legend:
         plt.legend(loc=legend_loc)
