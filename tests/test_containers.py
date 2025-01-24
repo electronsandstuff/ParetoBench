@@ -356,3 +356,66 @@ def test_count_unique_individuals():
         g=np.array([[3.0], [4.0], [3.0]]),
     )
     assert pop_empty_dims.count_unique_individuals() == 2
+
+
+def test_get_feasible_indices():
+    # Single less-than constraint (g <= 1)
+    pop1 = Population(
+        x=np.empty((3, 0)),
+        f=np.empty((3, 0)),
+        g=np.array([[0.5], [1.5], [1.0]]),
+        less_than_g=np.array([True]),
+        boundary_g=np.array([1.0]),
+    )
+    assert np.array_equal(pop1.get_feasible_indices(), np.array([True, False, True]))
+
+    # Single greater-than constraint (g >= 1)
+    pop2 = Population(
+        x=np.empty((3, 0)),
+        f=np.empty((3, 0)),
+        g=np.array([[0.5], [1.5], [1.0]]),
+        less_than_g=np.array([False]),
+        boundary_g=np.array([1.0]),
+    )
+    assert np.array_equal(pop2.get_feasible_indices(), np.array([False, True, True]))
+
+    # Single less-than constraint (g <= -1)
+    pop1 = Population(
+        x=np.empty((3, 0)),
+        f=np.empty((3, 0)),
+        g=np.array([[-0.5], [-1.5], [-1.0]]),
+        less_than_g=np.array([True]),
+        boundary_g=np.array([-1.0]),
+    )
+    assert np.array_equal(pop1.get_feasible_indices(), np.array([False, True, True]))
+
+    # Single greater-than constraint (g >= -1)
+    pop2 = Population(
+        x=np.empty((3, 0)),
+        f=np.empty((3, 0)),
+        g=np.array([[-0.5], [-1.5], [-1.0]]),
+        less_than_g=np.array([False]),
+        boundary_g=np.array([-1.0]),
+    )
+    assert np.array_equal(pop2.get_feasible_indices(), np.array([True, False, True]))
+
+    # Multiple mixed constraints (g1 <= 0, g2 >= 1)
+    pop3 = Population(
+        x=np.empty((4, 0)),
+        f=np.empty((4, 0)),
+        g=np.array(
+            [
+                [-0.5, 1.5],
+                [0.5, 0.5],
+                [-1.0, 1.0],
+                [0.1, 2.0],
+            ]
+        ),
+        less_than_g=np.array([True, False]),
+        boundary_g=np.array([0.0, 1.0]),
+    )
+    assert np.array_equal(pop3.get_feasible_indices(), np.array([True, False, True, False]))
+
+    # No constraints
+    pop4 = Population(x=np.empty((3, 0)), f=np.empty((3, 0)), g=np.empty((3, 0)))
+    assert np.array_equal(pop4.get_feasible_indices(), np.array([True, True, True]))
