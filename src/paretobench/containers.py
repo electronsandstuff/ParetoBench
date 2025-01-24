@@ -25,11 +25,13 @@ class Population(BaseModel):
     zero length. Names may be associated with decision variables, objectives, or constraints in the form of lists.
     """
 
+    # The decision vars, objectives, and constraints
     x: np.ndarray
     f: np.ndarray
     g: np.ndarray
+
+    # Total number of function evaluations performed during optimization after this population was completed
     fevals: int
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # Optional lists of names for decision variables, objectives, and constraints
     names_x: Optional[List[str]] = None
@@ -40,6 +42,9 @@ class Population(BaseModel):
     obj_directions: np.ndarray  # True is maximize, False is minimize
     constraint_directions: np.ndarray  # True is greater-than, False is Less-Than
     constraint_targets: np.ndarray
+
+    # Pydantic config
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="before")
     @classmethod
