@@ -126,7 +126,7 @@ class Population(BaseModel):
     def validate_constraint_directions(self):
         if len(self.constraint_directions) != self.n_constraints:
             raise ValueError(
-                "Length of constraint_directions must match numbe of constraints, got"
+                "Length of constraint_directions must match number of constraints, got"
                 f" {len(self.constraint_directions)} chars but we have {self.n_constraints} constraints"
             )
         if not all(c in "<>" for c in self.constraint_directions):
@@ -156,7 +156,7 @@ class Population(BaseModel):
     @classmethod
     def validate_numpy_arrays(cls, value: np.ndarray, info) -> np.ndarray:
         """
-        Double checks that the arrays have the right numbe of dimensions and datatype.
+        Double checks that the arrays have the right number of dimensions and datatype.
         """
         if value.dtype != np.float64:
             raise TypeError(f"Expected array of type { np.float64} for field '{info.field_name}', got {value.dtype}")
@@ -392,7 +392,7 @@ class Population(BaseModel):
         return (
             f"Population(size={len(self)}, "
             f"vars={self.x.shape[1]}, "
-            f"objs={self.obj_directions}, "
+            f"objs=[{self.obj_directions}], "
             f"cons={self._get_constraint_direction_str()}, "
             f"fevals={self.fevals})"
         )
@@ -407,7 +407,7 @@ class Population(BaseModel):
         Parameters
         ----------
         decimals : int, optional
-            _description_, by default 13
+            Number of digits to which we will compare the values, by default 13
 
         Returns
         -------
@@ -446,7 +446,7 @@ class History(BaseModel):
 
     Assumptions:
      - All reports must have a consistent number of objectives, decision variables, and constraints.
-     - Objective/constraint settings and ames, if used, must be consistent across populations
+     - Objective/constraint settings and names, if used, must be consistent across populations
     """
 
     reports: List[Population]
