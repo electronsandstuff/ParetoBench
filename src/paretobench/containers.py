@@ -119,7 +119,7 @@ class Population(BaseModel):
                 f" {len(self.obj_directions)} chars but we have {self.m} objectives"
             )
         if not all(c in "+-" for c in self.obj_directions):
-            raise ValueError(f"obj_directions must contain only + or - characters. Got: {self.obj_directions}")
+            raise ValueError(f'obj_directions must contain only + or - characters. Got: "{self.obj_directions}"')
         return self
 
     @model_validator(mode="after")
@@ -131,7 +131,7 @@ class Population(BaseModel):
             )
         if not all(c in "<>" for c in self.constraint_directions):
             raise ValueError(
-                f"constraint_directions must contain only < or > characters. Got: {self.constraint_directions}"
+                f'constraint_directions must contain only < or > characters. Got: "{self.constraint_directions}"'
             )
         return self
 
