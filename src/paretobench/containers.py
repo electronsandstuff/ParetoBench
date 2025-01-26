@@ -362,7 +362,7 @@ class Population(BaseModel):
         if generate_obj_constraint_settings:
             obj_directions = "".join(np.random.choice(["+", "-"], size=n_objectives))
             constraint_directions = "".join(np.random.choice([">", "<"], size=n_constraints))
-            constraint_targets = np.random.rand(n_constraints)
+            constraint_targets = np.random.rand(n_constraints) - 0.5
         else:
             obj_directions = None
             constraint_directions = None
