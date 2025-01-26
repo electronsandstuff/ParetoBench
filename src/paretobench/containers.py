@@ -346,7 +346,7 @@ class Population(BaseModel):
         """
         x = np.random.rand(pop_size, n_decision_vars)
         f = np.random.rand(pop_size, n_objectives)
-        g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
+        g = np.random.rand(pop_size, n_constraints) - 0.5 if n_constraints > 0 else np.empty((pop_size, 0))
 
         # Optionally generate names if generate_names is True
         if generate_names:
