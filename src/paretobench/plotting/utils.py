@@ -80,7 +80,8 @@ def get_per_point_settings_population(
     # Get the domination ranks (of only the visible solutions so we don't end up with a plot of all invisible points)
     ranks = np.zeros(len(population))
     filtered_indices = np.where(plot_filt)[0]
-    for rank, idx in enumerate(fast_dominated_argsort(population.f[plot_filt, :], population.g[plot_filt, :])):
+    idxs = fast_dominated_argsort(population.f_canonical[plot_filt, :], population.g_canonical[plot_filt, :])
+    for rank, idx in enumerate(idxs):
         ranks[filtered_indices[idx]] = rank
 
     # Compute alpha from the ranks
