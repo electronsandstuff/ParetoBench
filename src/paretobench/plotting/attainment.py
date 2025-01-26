@@ -303,11 +303,10 @@ def compute_attainment_surface_3d(population: Population, ref_point=None, paddin
         ref_point = get_reference_point(population, padding=padding)
     ref_point = np.asarray(ref_point) * binary_str_to_numpy(population.obj_directions, "-", "+")
 
-    if not np.all(ref_point >= np.max(population.f_canonical, axis=0)):
-        raise ValueError("Reference point must dominate all points")
-
     # Get the nondominated points
     population = population.get_nondominated_set()
+    if not np.all(ref_point >= np.max(population.f_canonical, axis=0)):
+        raise ValueError("Reference point must be dominated by all non-dominated points in set")
 
     vertices = []
     triangles = []
