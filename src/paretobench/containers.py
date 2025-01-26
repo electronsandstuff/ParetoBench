@@ -39,7 +39,7 @@ class Population(BaseModel):
     names_f: Optional[List[str]] = None
     names_g: Optional[List[str]] = None
 
-    # Configuration of objectives/constraints (minimization or maximization problem, direction of and boundary of constraint)
+    # Configuration of objectives/constraints (minimization or maximization problem, direction of and target of constraint)
     obj_directions: str  # '+' means maximize, '-' means minimize
     constraint_directions: (
         str  # '<' means satisfied when less-than target, '>' means satisfied when greater-than target
