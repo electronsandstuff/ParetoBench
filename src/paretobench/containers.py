@@ -8,7 +8,7 @@ import random
 import re
 import string
 
-from .utils import get_domination
+from .utils import get_domination, binary_str_to_numpy
 
 
 class Population(BaseModel):
@@ -17,13 +17,13 @@ class Population(BaseModel):
     the decision variables (x), the objectives (f), and inequality constraints (g). The first dimension of each array is the
     batch dimension. The number of evaluations of the objective functions performed to reach this state is also recorded.
 
-    Whether each objective is being minimized or maximized is set by the boolean array obj_directions. Constraints are configured
-    by the boolean array constraint_directions which sets whether it is a "less than" or "greater than" constraint and
-    constraint_targets which sets the boundary of the constraint. True in the boolean arrays means maximization or greater-than
-    and False means minimization or less-than.
-
     All arrays must have the same size batch dimension even if they are empty. In this case the non-batch dimension will be
     zero length. Names may be associated with decision variables, objectives, or constraints in the form of lists.
+
+    Whether each objectives is being minimized or maximized is set by the string obj_directions where each character corresponds
+    to an objectve and '+' means maximize with '-' meaning minimize. The constraints are configured by the string of directions
+    `constraint_directions` and the numpy array of targets `constraint_targets`. The string should contain either the '<' or '>'
+    character for the constraint at that index to be satisfied when it is less than or greater than the target respectively.
     """
 
     # The decision vars, objectives, and constraints
@@ -40,8 +40,10 @@ class Population(BaseModel):
     names_g: Optional[List[str]] = None
 
     # Configuration of objectives/constraints (minimization or maximization problem, direction of and boundary of constraint)
-    obj_directions: np.ndarray  # True is maximize, False is minimize
-    constraint_directions: np.ndarray  # True is greater-than, False is Less-Than
+    obj_directions: str  # '+' means maximize, '-' means minimize
+    constraint_directions: (
+        str  # '<' means satisfied when less-than target, '>' means satisfied when greater-than target
+    )
     constraint_targets: np.ndarray
 
     # Pydantic config
@@ -73,16 +75,11 @@ class Population(BaseModel):
 
         # Handle objectives / constraints settings (default to canonical problem)
         if values.get("obj_directions") is None:
-            values["obj_directions"] = np.zeros(values["f"].shape[1], dtype=bool)
+            values["obj_directions"] = "-" * values["f"].shape[1]
         if values.get("constraint_directions") is None:
-            values["constraint_directions"] = np.ones(values["g"].shape[1], dtype=bool)
+            values["constraint_directions"] = ">" * values["g"].shape[1]
         if values.get("constraint_targets") is None:
             values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
-
-        # Support lists being passed to us (cast into numpy array)
-        for attr, dtype in [("obj_directions", bool), ("constraint_directions", bool), ("constraint_targets", float)]:
-            if isinstance(values[attr], list):
-                values[attr] = np.array(values[attr], dtype=dtype)
 
         # Set fevals to number of individuals if not included
         if values.get("fevals") is None:
@@ -115,26 +112,44 @@ class Population(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_obj_constraint_settings(self):
-        """
-        Checks that the settings for objectives and constraints match with the dimensions of each.
-        """
-        for attr, arrlen, propname, dtype in [
-            ("obj_directions", self.m, "objectives", np.bool),
-            ("constraint_directions", self.g.shape[1], "constraints", np.bool),
-            ("constraint_targets", self.g.shape[1], "constraints", np.float64),
-        ]:
-            if not isinstance(getattr(self, attr), np.ndarray):
-                raise ValueError(f"obj_directions must be a numpy array, got: {type(getattr(self, attr))}")
-            if len(getattr(self, attr).shape) != 1:
-                raise ValueError(f"obj_directions must be 1D, shape was: {getattr(self, attr).shape}")
-            if len(getattr(self, attr)) != arrlen:
-                raise ValueError(
-                    f"Length of obj_directions must match number of {propname} in f. Got {len(getattr(self, attr))} "
-                    f"elements and {arrlen} {propname} from f"
-                )
-            if getattr(self, attr).dtype != dtype:
-                raise ValueError(f"obj_directions dtype must be {dtype}. Got {getattr(self, attr).dtype}")
+    def validate_obj_directions(self):
+        if len(self.obj_directions) != self.m:
+            raise ValueError(
+                "Length of obj_directions must match number of objectives, got"
+                f" {len(self.obj_directions)} chars but we have {self.m} objectives"
+            )
+        if not all(c in "+-" for c in self.obj_directions):
+            raise ValueError(f"obj_directions must contain only + or - characters. Got: {self.obj_directions}")
+        return self
+
+    @model_validator(mode="after")
+    def validate_constraint_directions(self):
+        if len(self.constraint_directions) != self.n_constraints:
+            raise ValueError(
+                "Length of constraint_directions must match numbe of constraints, got"
+                f" {len(self.constraint_directions)} chars but we have {self.n_constraints} constraints"
+            )
+        if not all(c in "<>" for c in self.constraint_directions):
+            raise ValueError(
+                f"constraint_directions must contain only < or > characters. Got: {self.constraint_directions}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_constraint_targets(self):
+        # Check the targets
+        attr = "constraint_targets"
+        if not isinstance(getattr(self, attr), np.ndarray):
+            raise ValueError(f"{attr} must be a numpy array, got: {type(getattr(self, attr))}")
+        if len(getattr(self, attr).shape) != 1:
+            raise ValueError(f"{attr} must be 1D, shape was: {getattr(self, attr).shape}")
+        if len(getattr(self, attr)) != self.g.shape[1]:
+            raise ValueError(
+                f"Length of {attr} must match number of constraints in g. Got {len(getattr(self, attr))} "
+                f"elements and {self.g.shape[1]} constraints from g"
+            )
+        if getattr(self, attr).dtype != np.float64:
+            raise ValueError(f"{attr} dtype must be {np.float64}. Got {getattr(self, attr).dtype}")
         return self
 
     @field_validator("x", "f", "g")
@@ -168,8 +183,8 @@ class Population(BaseModel):
             and self.names_x == other.names_x
             and self.names_f == other.names_f
             and self.names_g == other.names_g
-            and np.array_equal(self.obj_directions, other.obj_directions)
-            and np.array_equal(self.constraint_directions, other.constraint_directions)
+            and self.obj_directions == other.obj_directions
+            and self.constraint_directions == other.constraint_directions
             and np.array_equal(self.constraint_targets, other.constraint_targets)
         )
 
@@ -178,15 +193,15 @@ class Population(BaseModel):
         """
         Return the objectives transformed so that we are a minimization problem.
         """
-        return np.where(self.obj_directions, -1, 1)[None, :] * self.f
+        return binary_str_to_numpy(self.obj_directions, "-", "+")[None, :] * self.f
 
     @property
     def g_canonical(self):
         """
         Return constraints transformed such that g[...] >= 0 are the feasible solutions.
         """
-        gc = np.where(self.constraint_directions, 1, -1)[None, :] * self.g
-        gc += np.where(self.constraint_directions, -1, 1)[None, :] * self.constraint_targets[None, :]
+        gc = binary_str_to_numpy(self.constraint_directions, ">", "<")[None, :] * self.g
+        gc += binary_str_to_numpy(self.constraint_directions, "<", ">")[None, :] * self.constraint_targets[None, :]
         return gc
 
     def __add__(self, other: "Population") -> "Population":
@@ -204,9 +219,9 @@ class Population(BaseModel):
             raise ValueError("names_f are inconsistent between populations")
         if self.names_g != other.names_g:
             raise ValueError("names_g are inconsistent between populations")
-        if not np.array_equal(self.obj_directions, other.obj_directions):
+        if self.obj_directions != other.obj_directions:
             raise ValueError("obj_directions are inconsistent between populations")
-        if not np.array_equal(self.constraint_directions, other.constraint_directions):
+        if self.constraint_directions != other.constraint_directions:
             raise ValueError("constraint_directions are inconsistent between populations")
         if not np.array_equal(self.constraint_targets, other.constraint_targets):
             raise ValueError("constraint_targets are inconsistent between populations")
@@ -345,8 +360,8 @@ class Population(BaseModel):
 
         # Create randomized settings for objectives/constraints
         if generate_obj_constraint_settings:
-            obj_directions = np.random.randint(0, 2, size=n_objectives, dtype=bool)
-            constraint_directions = np.random.randint(0, 2, size=n_constraints, dtype=bool)
+            obj_directions = "".join(np.random.choice(["+", "-"], size=n_objectives))
+            constraint_directions = "".join(np.random.choice([">", "<"], size=n_constraints))
             constraint_targets = np.random.rand(n_constraints)
         else:
             obj_directions = None
@@ -369,25 +384,15 @@ class Population(BaseModel):
     def __len__(self):
         return self.x.shape[0]
 
-    def _get_obj_direction_str(self) -> str:
-        # Create a list of +/- symbols
-        return "[" + ",".join("+" if d else "-" for d in self.obj_directions) + "]"
-
     def _get_constraint_direction_str(self) -> str:
         # Create a list of >/< symbols with their targets
-        return (
-            "["
-            + ",".join(
-                f"{'>=' if d else '<='}{t:.1e}" for d, t in zip(self.constraint_directions, self.constraint_targets)
-            )
-            + "]"
-        )
+        return "[" + ",".join(f"{d}{t:.1e}" for d, t in zip(self.constraint_directions, self.constraint_targets)) + "]"
 
     def __repr__(self) -> str:
         return (
             f"Population(size={len(self)}, "
             f"vars={self.x.shape[1]}, "
-            f"objs={self._get_obj_direction_str()}, "
+            f"objs={self.obj_directions}, "
             f"cons={self._get_constraint_direction_str()}, "
             f"fevals={self.fevals})"
         )
@@ -478,8 +483,8 @@ class History(BaseModel):
             raise ValueError(f"Inconsistent names for constraints in reports: {names_g}")
 
         # Check settings for objectives and constraints
-        obj_directions = [tuple(x.obj_directions) for x in self.reports]
-        constraint_directions = [tuple(x.constraint_directions) for x in self.reports]
+        obj_directions = [x.obj_directions for x in self.reports]
+        constraint_directions = [x.constraint_directions for x in self.reports]
         constraint_targets = [tuple(x.constraint_targets) for x in self.reports]
         if obj_directions and len(set(obj_directions)) != 1:
             raise ValueError(f"Inconsistent obj_directions in reports: {obj_directions}")
@@ -560,8 +565,8 @@ class History(BaseModel):
 
         # Create randomized settings for objectives/constraints (must be consistent between objects)
         if generate_obj_constraint_settings:
-            obj_directions = np.random.randint(0, 2, size=n_objectives, dtype=bool)
-            constraint_directions = np.random.randint(0, 2, size=n_constraints, dtype=bool)
+            obj_directions = "".join(np.random.choice(["+", "-"], size=n_objectives))
+            constraint_directions = "".join(np.random.choice([">", "<"], size=n_constraints))
             constraint_targets = np.random.rand(n_constraints)
             for report in reports:
                 report.obj_directions = obj_directions
