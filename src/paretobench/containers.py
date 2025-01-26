@@ -704,8 +704,8 @@ class History(BaseModel):
     def __repr__(self) -> str:
         dims = (
             (
-                f"vars={self.reports[0].x.shape[1]}, objs={self.reports[0].f.shape[1]}, "
-                f"cons={self.reports[0].g.shape[1]}"
+                f"vars={self.reports[0].x.shape[1]}, objs=[{self.reports[0].obj_directions}], "
+                f"cons={self.reports[0]._get_constraint_direction_str()}"
             )
             if self.reports
             else "empty"
