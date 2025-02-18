@@ -167,49 +167,53 @@ def aggregate_metrics_feval_budget(
     df["problem"] = df.apply(lambda x: normalize_problem_name(x["problem"]), axis=1)
     df = apply_feval_cutoff(df, max_feval)
 
-    def get_wilcoxon_comparison(x, metric):
+    def get_wilcoxon_comparison(our_vals, metric):
         """
         Given the grouped evaluations for this problem and run, compare ourself with the "reference" run
         """
         # If we are the reference run don't perform the comparison against ourself
-        if df.loc[x.index[0]]["exp_idx"] == wilcoxon_idx:
+        if df.loc[our_vals.index[0]]["exp_idx"] == wilcoxon_idx:
             return ""
 
         # Get the problem name
-        problem = df.loc[x.index[0]]["problem"]
+        problem = df.loc[our_vals.index[0]]["problem"]
 
         # Get the values for the metric on this problem from the container we are comparing agianst
-        y = df.loc[(df["exp_idx"] == wilcoxon_idx) & (df["problem"] == problem)][metric]
+        other_vals = df[(df["exp_idx"] == wilcoxon_idx) & (df["problem"] == problem)][metric]
 
         # Use the stats test to compare values
-        if ranksums(x.to_numpy(), y.to_numpy(), "less")[1] < wilcoxon_p:
+        if ranksums(our_vals.to_numpy(), other_vals.to_numpy(), "less")[1] < wilcoxon_p:
             return {"-": "+", "+": "-"}[directions[metric]]
-        if ranksums(x.to_numpy(), y.to_numpy(), "greater")[1] < wilcoxon_p:
+        if ranksums(our_vals.to_numpy(), other_vals.to_numpy(), "greater")[1] < wilcoxon_p:
             return directions[metric]
         return "="
 
-    def is_best(x, metric):
+    def is_best(our_vals, metric):
         """
         Given one of the groupby objects, is this collection of evaluations one of the best in the table for this problem.
         """
         # Get the problem name
-        problem = df.loc[x.index[0]]["problem"]
+        problem = df.loc[our_vals.index[0]]["problem"]
 
-        # Go through each container figuring out if we are the best
-        for n in df["exp_idx"].unique().tolist():
-            y = df.loc[(df["exp_idx"] == n) & (df["problem"] == problem)][metric]
+        # Compare against every other container
+        for exp_idx in df["exp_idx"].unique().tolist():
+            # Get all of the values of this metric for the container we are comparing against and this problem
+            other_vals = df[(df["exp_idx"] == exp_idx) & (df["problem"] == problem)][metric]
 
-            if not len(y):
+            # Perform the rank-sum test and if the other is better than us, we are not the best
+            if not len(other_vals):
                 continue
             if (
                 ranksums(
-                    x.to_numpy(),
-                    y.to_numpy(),
+                    our_vals.to_numpy(),
+                    other_vals.to_numpy(),
                     {"-": "greater", "+": "less"}[directions[metric]],
                 )[1]
                 < wilcoxon_p
             ):
                 return False
+
+        # We could not find a container which beat us, we are among the best
         return True
 
     # Get metric names and validate
