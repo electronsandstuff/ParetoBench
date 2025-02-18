@@ -1,3 +1,6 @@
 name: paretobench
 dependencies:
   - pytest
+  - pip
+  - pip:
+    - pre-commit

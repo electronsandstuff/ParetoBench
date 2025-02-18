@@ -8,7 +8,7 @@ import random
 import re
 import string
 
-from .utils import get_domination
+from .utils import get_domination, binary_str_to_numpy
 
 
 class Population(BaseModel):
@@ -16,23 +16,38 @@ class Population(BaseModel):
     Stores the individuals in a population for one reporting interval in a genetic algorithm. Conventional names are used for
     the decision variables (x), the objectives (f), and inequality constraints (g). The first dimension of each array is the
     batch dimension. The number of evaluations of the objective functions performed to reach this state is also recorded.
-    Objectives are assumed to be part of a minimization problem and constraints are set such that individuals with g_i > 0 are
-    feasible.
 
     All arrays must have the same size batch dimension even if they are empty. In this case the non-batch dimension will be
     zero length. Names may be associated with decision variables, objectives, or constraints in the form of lists.
+
+    Whether each objectives is being minimized or maximized is set by the string obj_directions where each character corresponds
+    to an objectve and '+' means maximize with '-' meaning minimize. The constraints are configured by the string of directions
+    `constraint_directions` and the numpy array of targets `constraint_targets`. The string should contain either the '<' or '>'
+    character for the constraint at that index to be satisfied when it is less than or greater than the target respectively.
     """
 
+    # The decision vars, objectives, and constraints
     x: np.ndarray
     f: np.ndarray
     g: np.ndarray
+
+    # Total number of function evaluations performed during optimization after this population was completed
     fevals: int
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # Optional lists of names for decision variables, objectives, and constraints
     names_x: Optional[List[str]] = None
     names_f: Optional[List[str]] = None
     names_g: Optional[List[str]] = None
+
+    # Configuration of objectives/constraints (minimization or maximization problem, direction of and target of constraint)
+    obj_directions: str  # '+' means maximize, '-' means minimize
+    constraint_directions: (
+        str  # '<' means satisfied when less-than target, '>' means satisfied when greater-than target
+    )
+    constraint_targets: np.ndarray
+
+    # Pydantic config
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -57,6 +72,14 @@ class Population(BaseModel):
             values["f"] = np.empty((batch_size, 0), dtype=np.float64)
         if values.get("g") is None:
             values["g"] = np.empty((batch_size, 0), dtype=np.float64)
+
+        # Handle objectives / constraints settings (default to canonical problem)
+        if values.get("obj_directions") is None:
+            values["obj_directions"] = "-" * values["f"].shape[1]
+        if values.get("constraint_directions") is None:
+            values["constraint_directions"] = ">" * values["g"].shape[1]
+        if values.get("constraint_targets") is None:
+            values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
 
         # Set fevals to number of individuals if not included
         if values.get("fevals") is None:
@@ -88,11 +111,52 @@ class Population(BaseModel):
             raise ValueError("Length of names_g must match the number of constraints in g.")
         return self
 
+    @model_validator(mode="after")
+    def validate_obj_directions(self):
+        if len(self.obj_directions) != self.m:
+            raise ValueError(
+                "Length of obj_directions must match number of objectives, got"
+                f" {len(self.obj_directions)} chars but we have {self.m} objectives"
+            )
+        if not all(c in "+-" for c in self.obj_directions):
+            raise ValueError(f'obj_directions must contain only + or - characters. Got: "{self.obj_directions}"')
+        return self
+
+    @model_validator(mode="after")
+    def validate_constraint_directions(self):
+        if len(self.constraint_directions) != self.n_constraints:
+            raise ValueError(
+                "Length of constraint_directions must match number of constraints, got"
+                f" {len(self.constraint_directions)} chars but we have {self.n_constraints} constraints"
+            )
+        if not all(c in "<>" for c in self.constraint_directions):
+            raise ValueError(
+                f'constraint_directions must contain only < or > characters. Got: "{self.constraint_directions}"'
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_constraint_targets(self):
+        # Check the targets
+        attr = "constraint_targets"
+        if not isinstance(getattr(self, attr), np.ndarray):
+            raise ValueError(f"{attr} must be a numpy array, got: {type(getattr(self, attr))}")
+        if len(getattr(self, attr).shape) != 1:
+            raise ValueError(f"{attr} must be 1D, shape was: {getattr(self, attr).shape}")
+        if len(getattr(self, attr)) != self.g.shape[1]:
+            raise ValueError(
+                f"Length of {attr} must match number of constraints in g. Got {len(getattr(self, attr))} "
+                f"elements and {self.g.shape[1]} constraints from g"
+            )
+        if getattr(self, attr).dtype != np.float64:
+            raise ValueError(f"{attr} dtype must be {np.float64}. Got {getattr(self, attr).dtype}")
+        return self
+
     @field_validator("x", "f", "g")
     @classmethod
     def validate_numpy_arrays(cls, value: np.ndarray, info) -> np.ndarray:
         """
-        Double checks that the arrays have the right numbe of dimensions and datatype.
+        Double checks that the arrays have the right number of dimensions and datatype.
         """
         if value.dtype != np.float64:
             raise TypeError(f"Expected array of type { np.float64} for field '{info.field_name}', got {value.dtype}")
@@ -119,7 +183,26 @@ class Population(BaseModel):
             and self.names_x == other.names_x
             and self.names_f == other.names_f
             and self.names_g == other.names_g
+            and self.obj_directions == other.obj_directions
+            and self.constraint_directions == other.constraint_directions
+            and np.array_equal(self.constraint_targets, other.constraint_targets)
         )
+
+    @property
+    def f_canonical(self):
+        """
+        Return the objectives transformed so that we are a minimization problem.
+        """
+        return binary_str_to_numpy(self.obj_directions, "-", "+")[None, :] * self.f
+
+    @property
+    def g_canonical(self):
+        """
+        Return constraints transformed such that g[...] >= 0 are the feasible solutions.
+        """
+        gc = binary_str_to_numpy(self.constraint_directions, ">", "<")[None, :] * self.g
+        gc += binary_str_to_numpy(self.constraint_directions, "<", ">")[None, :] * self.constraint_targets[None, :]
+        return gc
 
     def __add__(self, other: "Population") -> "Population":
         """
@@ -129,13 +212,19 @@ class Population(BaseModel):
         if not isinstance(other, Population):
             raise TypeError("Operands must be instances of Population")
 
-        # Check that the names are consistent
+        # Check that the names/settings are consistent
         if self.names_x != other.names_x:
             raise ValueError("names_x are inconsistent between populations")
         if self.names_f != other.names_f:
             raise ValueError("names_f are inconsistent between populations")
         if self.names_g != other.names_g:
             raise ValueError("names_g are inconsistent between populations")
+        if self.obj_directions != other.obj_directions:
+            raise ValueError("obj_directions are inconsistent between populations")
+        if self.constraint_directions != other.constraint_directions:
+            raise ValueError("constraint_directions are inconsistent between populations")
+        if not np.array_equal(self.constraint_targets, other.constraint_targets):
+            raise ValueError("constraint_targets are inconsistent between populations")
 
         # Concatenate the arrays along the batch dimension (axis=0)
         new_x = np.concatenate((self.x, other.x), axis=0)
@@ -160,6 +249,9 @@ class Population(BaseModel):
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g,
+            obj_directions=self.obj_directions,
+            constraint_directions=self.constraint_directions,
+            constraint_targets=self.constraint_targets,
         )
 
     def __getitem__(self, idx: Union[slice, np.ndarray, List[int]]) -> "Population":
@@ -184,18 +276,21 @@ class Population(BaseModel):
             names_x=self.names_x,
             names_f=self.names_f,
             names_g=self.names_g,
+            obj_directions=self.obj_directions,
+            constraint_directions=self.constraint_directions,
+            constraint_targets=self.constraint_targets,
         )
 
     def get_nondominated_indices(self):
         """
         Returns a boolean array of whether or not an individual is non-dominated.
         """
-        return np.sum(get_domination(self.f, self.g), axis=0) == 0
+        return np.sum(get_domination(self.f_canonical, self.g_canonical), axis=0) == 0
 
     def get_feasible_indices(self):
         if self.g.shape[1] == 0:
             return np.ones((len(self)), dtype=bool)
-        return np.all(self.g >= 0.0, axis=1)
+        return np.all(self.g_canonical >= 0.0, axis=1)
 
     def get_nondominated_set(self):
         return self[self.get_nondominated_indices()]
@@ -209,6 +304,7 @@ class Population(BaseModel):
         pop_size: int,
         fevals: int = 0,
         generate_names: bool = False,
+        generate_obj_constraint_settings: bool = False,
     ) -> "Population":
         """
         Generate a randomized instance of the Population class.
@@ -227,6 +323,8 @@ class Population(BaseModel):
             The number of evaluations of the objective functions performed to reach this state, by default 0.
         generate_names : bool, optional
             Whether to include names for the decision variables, objectives, and constraints, by default False.
+        generate_obj_constraint_settings : bool, optional
+            Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
 
         Returns
         -------
@@ -248,12 +346,27 @@ class Population(BaseModel):
         """
         x = np.random.rand(pop_size, n_decision_vars)
         f = np.random.rand(pop_size, n_objectives)
-        g = np.random.rand(pop_size, n_constraints) if n_constraints > 0 else np.empty((pop_size, 0))
+        g = np.random.rand(pop_size, n_constraints) - 0.5 if n_constraints > 0 else np.empty((pop_size, 0))
 
         # Optionally generate names if generate_names is True
-        names_x = [f"x{i+1}" for i in range(n_decision_vars)] if generate_names else None
-        names_f = [f"f{i+1}" for i in range(n_objectives)] if generate_names else None
-        names_g = [f"g{i+1}" for i in range(n_constraints)] if generate_names else None
+        if generate_names:
+            names_x = [f"x{i+1}" for i in range(n_decision_vars)]
+            names_f = [f"f{i+1}" for i in range(n_objectives)]
+            names_g = [f"g{i+1}" for i in range(n_constraints)]
+        else:
+            names_x = None
+            names_f = None
+            names_g = None
+
+        # Create randomized settings for objectives/constraints
+        if generate_obj_constraint_settings:
+            obj_directions = "".join(np.random.choice(["+", "-"], size=n_objectives))
+            constraint_directions = "".join(np.random.choice([">", "<"], size=n_constraints))
+            constraint_targets = np.random.rand(n_constraints) - 0.5
+        else:
+            obj_directions = None
+            constraint_directions = None
+            constraint_targets = None
 
         return cls(
             x=x,
@@ -263,13 +376,26 @@ class Population(BaseModel):
             names_x=names_x,
             names_f=names_f,
             names_g=names_g,
+            obj_directions=obj_directions,
+            constraint_directions=constraint_directions,
+            constraint_targets=constraint_targets,
         )
 
     def __len__(self):
         return self.x.shape[0]
 
+    def _get_constraint_direction_str(self) -> str:
+        # Create a list of >/< symbols with their targets
+        return "[" + ",".join(f"{d}{t:.1e}" for d, t in zip(self.constraint_directions, self.constraint_targets)) + "]"
+
     def __repr__(self) -> str:
-        return f"Population(size={len(self)}, vars={self.x.shape[1]}, objs={self.f.shape[1]}, cons={self.g.shape[1]}, fevals={self.fevals})"
+        return (
+            f"Population(size={len(self)}, "
+            f"vars={self.x.shape[1]}, "
+            f"objs=[{self.obj_directions}], "
+            f"cons={self._get_constraint_direction_str()}, "
+            f"fevals={self.fevals})"
+        )
 
     def __str__(self):
         return self.__repr__()
@@ -281,7 +407,7 @@ class Population(BaseModel):
         Parameters
         ----------
         decimals : int, optional
-            _description_, by default 13
+            Number of digits to which we will compare the values, by default 13
 
         Returns
         -------
@@ -320,7 +446,7 @@ class History(BaseModel):
 
     Assumptions:
      - All reports must have a consistent number of objectives, decision variables, and constraints.
-     - Names, if used, must be consistent across populations
+     - Objective/constraint settings and names, if used, must be consistent across populations
     """
 
     reports: List[Population]
@@ -356,6 +482,17 @@ class History(BaseModel):
         if names_g and len(set(names_g)) != 1:
             raise ValueError(f"Inconsistent names for constraints in reports: {names_g}")
 
+        # Check settings for objectives and constraints
+        obj_directions = [x.obj_directions for x in self.reports]
+        constraint_directions = [x.constraint_directions for x in self.reports]
+        constraint_targets = [tuple(x.constraint_targets) for x in self.reports]
+        if obj_directions and len(set(obj_directions)) != 1:
+            raise ValueError(f"Inconsistent obj_directions in reports: {obj_directions}")
+        if constraint_directions and len(set(constraint_directions)) != 1:
+            raise ValueError(f"Inconsistent constraint_directions in reports: {constraint_directions}")
+        if constraint_targets and len(set(constraint_targets)) != 1:
+            raise ValueError(f"Inconsistent constraint_targets in reports: {constraint_targets}")
+
         return self
 
     def __eq__(self, other):
@@ -372,6 +509,7 @@ class History(BaseModel):
         n_constraints: int,
         pop_size: int,
         generate_names: bool = False,
+        generate_obj_constraint_settings: bool = False,
     ) -> "History":
         """
         Generate a randomized instance of the History class, including random problem name and metadata.
@@ -390,6 +528,8 @@ class History(BaseModel):
             The number of individuals in each population.
         generate_names : bool, optional
             Whether to include names for the decision variables, objectives, and constraints, by default False.
+        generate_obj_constraint_settings : bool, optional
+            Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
 
         Returns
         -------
@@ -422,6 +562,16 @@ class History(BaseModel):
             )
             for i in range(n_populations)
         ]
+
+        # Create randomized settings for objectives/constraints (must be consistent between objects)
+        if generate_obj_constraint_settings:
+            obj_directions = "".join(np.random.choice(["+", "-"], size=n_objectives))
+            constraint_directions = "".join(np.random.choice([">", "<"], size=n_constraints))
+            constraint_targets = np.random.rand(n_constraints)
+            for report in reports:
+                report.obj_directions = obj_directions
+                report.constraint_directions = constraint_directions
+                report.constraint_targets = constraint_targets
 
         return cls(reports=reports, problem=problem, metadata=metadata)
 
@@ -463,6 +613,12 @@ class History(BaseModel):
         if self.reports and self.reports[0].names_g is not None:
             g["g"].attrs["names"] = self.reports[0].names_g
 
+        # Save the configuration data
+        if self.reports:
+            g["f"].attrs["directions"] = self.reports[0].obj_directions
+            g["g"].attrs["directions"] = self.reports[0].constraint_directions
+            g["g"].attrs["targets"] = self.reports[0].constraint_targets
+
     @classmethod
     def _from_h5py_group(cls, grp: h5py.Group):
         """
@@ -484,6 +640,11 @@ class History(BaseModel):
         g = grp["g"][()]
 
         # Get the names
+        obj_directions = grp["f"].attrs.get("directions", None)
+        constraint_directions = grp["g"].attrs.get("directions", None)
+        constraint_targets = grp["g"].attrs.get("targets", None)
+
+        # Get the objective / constraint settings
         names_x = grp["x"].attrs.get("names", None)
         names_f = grp["f"].attrs.get("names", None)
         names_g = grp["g"].attrs.get("names", None)
@@ -501,6 +662,9 @@ class History(BaseModel):
                     names_x=names_x,
                     names_f=names_f,
                     names_g=names_g,
+                    obj_directions=obj_directions,
+                    constraint_directions=constraint_directions,
+                    constraint_targets=constraint_targets,
                 )
             )
             start_idx += pop_size
@@ -540,8 +704,8 @@ class History(BaseModel):
     def __repr__(self) -> str:
         dims = (
             (
-                f"vars={self.reports[0].x.shape[1]}, objs={self.reports[0].f.shape[1]}, "
-                f"cons={self.reports[0].g.shape[1]}"
+                f"vars={self.reports[0].x.shape[1]}, objs=[{self.reports[0].obj_directions}], "
+                f"cons={self.reports[0]._get_constraint_direction_str()}"
             )
             if self.reports
             else "empty"
@@ -568,7 +732,7 @@ class Experiment(BaseModel):
     software_version: str = ""
     comment: str = ""
     creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    file_version: str = "1.0.0"
+    file_version: str = "1.1.0"
 
     def __eq__(self, other):
         if not isinstance(other, Experiment):
@@ -609,6 +773,7 @@ class Experiment(BaseModel):
         n_constraints: int,
         pop_size: int,
         generate_names: bool = False,
+        generate_obj_constraint_settings: bool = False,
     ) -> "Experiment":
         """
         Generate a randomized instance of the Experiment class.
@@ -629,6 +794,8 @@ class Experiment(BaseModel):
             The number of individuals in each population.
         generate_names : bool, optional
             Whether to include names for the decision variables, objectives, and constraints, by default False.
+        generate_obj_constraint_settings : bool, optional
+            Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
 
         Returns
         -------
@@ -644,6 +811,7 @@ class Experiment(BaseModel):
                 n_constraints,
                 pop_size,
                 generate_names=generate_names,
+                generate_obj_constraint_settings=generate_obj_constraint_settings,
             )
             for _ in range(n_histories)
         ]

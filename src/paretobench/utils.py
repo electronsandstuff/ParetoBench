@@ -180,3 +180,12 @@ def get_problem_from_obj_or_str(obj_or_str: Union[str, Problem]) -> Problem:
         return Problem.from_line_fmt(obj_or_str)
     else:
         raise ValueError(f"Unrecognized input type: {type(obj_or_str)}")
+
+
+def binary_str_to_numpy(ss, pos_char, neg_char):
+    """
+    Convert the characters of the string ss into a numpy array with +1 being wherever
+    the character pos_char shows up and -1 being wherever neg_char shows up.
+    """
+    arr = np.array(list(ss))
+    return np.where(arr == pos_char, 1, np.where(arr == neg_char, -1, 0))
