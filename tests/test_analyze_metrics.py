@@ -107,12 +107,15 @@ def test_aggregate_metrics_stats_test():
             assert agg.loc[prob_norm, exp_idx].iloc[0][("test", "wilcoxon_best")] == (loc == min(run_locs[prob]))
 
 
-def test_feval_cutoff():
+@pytest.mark.parametrize(
+    "index_pattern",
+    ["sequential", "shuffled", "duplicated"],
+)
+def test_feval_cutoff_index_variants(index_pattern):
     """
     Test the cutoff function by making a table of values with a test metric equalling 1.0 only at fevals=7. The cutoff is made
     for fevals=7 and we check all the metric values.
     """
-    # Create a test dataframe (big nasty nested loop)
     rows = []
     for run_idx in range(16):
         for exp_idx in range(4):
@@ -129,9 +132,22 @@ def test_feval_cutoff():
                     )
     df = pd.DataFrame(rows)
 
-    # Run the cutoff function
+    if index_pattern == "sequential":
+        pass
+    elif index_pattern == "shuffled":
+        n_rows = len(df)
+        shuffled_idx = np.random.permutation(n_rows)
+        df.index = shuffled_idx
+    elif index_pattern == "duplicated":
+        n_rows = len(df)
+        duplicate_idx = np.repeat(range(n_rows // 2), 2)[:n_rows]
+        df.index = duplicate_idx
+
     df_cutoff = apply_feval_cutoff(df, max_feval=7)
+
     assert (df_cutoff["test"] == 1.0).all()
+    assert len(df_cutoff) == len(df[df["fevals"] == 7])
+    assert all(col in df_cutoff.columns for col in ["run_idx", "exp_idx", "problem", "fevals", "test"])
 
 
 @pytest.mark.parametrize(
