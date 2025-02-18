@@ -84,14 +84,30 @@ def apply_feval_cutoff(df: pd.DataFrame, max_feval: int = 300) -> pd.DataFrame:
 
     Parameters
     ----------
-    df : Dataframe
+    df : DataFrame
         The metric data
     max_feval : int, optional
         Cutoff of how many function evaluations are allowed, by default 300
+
+    Returns
+    -------
+    DataFrame
+        Filtered DataFrame containing one row per group with the largest fevals value not exceeding max_feval
     """
+    # Filter to rows within max_feval
     df = df[df["fevals"] <= max_feval]
-    idx = df.groupby(by=["run_idx", "exp_idx", "problem"])["fevals"].idxmax()
-    return df.loc[idx].reset_index(drop=True)
+
+    # Grab the row with the largest value of `fevals` within each group
+    df = df[df.groupby(["run_idx", "exp_idx", "problem"])["fevals"].transform("max") == df["fevals"]]
+
+    # Check for duplicate maximum values within groups
+    counts = df.groupby(["run_idx", "exp_idx", "problem"]).size()
+    if (counts > 1).any():
+        raise ValueError("At least one evaluation has a duplicate value for `fevals`")
+
+    # Fix the index
+    df = df.reset_index(drop=True)
+    return df
 
 
 def aggregate_metrics_feval_budget(
