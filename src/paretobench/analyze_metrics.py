@@ -240,7 +240,9 @@ def aggregate_metrics_feval_budget(
 
     # Apply the aggregation and return
     by = ["problem", "exp_idx"]
-    by.append("fname")
+
+    if not df["fname"].isna().any():
+        by.append("fname")
     if "exp_name" in df.columns:
         by.append("exp_name")
     return df.groupby(by).agg(agg_funs)
@@ -563,5 +565,11 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
         lines.append(ln)
     latex_str = "\n".join(lines)
 
-    # Return it
-    return latex_str.replace("=", r"$\approx$")
+    # Keep first 3 lines unchanged, replace "=" in remaining lines
+    lines = latex_str.split("\n")
+    for i in range(len(lines)):
+        if i >= 3:  # Only process lines after the third line
+            lines[i] = lines[i].replace("=", r"$\approx$")
+
+    # Join the lines back together
+    return "\n".join(lines)
