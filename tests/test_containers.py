@@ -288,6 +288,12 @@ def test_population_invalid_dimensions():
         Population(x=x, f=f, g=g, fevals=5)
 
 
+def test_field_assignment_validation():
+    with pytest.raises(ValueError, match="Expected array with 2 dimensions for field 'x'"):
+        pop = Population(f=np.random.random((256, 2)))
+        pop.x = np.random.random((2))
+
+
 def test_overwrite():
     # Create a randomized Experiment object
     experiment1 = Experiment.from_random(

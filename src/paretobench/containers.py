@@ -33,7 +33,6 @@ class Population(BaseModel):
 
     # Total number of function evaluations performed during optimization after this population was completed
     fevals: int
-
     # Optional lists of names for decision variables, objectives, and constraints
     names_x: Optional[List[str]] = None
     names_f: Optional[List[str]] = None
@@ -47,7 +46,7 @@ class Population(BaseModel):
     constraint_targets: np.ndarray
 
     # Pydantic config
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
 
     @model_validator(mode="before")
     @classmethod
