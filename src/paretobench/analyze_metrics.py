@@ -565,7 +565,8 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
         lines.append(ln)
     latex_str = "\n".join(lines)
 
-    # Keep first 3 lines unchanged, replace "=" in remaining lines
+    # Keep first 3 lines unchanged, replace "=" in remaining lines, avoid problems with experiment names
+    # that have equals characert in them
     lines = latex_str.split("\n")
     for i in range(len(lines)):
         if i >= 3:  # Only process lines after the third line
