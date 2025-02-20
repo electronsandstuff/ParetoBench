@@ -27,7 +27,7 @@ def test_inverse_generational_distance():
     Make sure IGD calculation works on analytical cases
     """
     # Create the metric
-    igd = pb.InverseGenerationalDistance()
+    igd = pb.InvertedGenerationalDistance()
 
     # Get the IGD of a test population and compare with analytical value
     test_pop = pb.Population(f=np.array([[0.0, 0.0]]))

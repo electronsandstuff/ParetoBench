@@ -16,7 +16,7 @@ class Metric:
         raise NotImplementedError
 
 
-class InverseGenerationalDistance(Metric):
+class InvertedGenerationalDistance(Metric):
     """
     Calculates the inverse generational distance for the population to the Pareto front in the named problem.
     """

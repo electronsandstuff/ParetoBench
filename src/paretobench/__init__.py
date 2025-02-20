@@ -1,7 +1,7 @@
 from .problem import Problem, ProblemWithFixedPF, ProblemWithPF
 from .factory import register_problem, get_problem_names, create_problem
 from .containers import Population, History, Experiment
-from .metrics import InverseGenerationalDistance, eval_metrics_experiments
+from .metrics import InvertedGenerationalDistance, eval_metrics_experiments
 from .analyze_metrics import (
     aggregate_metrics_feval_budget,
     construct_metric_comparison_table,
@@ -58,7 +58,7 @@ __all__ = [
     "Population",
     "History",
     "Experiment",
-    "InverseGenerationalDistance",
+    "InvertedGenerationalDistance",
     "eval_metrics_experiments",
     "aggregate_metrics_feval_budget",
     "construct_metric_comparison_table",
