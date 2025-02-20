@@ -525,14 +525,20 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
     latex_str = df.to_latex(multirow=True, escape=False, index=True).replace("multirow[t]", "multirow")
 
     # Count the number of each comparison for the columns and construct the summary to go at the bottom
-    summary_str = r" \multicolumn{1}{c}{%d/%d/%d} "
+    # Do this by counting the characters at the end of each of the cells.
+    def val_counts_to_summary_str(counts):
+        n_plus = int(counts.get("+", 0))
+        n_minus = int(counts.get("-", 0))
+        n_equal = int(counts.get("=", 0))
+        if (n_minus + n_plus + n_equal) == 0:
+            return " "
+        return " \multicolumn{1}{c}{%d/%d/%d} " % (n_plus, n_minus, n_equal)
+
     comparisons = df.map(lambda x: (x[-1] if len(x) > 4 else "")).apply(pd.Series.value_counts).fillna(0)
-    comparisons = comparisons.apply(
-        lambda x: summary_str % (int(x.get("+", 0)), int(x.get("-", 0)), int(x.get("=", 0)))
-    )
+    comparisons = comparisons.apply(val_counts_to_summary_str)
 
     # Construct text for the final row
-    comparison_cells = [(r" \multicolumn{%d}{c}{+/-/=} " % df.index.nlevels)] + comparisons.values[:-1].tolist() + [" "]
+    comparison_cells = [(r" \multicolumn{%d}{c}{+/-/=} " % df.index.nlevels)] + comparisons.to_list()
     summary_line = "&".join(comparison_cells) + r"\\"
 
     # Bold and center the header
