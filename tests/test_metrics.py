@@ -9,7 +9,7 @@ from .utils import generate_moga_experiments, example_metric
 
 class ProblemExample(pb.Problem, pb.ProblemWithFixedPF):
     """
-    Problem with specific Pareto front for `test_inverse_generational_distance`
+    Problem with specific Pareto front for `test_inverted_generational_distance`
     """
 
     def get_pareto_front(self):
@@ -22,12 +22,12 @@ class ProblemExample(pb.Problem, pb.ProblemWithFixedPF):
         )
 
 
-def test_inverse_generational_distance():
+def test_inverted_generational_distance():
     """
     Make sure IGD calculation works on analytical cases
     """
     # Create the metric
-    igd = pb.InverseGenerationalDistance()
+    igd = pb.InvertedGenerationalDistance()
 
     # Get the IGD of a test population and compare with analytical value
     test_pop = pb.Population(f=np.array([[0.0, 0.0]]))
