@@ -1,4 +1,3 @@
-from collections import defaultdict
 from scipy.stats import ranksums
 from typing import Union, Dict, List, Tuple, Any, Callable
 import numpy as np
@@ -13,7 +12,7 @@ def normalize_problem_name(name: str) -> str:
     """
     Standardizes the format (whitespace, order of parameters, and default parameters) of problem names so that they can be
     referenced easily tables of metrics (for example).
-    
+
     If the problem is not registered to ParetoBench, the name is simply passed through unchanged.
 
     Parameters
@@ -51,10 +50,10 @@ def get_index_before(xv: np.ndarray, xq: np.ndarray) -> np.ndarray:
     """
     # Check that all query values are valid (larger than at least one element in xv)
     if np.any(xq < np.min(xv)):
-        raise ValueError('At least one value in the queries (xq) is less than all values in xv. Cannot continue.')
-    
+        raise ValueError("At least one value in the queries (xq) is less than all values in xv. Cannot continue.")
+
     # Get the indices
-    return np.maximum(np.searchsorted(xv, xq, side='right') - 1, 0)
+    return np.maximum(np.searchsorted(xv, xq, side="right") - 1, 0)
 
 
 def get_metric_names(df: pd.DataFrame) -> List[str]:
@@ -66,7 +65,15 @@ def get_metric_names(df: pd.DataFrame) -> List[str]:
     df : Dataframe
         The table of metric values
     """
-    nm_keys = ['problem', 'fevals', 'run_idx', 'pop_idx', 'exp_idx', 'fname', 'exp_name']
+    nm_keys = [
+        "problem",
+        "fevals",
+        "run_idx",
+        "pop_idx",
+        "exp_idx",
+        "fname",
+        "exp_name",
+    ]
     return [x for x in df.columns.to_list() if x not in nm_keys]
 
 
@@ -77,37 +84,53 @@ def apply_feval_cutoff(df: pd.DataFrame, max_feval: int = 300) -> pd.DataFrame:
 
     Parameters
     ----------
-    df : Dataframe
+    df : DataFrame
         The metric data
     max_feval : int, optional
         Cutoff of how many function evaluations are allowed, by default 300
+
+    Returns
+    -------
+    DataFrame
+        Filtered DataFrame containing one row per group with the largest fevals value not exceeding max_feval
     """
-    df = df[df['fevals'] <= max_feval]
-    idx = df.groupby(by=['run_idx', 'exp_idx', 'problem'])['fevals'].idxmax()
-    return df.loc[idx].reset_index(drop=True)
+    # Filter to rows within max_feval
+    df = df[df["fevals"] <= max_feval]
+
+    # Grab the row with the largest value of `fevals` within each group
+    df = df[df.groupby(["run_idx", "exp_idx", "problem"])["fevals"].transform("max") == df["fevals"]]
+
+    # Check for duplicate maximum values within groups
+    counts = df.groupby(["run_idx", "exp_idx", "problem"]).size()
+    if (counts > 1).any():
+        raise ValueError("At least one evaluation has a duplicate value for `fevals`")
+
+    # Fix the index
+    df = df.reset_index(drop=True)
+    return df
 
 
 def aggregate_metrics_feval_budget(
-        df: pd.DataFrame,
-        max_feval: int = 300,
-        metric_direction_override: Union[None, Dict[str, str]] = None,
-        wilcoxon_p: float = 0.05,
-        wilcoxon_idx: Union[int, None] = None
-    ) -> pd.DataFrame:
+    df: pd.DataFrame,
+    max_feval: int = 300,
+    metric_direction_override: Union[None, Dict[str, str]] = None,
+    wilcoxon_p: float = 0.05,
+    wilcoxon_idx: Union[int, None] = None,
+) -> pd.DataFrame:
     """
     Calculate aggregate statistics from the metric dataframe generated with `eval_metrics_experiments`. The aggregation is
     performed on the last generation in each optimization run before it exceeded the specified maximum number of function
     evaluations. Mean, std. deviation and other statistics of the metric values at this generation are recorded.
-    
+
     The Wilcoxon rank sum test is used to discern which runs are the "best" across a given problem and metric. Optionally, the
     Wilcoxon rank sum test can also be used to generate comparisons with a specific run (selected by its `exp_idx`). This is
     useful for benchmarking a new optimization algorithm.
-    
+
     The output table will have hierarchical columns. The top level colunms are the metric names from the orginal table. The next
     level of columns are aggregate values. These are the following
      * mean: The mean value of the metric
      * std: The standard deviation of the metric's values
-     * wilcoxon_best: boolean, are we the best value (small wins) of the metric for this problem 
+     * wilcoxon_best: boolean, are we the best value (small wins) of the metric for this problem
      * wilcoxon_comp: optional, has the value '+', '-', '='. Comparison of this metric value against the specified container
      * Other statistical values may be included
 
@@ -131,96 +154,111 @@ def aggregate_metrics_feval_budget(
     """
     # Don't mutate the dataframe
     df = df.copy()
-    
+
     # Set up the metric "directions"
     directions = {
-        'igd': '-',
-        'hypervolume': '+',
+        "igd": "-",
+        "hypervolume": "+",
     }
     if metric_direction_override is not None:
         directions.update(metric_direction_override)
-    
+
     # Clean up the problem names and cutoff the fevals
-    df['problem'] = df.apply(lambda x: normalize_problem_name(x['problem']), axis=1)
+    df["problem"] = df.apply(lambda x: normalize_problem_name(x["problem"]), axis=1)
     df = apply_feval_cutoff(df, max_feval)
-    
-    def get_wilcoxon_comparison(x, metric):
+
+    def get_wilcoxon_comparison(our_vals, metric):
         """
         Given the grouped evaluations for this problem and run, compare ourself with the "reference" run
         """
         # If we are the reference run don't perform the comparison against ourself
-        if df.loc[x.index[0]]['exp_idx'] == wilcoxon_idx:
-            return ''
-        
+        if df.loc[our_vals.index[0]]["exp_idx"] == wilcoxon_idx:
+            return ""
+
         # Get the problem name
-        problem = df.loc[x.index[0]]['problem']
+        problem = df.loc[our_vals.index[0]]["problem"]
 
         # Get the values for the metric on this problem from the container we are comparing agianst
-        y = df.loc[(df['exp_idx'] == wilcoxon_idx) & (df['problem'] == problem)][metric]
-        
+        other_vals = df[(df["exp_idx"] == wilcoxon_idx) & (df["problem"] == problem)][metric]
+
         # Use the stats test to compare values
-        if ranksums(x.to_numpy(), y.to_numpy(), 'less')[1] < wilcoxon_p:
-            return {'-': '+', '+': '-'}[directions[metric]]
-        if ranksums(x.to_numpy(), y.to_numpy(), 'greater')[1] < wilcoxon_p:
+        if ranksums(our_vals.to_numpy(), other_vals.to_numpy(), "less")[1] < wilcoxon_p:
+            return {"-": "+", "+": "-"}[directions[metric]]
+        if ranksums(our_vals.to_numpy(), other_vals.to_numpy(), "greater")[1] < wilcoxon_p:
             return directions[metric]
-        return '='
-    
-    def is_best(x, metric):
+        return "="
+
+    def is_best(our_vals, metric):
         """
         Given one of the groupby objects, is this collection of evaluations one of the best in the table for this problem.
         """
         # Get the problem name
-        problem = df.loc[x.index[0]]['problem']
-        
-        # Go through each container figuring out if we are the best
-        for n in df['exp_idx'].unique().tolist():
-            y = df.loc[(df['exp_idx'] == n) & (df['problem'] == problem)][metric]
-            
-            if not len(y):
+        problem = df.loc[our_vals.index[0]]["problem"]
+
+        # Compare against every other container
+        for exp_idx in df["exp_idx"].unique().tolist():
+            # Get all of the values of this metric for the container we are comparing against and this problem
+            other_vals = df[(df["exp_idx"] == exp_idx) & (df["problem"] == problem)][metric]
+
+            # Perform the rank-sum test and if the other is better than us, we are not the best
+            if not len(other_vals):
                 continue
-            if ranksums(x.to_numpy(), y.to_numpy(), {'-': 'greater', '+': 'less'}[directions[metric]])[1] < wilcoxon_p:
+            if (
+                ranksums(
+                    our_vals.to_numpy(),
+                    other_vals.to_numpy(),
+                    {"-": "greater", "+": "less"}[directions[metric]],
+                )[1]
+                < wilcoxon_p
+            ):
                 return False
+
+        # We could not find a container which beat us, we are among the best
         return True
 
     # Get metric names and validate
     metrics = get_metric_names(df)
     for metric in metrics:
         if metric not in directions:
-            raise ValueError(f'Must specify "direction" of metric with `metric_direction_override`: not defined for "{metric}"')
+            raise ValueError(
+                f'Must specify "direction" of metric with `metric_direction_override`: not defined for "{metric}"'
+            )
 
     # Create the set of functions which we'll apply to aggregate the values
     agg_funs = {}
     for m in metrics:
         funs = [
-            'mean',
-            'std',
-            'median',
-            ('pct_2.5', lambda x: np.percentile(x, 2.5, axis=0)),
-            ('pct_97.5', lambda x: np.percentile(x, 97.5, axis=0)),
-            ('wilcoxon_best', lambda x: is_best(x, m))
+            "mean",
+            "std",
+            "median",
+            ("pct_2.5", lambda x: np.percentile(x, 2.5, axis=0)),
+            ("pct_97.5", lambda x: np.percentile(x, 97.5, axis=0)),
+            ("wilcoxon_best", lambda x: is_best(x, m)),
         ]
-        (wilcoxon_idx is None) or funs.append(('wilcoxon_comp', lambda x: get_wilcoxon_comparison(x, m)))
+        (wilcoxon_idx is None) or funs.append(("wilcoxon_comp", lambda x: get_wilcoxon_comparison(x, m)))
         agg_funs[m] = funs
-        
+
     # Apply the aggregation and return
-    by = ['problem', 'exp_idx']
-    by.append('fname')
-    if 'exp_name' in df.columns:
-        by.append('exp_name')
+    by = ["problem", "exp_idx"]
+
+    if not df["fname"].isna().any():
+        by.append("fname")
+    if "exp_name" in df.columns:
+        by.append("exp_name")
     return df.groupby(by).agg(agg_funs)
 
 
 def construct_metric_comparison_table(
-        df: pd.DataFrame, 
-        metric: Union[str, None] = None, 
-        problem_params: Union[None, List[Union[str, Tuple[str, Callable], Tuple[str, str]]]] = None,
-        mean_fmt_kwargs: Union[None, Dict[str, Any]] = None,
-        std_fmt_kwargs: Union[None, Dict[str, Any]] = None,
-    ) -> pd.DataFrame:
+    df: pd.DataFrame,
+    metric: Union[str, None] = None,
+    problem_params: Union[None, List[Union[str, Tuple[str, Callable], Tuple[str, str]]]] = None,
+    mean_fmt_kwargs: Union[None, Dict[str, Any]] = None,
+    std_fmt_kwargs: Union[None, Dict[str, Any]] = None,
+) -> pd.DataFrame:
     """
     Constructs a table with the problems as the index and the experiments as the columns with a summary of one of the metrics as
     the values along with comparisons and highlighting the best values in each row.
-    
+
     The index will always include the problem name. Additional information about the problem (such as m, the number of
     objectives) can be included in the index. This is specified by a list of tuples of the names of the parameters and getter
     functions which retrieve their values from a problem object. To make things easier, `problem_params` can also accept a
@@ -250,21 +288,25 @@ def construct_metric_comparison_table(
     """
     # Avoid mutating original dataframe
     df = df.copy()
-    
+
     # Empty problem params
     if problem_params is None:
         problem_params = []
-    
+
     # Default formatting
     if mean_fmt_kwargs is None:
-        mean_fmt_kwargs = {'precision': 3, 'exp_digits': 1}
+        mean_fmt_kwargs = {"precision": 3, "exp_digits": 1}
     if std_fmt_kwargs is None:
-        std_fmt_kwargs = {'precision': 3, 'exp_digits': 1}
-        
+        std_fmt_kwargs = {"precision": 3, "exp_digits": 1}
+
+    # Set unique to False by default to keep all digits
+    for kwargs in [mean_fmt_kwargs, std_fmt_kwargs]:
+        kwargs["unique"] = kwargs.get("unique", False)
+
     # Deal with default metric
     if metric is None:
         metric = df.columns[0][0]
-        
+
     # Expand the problem params
     if isinstance(problem_params, str):
         problem_params = [problem_params]
@@ -282,35 +324,35 @@ def construct_metric_comparison_table(
         Used to convert a row in the aggregate dataframe into a string for the combined table
         """
         # Handle nans
-        if not np.isfinite(x[(metric, 'mean')]):
-            return '-'
-        
+        if not np.isfinite(x[(metric, "mean")]):
+            return "-"
+
         # Handle the floating point numbers
-        mean = np.format_float_scientific(x[(metric, 'mean')], **mean_fmt_kwargs)
-        std =  np.format_float_scientific(x[(metric, 'std')], **std_fmt_kwargs)
-        
+        mean = np.format_float_scientific(x[(metric, "mean")], **mean_fmt_kwargs)
+        std = np.format_float_scientific(x[(metric, "std")], **std_fmt_kwargs)
+
         # Construct the string for this cell in the table
-        ret = f'{ mean } ({ std })'
-        
+        ret = f"{ mean } ({ std })"
+
         # Add the comparison, if provided
         if (metric, "wilcoxon_comp") in x and x[(metric, "wilcoxon_comp")]:
             ret = f'{ ret } { x[(metric, "wilcoxon_comp")] }'
-        
+
         # Handle bolding the cell if we are the best in the row
-        if x[(metric, 'wilcoxon_best')]:
-            ret = f'\\cellbold { ret }' 
+        if x[(metric, "wilcoxon_best")]:
+            ret = f"\\cellbold { ret }"
         return ret
 
     # Convert the metrics into text for the row
-    df['cell_txt'] = df.apply(get_cell, axis=1)
+    df["cell_txt"] = df.apply(get_cell, axis=1)
 
     # Pivot so we get a table of just the txt values
     df = df.pivot_table(
-        index='problem', 
-        columns=('exp_name' if 'exp_name' in df.index.names else 'exp_idx'),
-        values=['cell_txt'], 
+        index="problem",
+        columns=("exp_name" if "exp_name" in df.index.names else "exp_idx"),
+        values=["cell_txt"],
         aggfunc=lambda x: x,
-        fill_value = '-',
+        fill_value="-",
     )
 
     # Remove the unecessary levels of columns (and its name)
@@ -331,8 +373,8 @@ def construct_metric_comparison_table(
 
     # Set the indices and their names
     df.index = pd.MultiIndex.from_tuples(indices)
-    df.index = df.index.set_names(['Problem'] + [n for n, _ in problem_params])
-    
+    df.index = df.index.set_names(["Problem"] + [n for n, _ in problem_params])
+
     # Sort by the index lexicographically
     df = df.sort_index(axis=0)
     return df
@@ -358,12 +400,12 @@ def gather_metric_values_stepwise(df: pd.DataFrame, metric: str, fevals: int) ->
         The metric values
     """
     # `get_index_before` assumes sorted values
-    df_sorted = df.sort_values('fevals')
-    
+    df_sorted = df.sort_values("fevals")
+
     # Perform the stepwise interpolation
-    return  df_sorted[metric].values[get_index_before(df_sorted['fevals'], fevals)]
-    
-    
+    return df_sorted[metric].values[get_index_before(df_sorted["fevals"], fevals)]
+
+
 def aggregate_metric_series_apply_fn(df: pd.DataFrame) -> pd.DataFrame:
     """
     For a dataframe containing a single problem and run (with multiple evaluations) collect statistics of the metrics over all
@@ -380,37 +422,41 @@ def aggregate_metric_series_apply_fn(df: pd.DataFrame) -> pd.DataFrame:
         The mean and std. deviation of the metrics and the points they were evaluated at
     """
     # The values of feval where we will evaluate the metrics
-    fevals = np.sort(df['fevals'].unique())
-    
+    fevals = np.sort(df["fevals"].unique())
+
     # Filter so that the evaluation points are greater than the starting value feval for each run
     # Note: lambda accepts keyword arguments as a hack to prevent an error with (what I think) is different pandas
     # versions. In earlier versions of pandas apply will try to pass `include_groups` as a kwarg to the lambda. However, in
     # later versions we need to set it here to avoid a deprecation warning.
-    min_feval = max(df.groupby('run_idx').apply(lambda x, **kw: x['fevals'].min(), include_groups=False))
+    min_feval = max(df.groupby("run_idx").apply(lambda x, **kw: x["fevals"].min(), include_groups=False))
     fevals = fevals[fevals >= min_feval]
     fevals = fevals.astype(int)
 
     # The metric names
     metrics = get_metric_names(df)
 
-    # Calculate each of the series statistics collecting them into a dict    
+    # Calculate each of the series statistics collecting them into a dict
     data = {}
     for metric in metrics:
         # The "interpolated" (step-wise) metric values at each of the function evaluations in `fevals`
-        apply_fn = lambda g, **kw: gather_metric_values_stepwise(g, metric, fevals)
-        vals = df.groupby('run_idx').apply(apply_fn, include_groups=False)
-        vals = np.array(vals.to_list())  # Each row contains the values of the metric for a single evaluation at `fevals`
-        
+        def apply_fn(g, **kw):
+            return gather_metric_values_stepwise(g, metric, fevals)
+
+        vals = df.groupby("run_idx").apply(apply_fn, include_groups=False)
+        vals = np.array(
+            vals.to_list()
+        )  # Each row contains the values of the metric for a single evaluation at `fevals`
+
         # Calculate statistics on it and add to the dict of data
-        data[(metric, 'mean')] = np.mean(vals, axis=0)
-        data[(metric, 'median')] = np.median(vals, axis=0)
-        data[(metric, 'pct_2.5')] = np.percentile(vals, 2.5, axis=0)
-        data[(metric, 'pct_97.5')] = np.percentile(vals, 97.5, axis=0)
-        data[(metric, 'std')] = np.std(vals, axis=0)
-        
+        data[(metric, "mean")] = np.mean(vals, axis=0)
+        data[(metric, "median")] = np.median(vals, axis=0)
+        data[(metric, "pct_2.5")] = np.percentile(vals, 2.5, axis=0)
+        data[(metric, "pct_97.5")] = np.percentile(vals, 97.5, axis=0)
+        data[(metric, "std")] = np.std(vals, axis=0)
+
     # Return as a dataframe
     df = pd.DataFrame(data, index=fevals)
-    df.index.name = 'fevals'
+    df.index.name = "fevals"
     return df
 
 
@@ -419,7 +465,7 @@ def aggregate_metric_series(df: pd.DataFrame, keep_filename: bool = False) -> pd
     Performs aggregation of metrics calculated on a single problem and within a single experiment for all fevals. The input
     dataframe should have the schema output by `eval_metrics_experiments`. This will have the value of metrics versus the number
     of function evaluations for multiple problems, multiple runs, and multiple evaluations in each of the runs.
-    
+
     This analysis will calculate statistics on the metrics at each value of `fevals` for the runs. If the array of
     `fevals` is not the same between runs which are being aggregated then it happens at all unique values of `fevals`
     across the runs. These values are used as a cutoff and at any given number of function evaluations the data is being
@@ -438,14 +484,14 @@ def aggregate_metric_series(df: pd.DataFrame, keep_filename: bool = False) -> pd
         Table with the aggregated series
     """
     # Apply the aggregation and return
-    by = ['problem', 'exp_idx']
+    by = ["problem", "exp_idx"]
     if keep_filename:
-        by.append('filename')
-    if 'exp_name' in df.columns:
-        by.append('exp_name')
-    
+        by.append("filename")
+    if "exp_name" in df.columns:
+        by.append("exp_name")
+
     # The lambda has the parameter `kw` as a hack (see note in `aggregate_metric_series_apply_fn`)
-    return df.groupby(by).apply(lambda x,  **kw: aggregate_metric_series_apply_fn(x), include_groups=False)
+    return df.groupby(by).apply(lambda x, **kw: aggregate_metric_series_apply_fn(x), include_groups=False)
 
 
 def comparison_table_to_latex(df: pd.DataFrame) -> str:
@@ -453,14 +499,14 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
     Converts the table created from `construct_metric_comparison_table` into latex with nice formatting. Headers are centered
     and bolded. A summary row of the comparisons in the style of IEEE Transactions on Evolutionary Computation is added at the
     bottom.
-    
+
     The table will be made in the `tabular` environment and uses the `multirow` package. A custom command for bolding of the
     cells should be defined at the top of your file.
-    
+
     ```
     % Loaded for benchmark tables
     \usepackage{multirow}
-    
+
     % For bolding the cells in the tables
     \newcommand{\cellbold}{\cellcolor{gray!50}}
     ```
@@ -476,31 +522,39 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
         The latex table
     """
     # Get the latex representation
-    latex_str = df.to_latex(multirow=True, escape=False, index=True).replace('multirow[t]', 'multirow')
+    latex_str = df.to_latex(multirow=True, escape=False, index=True).replace("multirow[t]", "multirow")
 
     # Count the number of each comparison for the columns and construct the summary to go at the bottom
-    summary_str = r' \multicolumn{1}{c}{%d/%d/%d} '
-    comparisons = df.map(lambda x: (x[-1] if len(x) > 4 else '')).apply(pd.Series.value_counts).fillna(0)
-    comparisons = comparisons.apply(lambda x: summary_str % (int(x.get('+', 0)), int(x.get('-', 0)), int(x.get('=', 0))))
+    # Do this by counting the characters at the end of each of the cells.
+    def val_counts_to_summary_str(counts):
+        n_plus = int(counts.get("+", 0))
+        n_minus = int(counts.get("-", 0))
+        n_equal = int(counts.get("=", 0))
+        if (n_minus + n_plus + n_equal) == 0:
+            return " "
+        return " \multicolumn{1}{c}{%d/%d/%d} " % (n_plus, n_minus, n_equal)
+
+    comparisons = df.map(lambda x: (x[-1] if len(x) > 4 else "")).apply(pd.Series.value_counts).fillna(0)
+    comparisons = comparisons.apply(val_counts_to_summary_str)
 
     # Construct text for the final row
-    comparison_cells = [(r' \multicolumn{%d}{c}{+/-/=} ' % df.index.nlevels)] + comparisons.values[:-1].tolist() + [' ']
-    summary_line = '&'.join(comparison_cells) + r'\\'
+    comparison_cells = [(r" \multicolumn{%d}{c}{+/-/=} " % df.index.nlevels)] + comparisons.to_list()
+    summary_line = "&".join(comparison_cells) + r"\\"
 
     # Bold and center the header
     lines = []
     header = False
     header_cells = []
-    for l in latex_str.split('\n'):
-        if r'\midrule' in l:
+    for ln in latex_str.split("\n"):
+        if r"\midrule" in ln:
             # Inject the header cells at the top
-            lines.append('&'.join(header_cells) + r'\\')
+            lines.append("&".join(header_cells) + r"\\")
             header = False
         elif header:
             # Get the individual cells in the header and center/bold them
-            ls = l.replace(r'\\', '').split('&')
-            ls = [r'\multicolumn{1}{c}{\textbf{' + l + r'}}' if l.strip() else l for l in ls]
-           
+            ls = ln.replace(r"\\", "").split("&")
+            ls = [r"\multicolumn{1}{c}{\textbf{" + lns + r"}}" if lns.strip() else lns for lns in ls]
+
             # Merge into the overall set of header cells
             if not header_cells:
                 header_cells = ls
@@ -508,14 +562,21 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
                 for idx, (a, b) in enumerate(zip(ls, header_cells)):
                     header_cells[idx] = a + b
             continue
-        elif r'\toprule' in l:
+        elif r"\toprule" in ln:
             header = True
-        
+
         # Inject the summary line into the table
-        if r'\bottomrule' in l:
+        if r"\bottomrule" in ln:
             lines.append(summary_line)
-        lines.append(l)
-    latex_str = '\n'.join(lines)
-    
-    # Return it
-    return latex_str.replace('=', r'$\approx$')
+        lines.append(ln)
+    latex_str = "\n".join(lines)
+
+    # Keep first 3 lines unchanged, replace "=" in remaining lines, avoid problems with experiment names
+    # that have equals characert in them
+    lines = latex_str.split("\n")
+    for i in range(len(lines)):
+        if i >= 3:  # Only process lines after the third line
+            lines[i] = lines[i].replace("=", r"$\approx$")
+
+    # Join the lines back together
+    return "\n".join(lines)
