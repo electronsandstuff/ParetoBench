@@ -18,7 +18,7 @@ class Metric:
 
 class InvertedGenerationalDistance(Metric):
     """
-    Calculates the inverse generational distance for the population to the Pareto front in the named problem.
+    Calculates the inverted generational distance for the population to the Pareto front in the named problem.
     """
 
     def __init__(self, n_pf=1000):
