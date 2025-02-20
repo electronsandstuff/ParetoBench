@@ -532,7 +532,7 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
         n_equal = int(counts.get("=", 0))
         if (n_minus + n_plus + n_equal) == 0:
             return " "
-        return " \multicolumn{1}{c}{%d/%d/%d} " % (n_plus, n_minus, n_equal)
+        return r" \multicolumn{1}{c}{%d/%d/%d} " % (n_plus, n_minus, n_equal)
 
     comparisons = df.map(lambda x: (x[-1] if len(x) > 4 else "")).apply(pd.Series.value_counts).fillna(0)
     comparisons = comparisons.apply(val_counts_to_summary_str)
