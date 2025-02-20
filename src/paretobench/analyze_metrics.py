@@ -84,14 +84,30 @@ def apply_feval_cutoff(df: pd.DataFrame, max_feval: int = 300) -> pd.DataFrame:
 
     Parameters
     ----------
-    df : Dataframe
+    df : DataFrame
         The metric data
     max_feval : int, optional
         Cutoff of how many function evaluations are allowed, by default 300
+
+    Returns
+    -------
+    DataFrame
+        Filtered DataFrame containing one row per group with the largest fevals value not exceeding max_feval
     """
+    # Filter to rows within max_feval
     df = df[df["fevals"] <= max_feval]
-    idx = df.groupby(by=["run_idx", "exp_idx", "problem"])["fevals"].idxmax()
-    return df.loc[idx].reset_index(drop=True)
+
+    # Grab the row with the largest value of `fevals` within each group
+    df = df[df.groupby(["run_idx", "exp_idx", "problem"])["fevals"].transform("max") == df["fevals"]]
+
+    # Check for duplicate maximum values within groups
+    counts = df.groupby(["run_idx", "exp_idx", "problem"]).size()
+    if (counts > 1).any():
+        raise ValueError("At least one evaluation has a duplicate value for `fevals`")
+
+    # Fix the index
+    df = df.reset_index(drop=True)
+    return df
 
 
 def aggregate_metrics_feval_budget(
@@ -151,49 +167,53 @@ def aggregate_metrics_feval_budget(
     df["problem"] = df.apply(lambda x: normalize_problem_name(x["problem"]), axis=1)
     df = apply_feval_cutoff(df, max_feval)
 
-    def get_wilcoxon_comparison(x, metric):
+    def get_wilcoxon_comparison(our_vals, metric):
         """
         Given the grouped evaluations for this problem and run, compare ourself with the "reference" run
         """
         # If we are the reference run don't perform the comparison against ourself
-        if df.loc[x.index[0]]["exp_idx"] == wilcoxon_idx:
+        if df.loc[our_vals.index[0]]["exp_idx"] == wilcoxon_idx:
             return ""
 
         # Get the problem name
-        problem = df.loc[x.index[0]]["problem"]
+        problem = df.loc[our_vals.index[0]]["problem"]
 
         # Get the values for the metric on this problem from the container we are comparing agianst
-        y = df.loc[(df["exp_idx"] == wilcoxon_idx) & (df["problem"] == problem)][metric]
+        other_vals = df[(df["exp_idx"] == wilcoxon_idx) & (df["problem"] == problem)][metric]
 
         # Use the stats test to compare values
-        if ranksums(x.to_numpy(), y.to_numpy(), "less")[1] < wilcoxon_p:
+        if ranksums(our_vals.to_numpy(), other_vals.to_numpy(), "less")[1] < wilcoxon_p:
             return {"-": "+", "+": "-"}[directions[metric]]
-        if ranksums(x.to_numpy(), y.to_numpy(), "greater")[1] < wilcoxon_p:
+        if ranksums(our_vals.to_numpy(), other_vals.to_numpy(), "greater")[1] < wilcoxon_p:
             return directions[metric]
         return "="
 
-    def is_best(x, metric):
+    def is_best(our_vals, metric):
         """
         Given one of the groupby objects, is this collection of evaluations one of the best in the table for this problem.
         """
         # Get the problem name
-        problem = df.loc[x.index[0]]["problem"]
+        problem = df.loc[our_vals.index[0]]["problem"]
 
-        # Go through each container figuring out if we are the best
-        for n in df["exp_idx"].unique().tolist():
-            y = df.loc[(df["exp_idx"] == n) & (df["problem"] == problem)][metric]
+        # Compare against every other container
+        for exp_idx in df["exp_idx"].unique().tolist():
+            # Get all of the values of this metric for the container we are comparing against and this problem
+            other_vals = df[(df["exp_idx"] == exp_idx) & (df["problem"] == problem)][metric]
 
-            if not len(y):
+            # Perform the rank-sum test and if the other is better than us, we are not the best
+            if not len(other_vals):
                 continue
             if (
                 ranksums(
-                    x.to_numpy(),
-                    y.to_numpy(),
+                    our_vals.to_numpy(),
+                    other_vals.to_numpy(),
                     {"-": "greater", "+": "less"}[directions[metric]],
                 )[1]
                 < wilcoxon_p
             ):
                 return False
+
+        # We could not find a container which beat us, we are among the best
         return True
 
     # Get metric names and validate
@@ -220,7 +240,9 @@ def aggregate_metrics_feval_budget(
 
     # Apply the aggregation and return
     by = ["problem", "exp_idx"]
-    by.append("fname")
+
+    if not df["fname"].isna().any():
+        by.append("fname")
     if "exp_name" in df.columns:
         by.append("exp_name")
     return df.groupby(by).agg(agg_funs)
@@ -503,14 +525,20 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
     latex_str = df.to_latex(multirow=True, escape=False, index=True).replace("multirow[t]", "multirow")
 
     # Count the number of each comparison for the columns and construct the summary to go at the bottom
-    summary_str = r" \multicolumn{1}{c}{%d/%d/%d} "
+    # Do this by counting the characters at the end of each of the cells.
+    def val_counts_to_summary_str(counts):
+        n_plus = int(counts.get("+", 0))
+        n_minus = int(counts.get("-", 0))
+        n_equal = int(counts.get("=", 0))
+        if (n_minus + n_plus + n_equal) == 0:
+            return " "
+        return " \multicolumn{1}{c}{%d/%d/%d} " % (n_plus, n_minus, n_equal)
+
     comparisons = df.map(lambda x: (x[-1] if len(x) > 4 else "")).apply(pd.Series.value_counts).fillna(0)
-    comparisons = comparisons.apply(
-        lambda x: summary_str % (int(x.get("+", 0)), int(x.get("-", 0)), int(x.get("=", 0)))
-    )
+    comparisons = comparisons.apply(val_counts_to_summary_str)
 
     # Construct text for the final row
-    comparison_cells = [(r" \multicolumn{%d}{c}{+/-/=} " % df.index.nlevels)] + comparisons.values[:-1].tolist() + [" "]
+    comparison_cells = [(r" \multicolumn{%d}{c}{+/-/=} " % df.index.nlevels)] + comparisons.to_list()
     summary_line = "&".join(comparison_cells) + r"\\"
 
     # Bold and center the header
@@ -543,5 +571,12 @@ def comparison_table_to_latex(df: pd.DataFrame) -> str:
         lines.append(ln)
     latex_str = "\n".join(lines)
 
-    # Return it
-    return latex_str.replace("=", r"$\approx$")
+    # Keep first 3 lines unchanged, replace "=" in remaining lines, avoid problems with experiment names
+    # that have equals characert in them
+    lines = latex_str.split("\n")
+    for i in range(len(lines)):
+        if i >= 3:  # Only process lines after the third line
+            lines[i] = lines[i].replace("=", r"$\approx$")
+
+    # Join the lines back together
+    return "\n".join(lines)
