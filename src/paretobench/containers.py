@@ -76,7 +76,7 @@ class Population(BaseModel):
         if values.get("obj_directions") is None:
             values["obj_directions"] = "-" * values["f"].shape[1]
         if values.get("constraint_directions") is None:
-            values["constraint_directions"] = ">" * values["g"].shape[1]
+            values["constraint_directions"] = "<" * values["g"].shape[1]
         if values.get("constraint_targets") is None:
             values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
 
@@ -199,8 +199,8 @@ class Population(BaseModel):
         """
         Return constraints transformed such that g[...] >= 0 are the feasible solutions.
         """
-        gc = binary_str_to_numpy(self.constraint_directions, ">", "<")[None, :] * self.g
-        gc += binary_str_to_numpy(self.constraint_directions, "<", ">")[None, :] * self.constraint_targets[None, :]
+        gc = binary_str_to_numpy(self.constraint_directions, "<", ">")[None, :] * self.g
+        gc += binary_str_to_numpy(self.constraint_directions, ">", "<")[None, :] * self.constraint_targets[None, :]
         return gc
 
     def __add__(self, other: "Population") -> "Population":
@@ -289,7 +289,7 @@ class Population(BaseModel):
     def get_feasible_indices(self):
         if self.g.shape[1] == 0:
             return np.ones((len(self)), dtype=bool)
-        return np.all(self.g_canonical >= 0.0, axis=1)
+        return np.all(self.g_canonical <= 0.0, axis=1)
 
     def get_nondominated_set(self):
         return self[self.get_nondominated_indices()]
