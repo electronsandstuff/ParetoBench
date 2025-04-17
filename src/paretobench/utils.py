@@ -50,14 +50,14 @@ def get_domination(objs, constraints=None):
 
     if constraints is not None:
         # If one individual is feasible and the other isn't, set domination
-        feas = constraints >= 0.0
+        feas = constraints <= 0.0
         ind = np.bitwise_and(feas.all(axis=1)[:, None], ~feas.all(axis=1)[None, :])
         dom[ind] = True
         ind = np.bitwise_and(~feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
         dom[ind] = False
 
         # If both are infeasible, then the individual with the least constraint violation wins
-        constraint_violation = -np.sum(np.minimum(constraints, 0), axis=1)
+        constraint_violation = np.sum(np.maximum(constraints, 0), axis=1)
         comp = constraint_violation[:, None] < constraint_violation[None, :]
         ind = ~np.bitwise_or(feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
         dom[ind] = comp[ind]
