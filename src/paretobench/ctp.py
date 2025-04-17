@@ -62,7 +62,7 @@ class CTP1(CTPx):
         g = []
         for i in range(self.j):
             g.append(f[1] - self._a[i] * np.exp(-self._b[i] * f[0]))
-        return Population(f=f.T, g=np.vstack(g).T)
+        return Population(f=f.T, g=-np.vstack(g).T)
 
 
 class CTP2_7(CTPx):
@@ -118,7 +118,7 @@ class CTP2_7(CTPx):
         )
         g = np.vstack((c,))
 
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
 
 class CTP2(CTP2_7):
