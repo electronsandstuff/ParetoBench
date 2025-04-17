@@ -722,6 +722,10 @@ class Experiment(BaseModel):
     """
     Represents on "experiment" performed on a multibojective genetic algorithm. It may contain several evaluations of the
     algorithm on different problems or repeated iterations on the same problem.
+
+    Note: when loading files from disk, the `file_version` field will indicate the version of the file
+    that was loaded. When the `Experiment` is saved, the resulting file will contain the file version
+    used to save the data.
     """
 
     runs: List[History]
@@ -850,7 +854,7 @@ class Experiment(BaseModel):
             f.attrs["software_version"] = self.software_version
             f.attrs["comment"] = self.comment
             f.attrs["creation_time"] = self.creation_time.isoformat()
-            f.attrs["file_version"] = self.file_version
+            f.attrs["file_version"] = "1.1.0"
             f.attrs["file_format"] = "ParetoBench Multi-Objective Optimization Data"
 
             # Calculate the necessary zero padding based on the number of runs
@@ -905,4 +909,5 @@ class Experiment(BaseModel):
                 software_version=f.attrs["software_version"],
                 comment=f.attrs["comment"],
                 creation_time=creation_time,
+                file_version=f.attrs["file_version"],
             )
