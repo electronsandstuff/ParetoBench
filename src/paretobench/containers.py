@@ -619,7 +619,7 @@ class History(BaseModel):
             g["g"].attrs["targets"] = self.reports[0].constraint_targets
 
     @classmethod
-    def _from_h5py_group(cls, grp: h5py.Group):
+    def _from_h5py_group(cls, grp: h5py.Group, file_version: str):
         """
         Construct a new History object from data in an HDF5 group.
 
@@ -638,12 +638,17 @@ class History(BaseModel):
         f = grp["f"][()]
         g = grp["g"][()]
 
-        # Get the names
+        # Get the objective / constraint settings
         obj_directions = grp["f"].attrs.get("directions", None)
         constraint_directions = grp["g"].attrs.get("directions", None)
         constraint_targets = grp["g"].attrs.get("targets", None)
 
-        # Get the objective / constraint settings
+        # Before file version 1.1.0 which introduced explicit constraint directions,
+        # the default constraint type was g(x) >= 0.0
+        if file_version == "1.0.0":
+            constraint_directions = ">" * g.shape[1]
+
+        # Get the names
         names_x = grp["x"].attrs.get("names", None)
         names_f = grp["f"].attrs.get("names", None)
         names_g = grp["g"].attrs.get("names", None)
@@ -890,11 +895,12 @@ class Experiment(BaseModel):
         # Load the data
         with h5py.File(fname, mode="r") as f:
             # Load each of the runs keeping track of the order of the indices
+            file_version = f.attrs["file_version"]
             idx_runs = []
             for idx_str, run_grp in f.items():
                 m = re.match(r"run_(\d+)", idx_str)
                 if m:
-                    idx_runs.append((int(m.group(1)), History._from_h5py_group(run_grp)))
+                    idx_runs.append((int(m.group(1)), History._from_h5py_group(run_grp, file_version=file_version)))
             runs = [x[1] for x in sorted(idx_runs, key=lambda x: x[0])]
 
             # Convert the creation_time back to a timezone-aware datetime object
@@ -909,5 +915,5 @@ class Experiment(BaseModel):
                 software_version=f.attrs["software_version"],
                 comment=f.attrs["comment"],
                 creation_time=creation_time,
-                file_version=f.attrs["file_version"],
+                file_version=file_version,
             )
