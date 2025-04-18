@@ -76,7 +76,7 @@ class Population(BaseModel):
         if values.get("obj_directions") is None:
             values["obj_directions"] = "-" * values["f"].shape[1]
         if values.get("constraint_directions") is None:
-            values["constraint_directions"] = ">" * values["g"].shape[1]
+            values["constraint_directions"] = "<" * values["g"].shape[1]
         if values.get("constraint_targets") is None:
             values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
 
@@ -199,8 +199,8 @@ class Population(BaseModel):
         """
         Return constraints transformed such that g[...] >= 0 are the feasible solutions.
         """
-        gc = binary_str_to_numpy(self.constraint_directions, ">", "<")[None, :] * self.g
-        gc += binary_str_to_numpy(self.constraint_directions, "<", ">")[None, :] * self.constraint_targets[None, :]
+        gc = binary_str_to_numpy(self.constraint_directions, "<", ">")[None, :] * self.g
+        gc += binary_str_to_numpy(self.constraint_directions, ">", "<")[None, :] * self.constraint_targets[None, :]
         return gc
 
     def __add__(self, other: "Population") -> "Population":
@@ -289,7 +289,7 @@ class Population(BaseModel):
     def get_feasible_indices(self):
         if self.g.shape[1] == 0:
             return np.ones((len(self)), dtype=bool)
-        return np.all(self.g_canonical >= 0.0, axis=1)
+        return np.all(self.g_canonical <= 0.0, axis=1)
 
     def get_nondominated_set(self):
         return self[self.get_nondominated_indices()]
@@ -619,7 +619,7 @@ class History(BaseModel):
             g["g"].attrs["targets"] = self.reports[0].constraint_targets
 
     @classmethod
-    def _from_h5py_group(cls, grp: h5py.Group):
+    def _from_h5py_group(cls, grp: h5py.Group, file_version: str):
         """
         Construct a new History object from data in an HDF5 group.
 
@@ -638,12 +638,17 @@ class History(BaseModel):
         f = grp["f"][()]
         g = grp["g"][()]
 
-        # Get the names
+        # Get the objective / constraint settings
         obj_directions = grp["f"].attrs.get("directions", None)
         constraint_directions = grp["g"].attrs.get("directions", None)
         constraint_targets = grp["g"].attrs.get("targets", None)
 
-        # Get the objective / constraint settings
+        # Before file version 1.1.0 which introduced explicit constraint directions,
+        # the default constraint type was g(x) >= 0.0
+        if file_version == "1.0.0":
+            constraint_directions = ">" * g.shape[1]
+
+        # Get the names
         names_x = grp["x"].attrs.get("names", None)
         names_f = grp["f"].attrs.get("names", None)
         names_g = grp["g"].attrs.get("names", None)
@@ -722,6 +727,10 @@ class Experiment(BaseModel):
     """
     Represents on "experiment" performed on a multibojective genetic algorithm. It may contain several evaluations of the
     algorithm on different problems or repeated iterations on the same problem.
+
+    Note: when loading files from disk, the `file_version` field will indicate the version of the file
+    that was loaded. When the `Experiment` is saved, the resulting file will contain the file version
+    used to save the data.
     """
 
     runs: List[History]
@@ -850,7 +859,7 @@ class Experiment(BaseModel):
             f.attrs["software_version"] = self.software_version
             f.attrs["comment"] = self.comment
             f.attrs["creation_time"] = self.creation_time.isoformat()
-            f.attrs["file_version"] = self.file_version
+            f.attrs["file_version"] = "1.1.0"
             f.attrs["file_format"] = "ParetoBench Multi-Objective Optimization Data"
 
             # Calculate the necessary zero padding based on the number of runs
@@ -886,11 +895,12 @@ class Experiment(BaseModel):
         # Load the data
         with h5py.File(fname, mode="r") as f:
             # Load each of the runs keeping track of the order of the indices
+            file_version = f.attrs["file_version"]
             idx_runs = []
             for idx_str, run_grp in f.items():
                 m = re.match(r"run_(\d+)", idx_str)
                 if m:
-                    idx_runs.append((int(m.group(1)), History._from_h5py_group(run_grp)))
+                    idx_runs.append((int(m.group(1)), History._from_h5py_group(run_grp, file_version=file_version)))
             runs = [x[1] for x in sorted(idx_runs, key=lambda x: x[0])]
 
             # Convert the creation_time back to a timezone-aware datetime object
@@ -905,4 +915,5 @@ class Experiment(BaseModel):
                 software_version=f.attrs["software_version"],
                 comment=f.attrs["comment"],
                 creation_time=creation_time,
+                file_version=file_version,
             )

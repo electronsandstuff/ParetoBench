@@ -19,7 +19,7 @@ def test_per_point_settings_nondominated():
     # Create a simple population where all points are feasible and non-dominated
     pop = Population.from_random(n_objectives=2, n_decision_vars=2, n_constraints=1, pop_size=3)
     # Make all points feasible
-    pop.g[:] = 1.0
+    pop.g[:] = -1.0
     # Make points non-dominated by setting objectives such that no point dominates another
     pop.f = np.array([[1.0, 2.0], [2.0, 1.0], [1.5, 1.5]])
 
@@ -39,7 +39,7 @@ def test_per_point_settings_random():
     # Set up specific test cases
     pop.f = np.array([[1.0, 1.0], [2.0, 2.0], [1.5, 1.5], [0.5, 0.5], [1.5, 0.5]])
 
-    pop.g = np.array([[1.0], [1.0], [-1.0], [-1.0], [1.0]])
+    pop.g = -np.array([[1.0], [1.0], [-1.0], [-1.0], [1.0]])
 
     settings = get_per_point_settings_population(pop, domination_filt="all", feasibility_filt="all")
 

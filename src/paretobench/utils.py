@@ -41,7 +41,23 @@ def uniform_grid(n, m):
     )
 
 
-def get_domination(objs, constraints=None):
+def get_domination(objs: np.ndarray, constraints: np.ndarray | None = None) -> np.ndarray:
+    """
+    Calculate domination between all pairs of individuals in the population.
+
+    Parameters
+    ----------
+    objs : np.ndarray
+        The objectives, first index is batch index
+    constraints : np.ndarray / None
+        The constraints (such that g<=0 means feasible) or None if no constraints
+
+    Returns
+    -------
+    np.ndarray
+        (n, n) boolean array with domination relationship. dom_{ij} is true if individual i
+        dominates individual j.
+    """
     # Compare all pairs of individuals based on domination
     dom = np.bitwise_and(
         (objs[:, None, :] <= objs[None, :, :]).all(axis=-1),
@@ -50,14 +66,14 @@ def get_domination(objs, constraints=None):
 
     if constraints is not None:
         # If one individual is feasible and the other isn't, set domination
-        feas = constraints >= 0.0
+        feas = constraints <= 0.0
         ind = np.bitwise_and(feas.all(axis=1)[:, None], ~feas.all(axis=1)[None, :])
         dom[ind] = True
         ind = np.bitwise_and(~feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
         dom[ind] = False
 
         # If both are infeasible, then the individual with the least constraint violation wins
-        constraint_violation = -np.sum(np.minimum(constraints, 0), axis=1)
+        constraint_violation = np.sum(np.maximum(constraints, 0), axis=1)
         comp = constraint_violation[:, None] < constraint_violation[None, :]
         ind = ~np.bitwise_or(feas.all(axis=1)[:, None], feas.all(axis=1)[None, :])
         dom[ind] = comp[ind]

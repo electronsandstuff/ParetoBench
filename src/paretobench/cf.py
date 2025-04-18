@@ -64,7 +64,7 @@ class CF1(CFx, ProblemWithFixedPF):
             )
         )
         g = np.vstack((f[0] + f[1] - self.a * np.abs(np.sin(self.b * np.pi * (f[0] - f[1] + 1))) - 1,))
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -110,7 +110,7 @@ class CF2(CFx, ProblemWithPF):
         )
         t = f[1] + np.sqrt(f[0]) - self.a * np.sin(self.b * np.pi * (np.sqrt(f[0]) - f[1] + 1)) - 1
         g = np.vstack((t / (1 + np.exp(4 * np.abs(t))),))
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -165,7 +165,7 @@ class CF3(CFx, ProblemWithPF):
             )
         )
         g = np.vstack((f[1] + f[0] ** 2 - self.a * np.sin(self.b * np.pi * (f[0] ** 2 - f[1] + 1)) - 1,))
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -218,7 +218,7 @@ class CF4(CFx, ProblemWithPF):
 
         t = x[1] - np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n) - 0.5 * x[0] + 0.25
         g = np.vstack((t / (1 + np.exp(4 * np.abs(t))),))
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -270,7 +270,7 @@ class CF5(CFx, ProblemWithPF):
 
         g = np.vstack((x[1] - 0.8 * x[0] * np.sin(6 * np.pi * x[0] + 2 * np.pi / self.n) - 0.5 * x[0] + 0.25,))
 
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -328,7 +328,7 @@ class CF6(CFx, ProblemWithPF):
         )
         g = np.vstack((g1, g2))
 
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -384,7 +384,7 @@ class CF7(CFx, ProblemWithPF):
         )
         g = np.vstack((g1, g2))
 
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -443,7 +443,7 @@ class CF8(CFx, ProblemWithPF):
             )
         )
 
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -501,7 +501,7 @@ class CF9(CFx, ProblemWithPF):
             )
         )
 
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -556,7 +556,7 @@ class CF10(CFx, ProblemWithPF):
             )
         )
 
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):

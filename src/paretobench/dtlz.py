@@ -182,7 +182,7 @@ class DTLZ8(DTLZx):
         fsum = f[:-1, None, :] + f[None, :-1, :]
         fsum[np.diag_indices(2), :] = np.inf  # For i != j
         g = np.vstack(g + [2 * f[-1] + np.min(np.min(fsum, axis=0), axis=0) - 1])
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     def get_pareto_front(self, n):
         # Break points into the "pole" feature and the lower PF. Based on dimension, number in
@@ -244,7 +244,7 @@ class DTLZ9(DTLZx):
             ]
         )
         g = np.vstack([f[-1] ** 2 + f[j] ** 2 - 1 for j in range(self.m - 1)])
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     def get_pareto_front(self, n):
         th = np.linspace(0, 1, n)

@@ -196,7 +196,7 @@ class CONSTR(Problem):
 
         f = np.array([x[0], (1 + x[1]) / x[0]])
         g = np.array([x[1] + 9 * x[0] - 6, -x[1] + 9 * x[0] - 1])
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -233,7 +233,7 @@ class SRN(Problem):
 
         f = np.array([(x[0] - 2) ** 2 + (x[1] - 1) ** 2 + 2, 9 * x[0] - (x[1] - 1) ** 2])
         g = np.array([225 - (x[0] ** 2 + x[1] ** 2), -10 - (x[0] - 3 * x[1])])
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
@@ -275,7 +275,7 @@ class TNK(Problem):
                 0.5 - ((x[0] - 0.5) ** 2 + (x[1] - 0.5) ** 2),
             ]
         )
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_bounds(self):
@@ -334,7 +334,7 @@ class WATER(Problem):
                 550.0 - (0.164 / (x[0] * x[1]) + 631.13 * x[2] - 54.48),
             ]
         )
-        return Population(f=f.T, g=g.T)
+        return Population(f=f.T, g=-g.T)
 
     @property
     def var_lower_bounds(self):
