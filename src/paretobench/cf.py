@@ -493,11 +493,9 @@ class CF9(CFx, ProblemWithPF):
 
         f = np.vstack(
             (
-                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi)
-                + 2 / j[1::3].size * np.sum(summand[1::3], axis=0),
-                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi)
-                + 2 / j[2::3].size * np.sum(summand[2::3], axis=0),
-                np.sin(0.5 * x[0] * np.pi) + 2 / j[::3].size * np.sum(summand[::3], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi) + 2 * np.mean(summand[1::3], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi) + 2 * np.mean(summand[2::3], axis=0),
+                np.sin(0.5 * x[0] * np.pi) + 2 * np.mean(summand[::3], axis=0),
             )
         )
 
@@ -548,11 +546,9 @@ class CF10(CFx, ProblemWithPF):
 
         f = np.vstack(
             (
-                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi)
-                + 2 / j[1::3].size * np.sum(summand[1::3], axis=0),
-                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi)
-                + 2 / j[1::3].size * np.sum(summand[2::3], axis=0),
-                np.sin(0.5 * x[0] * np.pi) + 2 / j[::3].size * np.sum(summand[1::3], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi) + 2 * np.mean(summand[1::3], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi) + 2 * np.mean(summand[2::3], axis=0),
+                np.sin(0.5 * x[0] * np.pi) + 2 * np.mean(summand[1::3], axis=0),
             )
         )
 
