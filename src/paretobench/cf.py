@@ -462,8 +462,8 @@ class CF8(CFx, ProblemWithPF):
         f3 = []
         for i in range(n_parts):
             f3.append(np.linspace(0, 1, sub_n))
-            f1.append(np.sqrt(i / 2 / self.b * (1 - f3[-1] ** 2)))
-            f2.append(np.sqrt(1 - f1[-1] ** 2 - f3[-1] ** 2))
+            f1.append(np.sqrt(np.maximum(i / 2 / self.b * (1 - f3[-1] ** 2), 0.0)))
+            f2.append(np.sqrt(np.maximum(1 - f1[-1] ** 2 - f3[-1] ** 2, 0.0)))
 
         # Merge and return
         return np.vstack((np.concatenate(f1), np.concatenate(f2), np.concatenate(f3))).T
