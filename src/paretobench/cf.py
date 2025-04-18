@@ -427,11 +427,9 @@ class CF8(CFx, ProblemWithPF):
 
         f = np.vstack(
             (
-                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi)
-                + 2 / j[1::3].size * np.sum(summand[1::3], axis=0),
-                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi)
-                + 2 / j[2::3].size * np.sum(summand[2::3], axis=0),
-                np.sin(0.5 * x[0] * np.pi) + 2 / j[::3].size * np.sum(summand[::3], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi) + 2 * np.mean(summand[1::3], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi) + 2 * np.mean(summand[2::3], axis=0),
+                np.sin(0.5 * x[0] * np.pi) + 2 * np.mean(summand[::3], axis=0),
             )
         )
 
@@ -454,11 +452,21 @@ class CF8(CFx, ProblemWithPF):
         return np.concatenate(([1, 1], 4 * np.ones(self.n - 2)))
 
     def get_pareto_front(self, n):
-        sub_n = n // (2 * self.b + 1)
-        f3 = np.repeat(np.linspace(0, 1, sub_n), 2 * self.b + 1)
-        f1 = np.concatenate([np.sqrt(i / 2 / self.b * (1 - f3[:sub_n] ** 2)) for i in range(2 * self.b + 1)])
-        f2 = np.sqrt(np.maximum(0, 1 - f1**2 - f3**2))
-        return np.vstack((f1, f2, f3)).T
+        # Number of disconnected parts and number of points in each part
+        n_parts = 2 * self.b + 1
+        sub_n = n // n_parts
+
+        # Calculate each part
+        f1 = []
+        f2 = []
+        f3 = []
+        for i in range(n_parts):
+            f3.append(np.linspace(0, 1, sub_n))
+            f1.append(np.sqrt(i / 2 / self.b * (1 - f3[-1] ** 2)))
+            f2.append(np.sqrt(1 - f1[-1] ** 2 - f3[-1] ** 2))
+
+        # Merge and return
+        return np.vstack((np.concatenate(f1), np.concatenate(f2), np.concatenate(f3))).T
 
 
 class CF9(CFx, ProblemWithPF):
