@@ -422,26 +422,26 @@ class CF8(CFx, ProblemWithPF):
         # Transpose x (this function was written before ParetoBench standardized on rows being the batched index)
         x = x.T
 
-        j = np.arange(3, self.n + 1)
-        summand = (x[2:] - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)) ** 2
+        j = np.arange(1, self.n + 1)
+        summand = (x - 2 * x[1][None, :] * np.sin(2 * np.pi * x[0][None, :] + j[:, None] * np.pi / self.n)) ** 2
 
         f = np.vstack(
             (
-                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi) + 2 * np.mean(summand[1::3], axis=0),
-                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi) + 2 * np.mean(summand[2::3], axis=0),
-                np.sin(0.5 * x[0] * np.pi) + 2 * np.mean(summand[::3], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.cos(0.5 * x[1] * np.pi) + 2 * np.mean(summand[3::3, :], axis=0),
+                np.cos(0.5 * x[0] * np.pi) * np.sin(0.5 * x[1] * np.pi) + 2 * np.mean(summand[4::3, :], axis=0),
+                np.sin(0.5 * x[0] * np.pi) + 2 * np.mean(summand[2::3, :], axis=0),
             )
         )
 
         g = np.vstack(
             (
-                (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2)
-                - self.a * np.abs(np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1)))
-                - 1,
+                1
+                - (f[0] ** 2 + f[1] ** 2) / (1 - f[2] ** 2)
+                + self.a * np.abs(np.sin(self.b * np.pi * ((f[0] ** 2 - f[1] ** 2) / (1 - f[2] ** 2) + 1))),
             )
         )
 
-        return Population(f=f.T, g=-g.T)
+        return Population(f=f.T, g=g.T)
 
     @property
     def var_lower_bounds(self):
