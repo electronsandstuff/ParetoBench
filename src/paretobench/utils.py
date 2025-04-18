@@ -41,7 +41,23 @@ def uniform_grid(n, m):
     )
 
 
-def get_domination(objs, constraints=None):
+def get_domination(objs: np.ndarray, constraints: np.ndarray | None = None) -> np.ndarray:
+    """
+    Calculate domination between all pairs of individuals in the population.
+
+    Parameters
+    ----------
+    objs : np.ndarray
+        The objectives, first index is batch index
+    constraints : np.ndarray / None
+        The constraints (such that g<=0 means feasible) or None if no constraints
+
+    Returns
+    -------
+    np.ndarray
+        (n, n) boolean array with domination relationship. dom_{ij} is true if individual i
+        dominates individual j.
+    """
     # Compare all pairs of individuals based on domination
     dom = np.bitwise_and(
         (objs[:, None, :] <= objs[None, :, :]).all(axis=-1),
