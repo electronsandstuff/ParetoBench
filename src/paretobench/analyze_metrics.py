@@ -350,7 +350,7 @@ def construct_metric_comparison_table(
     df = df.pivot_table(
         index="problem",
         columns=("exp_name" if "exp_name" in df.index.names else "exp_idx"),
-        values=["cell_txt"],
+        values=[("cell_txt", "")],
         aggfunc=lambda x: x,
         fill_value="-",
     )
