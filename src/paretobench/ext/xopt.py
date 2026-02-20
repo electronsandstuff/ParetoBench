@@ -334,7 +334,7 @@ def import_nsga2_history(
     pops = []
     for idx, (gen, grp) in enumerate(pop_df.groupby(by="xopt_generation", sort=True)):
         # Sanity check that we are at the expected generation
-        if idx != gen:
+        if idx + 1 != gen:
             warnings.warn(
                 f"Non-consecutive groups detected - populations file is possibly corrupt. (generation at index {idx} is {gen})"
             )
