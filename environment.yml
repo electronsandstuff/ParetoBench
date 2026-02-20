@@ -3,5 +3,6 @@ dependencies:
   - python=3.11
   - pytest
   - pip
+  - xopt
   - pip:
     - pre-commit
