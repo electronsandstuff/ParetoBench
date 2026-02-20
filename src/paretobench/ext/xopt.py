@@ -227,7 +227,8 @@ def import_cnsga_history(
 
     # Get vocs from config file
     elif config is not None:
-        xx = Xopt.from_yaml(config)
+        with open(config) as f:
+            xx = Xopt.from_yaml(f)
         _vocs = xx.vocs
 
     else:
@@ -322,7 +323,8 @@ def import_nsga2_history(
 
     # Get vocs from config file
     elif config is not None:
-        xx = Xopt.from_yaml(config)
+        with open(config) as f:
+            xx = Xopt.from_yaml(f)
         _vocs = xx.vocs
 
     else:

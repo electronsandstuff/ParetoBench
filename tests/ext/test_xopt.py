@@ -44,38 +44,45 @@ def test_import_nsga2_history():
                 xopt_fs.append(xx.generator.vocs.objective_data(xx.generator.pop))
                 xopt_gs.append(xx.generator.vocs.constraint_data(xx.generator.pop))
 
+            # Save xopt to yaml file
+            xx.dump(os.path.join(output_dir, "xopt.yml"))
+
             # Verify that the data files are created
             assert os.path.exists(os.path.join(output_dir, "populations.csv"))
             assert os.path.exists(os.path.join(output_dir, "vocs.txt"))
 
-            # Load the data using ParetoBench
-            test_hist = import_nsga2_history(
-                os.path.join(output_dir, "populations.csv"), os.path.join(output_dir, "vocs.txt")
-            )
+            cases = [
+                (os.path.join(output_dir, "vocs.txt"), None),
+                (xx.generator.vocs, None),
+                (None, os.path.join(output_dir, "xopt.yml")),
+            ]
+            for vocs, config in cases:
+                # Load the data using ParetoBench
+                test_hist = import_nsga2_history(os.path.join(output_dir, "populations.csv"), vocs=vocs, config=config)
 
-            # Confirm the populations are the same
-            assert len(xopt_xs) == len(test_hist)
-            for rx, rf, rg, tp in zip(xopt_xs, xopt_fs, xopt_gs, test_hist.reports):
-                # Confirm number of individuals and right shape of contents
-                assert len(rx) == len(tp)
-                assert rf.shape[1] == tp.m
-                assert rx.shape[1] == tp.n
-                assert rg.shape[1] == tp.n_constraints
+                # Confirm the populations are the same
+                assert len(xopt_xs) == len(test_hist)
+                for rx, rf, rg, tp in zip(xopt_xs, xopt_fs, xopt_gs, test_hist.reports):
+                    # Confirm number of individuals and right shape of contents
+                    assert len(rx) == len(tp)
+                    assert rf.shape[1] == tp.m
+                    assert rx.shape[1] == tp.n
+                    assert rg.shape[1] == tp.n_constraints
 
-                def lexsorted(arr):
-                    return arr[np.lexsort(arr.T[::-1])]
+                    def lexsorted(arr):
+                        return arr[np.lexsort(arr.T[::-1])]
 
-                def df_comp(df1, df2):
-                    assert set(df1.columns) == set(df2.columns)
-                    cols = sorted(df1.columns)
-                    np.testing.assert_allclose(lexsorted(df1[cols].to_numpy()), lexsorted(df2[cols].to_numpy()))
+                    def df_comp(df1, df2):
+                        assert set(df1.columns) == set(df2.columns)
+                        cols = sorted(df1.columns)
+                        np.testing.assert_allclose(lexsorted(df1[cols].to_numpy()), lexsorted(df2[cols].to_numpy()))
 
-                # Confirm data is correct
-                df_comp(rx, pd.DataFrame(tp.x, columns=tp.names_x))
-                rf.columns = [x.removeprefix("objective_") for x in rf.columns]
-                df_comp(rf, pd.DataFrame(tp.f, columns=tp.names_f))
-                rg.columns = [x.removeprefix("constraint_") for x in rg.columns]
-                df_comp(rg, pd.DataFrame(tp.g_canonical, columns=tp.names_g))
+                    # Confirm data is correct
+                    df_comp(rx, pd.DataFrame(tp.x, columns=tp.names_x))
+                    rf.columns = [x.removeprefix("objective_") for x in rf.columns]
+                    df_comp(rf, pd.DataFrame(tp.f, columns=tp.names_f))
+                    rg.columns = [x.removeprefix("constraint_") for x in rg.columns]
+                    df_comp(rg, pd.DataFrame(tp.g_canonical, columns=tp.names_g))
 
         # Close log file before exiting context
         finally:
