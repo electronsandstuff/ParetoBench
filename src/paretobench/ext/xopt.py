@@ -147,7 +147,11 @@ def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraint
     )
 
 
-def import_cnsga_population(path: Union[str, os.PathLike[str]], vocs: VOCS, errors_as_constraints: bool = False):
+def import_cnsga_population(
+    path: Union[str, os.PathLike[str]],
+    vocs: VOCS | str | os.PathLike[str] | None = None,
+    errors_as_constraints: bool = False,
+):
     """
     Import a population file from Xopt's CNSGA geneator into a ParetoBench Population object.
 
@@ -188,8 +192,8 @@ def import_cnsga_history(
     ----------
     output_path : Union[str, os.PathLike[str]]
         Directory containing the CNSGA population CSV files.
-    vocs : Optional[VOCS], optional
-        VOCS object defining the variables, objectives, and constraints.
+    vocs : VOCS | str | os.PathLike[str], optional
+        VOCS object defining the variables, objectives, and constraints. Either python object or path to json file.
         If None, must provide config, by default None.
     config : Union[None, str, os.PathLike[str]], optional
         YAML config file or open file object with the information (passed to `Xopt.from_yaml`)
@@ -212,13 +216,22 @@ def import_cnsga_history(
     or 'cnsga_population_YYYY-MM-DDThh_mm_ss.ffffff+ZZ_ZZ.csv'
     """
     start_t = time.perf_counter()
-    if (vocs is None) and (config is None):
-        raise ValueError("Must specify one of vocs or config")
+    # Handle vocs in json file (ie output from NSGA2Generator)
+    if isinstance(vocs, (str, os.PathLike)):
+        with open(vocs) as f:
+            _vocs = VOCS.model_validate_json(f.read())
+
+    # Passed an actual VOCS object
+    elif isinstance(vocs, VOCS):
+        _vocs = vocs
 
     # Get vocs from config file
-    if vocs is None:
+    elif config is not None:
         xx = Xopt.from_yaml(config)
-        vocs = xx.vocs
+        _vocs = xx.vocs
+
+    else:
+        raise ValueError("Must specify one of vocs or config")
 
     # Get list of population files and their datetimes
     population_files = []
@@ -252,7 +265,7 @@ def import_cnsga_history(
         map(
             partial(
                 import_cnsga_population,
-                vocs=vocs,
+                vocs=_vocs,
                 errors_as_constraints=errors_as_constraints,
             ),
             population_files,
@@ -284,7 +297,7 @@ def import_nsga2_history(
     ----------
     populations_path : Union[str, os.PathLike[str]]
         Path to the populations file.
-    vocs : Optional[VOCS], optional
+    vocs : VOCS | str | os.PathLike[str], optional
         VOCS object defining the variables, objectives, and constraints. Either python object or path to json file.
         If None, must provide config, by default None.
     config : Union[None, str, os.PathLike[str]], optional
