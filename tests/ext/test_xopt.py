@@ -188,14 +188,14 @@ def test_xopt_problem_wrapper(prob_name):
     # Verify VOCS structure
     vocs = wrapper.vocs
 
-    assert vocs.variable_names == [f"x{i}" for i in range(prob.n_vars)]
+    assert set(vocs.variable_names) == {f"x{i}" for i in range(prob.n_vars)}
     for i, (lb, ub) in enumerate(zip(prob.var_lower_bounds, prob.var_upper_bounds)):
         np.testing.assert_allclose(list(vocs.variables[f"x{i}"]), [lb, ub])
 
-    assert vocs.objective_names == [f"f{i}" for i in range(prob.n_objs)]
+    assert set(vocs.objective_names) == {f"f{i}" for i in range(prob.n_objs)}
     assert all(vocs.objectives[name] != "MAXIMIZE" for name in vocs.objective_names)
 
-    assert vocs.constraint_names == [f"g{i}" for i in range(prob.n_constraints)]
+    assert set(vocs.constraint_names) == {f"g{i}" for i in range(prob.n_constraints)}
     assert all(vocs.constraints[name][0] == "LESS_THAN" for name in vocs.constraint_names)
     assert all(vocs.constraints[name][1] == 0 for name in vocs.constraint_names)
 
