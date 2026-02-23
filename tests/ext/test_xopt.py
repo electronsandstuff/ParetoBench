@@ -63,7 +63,7 @@ def test_import_nsga2_history():
 
                 # Confirm the populations are the same
                 assert len(xopt_xs) == len(test_hist)
-                for rx, rf, rg, tp in zip(xopt_xs, xopt_fs, xopt_gs, test_hist.reports):
+                for idx, (rx, rf, rg, tp) in enumerate(zip(xopt_xs, xopt_fs, xopt_gs, test_hist.reports)):
                     # Confirm number of individuals and right shape of contents
                     assert len(rx) == len(tp)
                     assert rf.shape[1] == tp.m
@@ -87,6 +87,7 @@ def test_import_nsga2_history():
                     assert tp.obj_directions == "--"
                     assert tp.constraint_directions == "><"
                     assert all(tp.constraint_targets == [0.0, 0.5])
+                    assert tp.fevals == (idx + 1) * population_size
 
                     # Confirm data is correct
                     df_comp(rx, pd.DataFrame(tp.x, columns=tp.names_x))
@@ -144,7 +145,7 @@ def test_import_cnsga_history():
             test_hist = import_cnsga_history(output_dir, vocs=vocs, config=config)
 
             assert len(xopt_xs) == len(test_hist)
-            for rx, rf, rg, tp in zip(xopt_xs, xopt_fs, xopt_gs, test_hist.reports):
+            for idx, (rx, rf, rg, tp) in enumerate(zip(xopt_xs, xopt_fs, xopt_gs, test_hist.reports)):
                 assert len(rx) == len(tp)
                 assert rf.shape[1] == tp.m
                 assert rx.shape[1] == tp.n
@@ -167,6 +168,7 @@ def test_import_cnsga_history():
                 assert tp.obj_directions == "--"
                 assert tp.constraint_directions == "><"
                 assert all(tp.constraint_targets == [0.0, 0.5])
+                assert tp.fevals == (idx + 1) * population_size
 
                 # Confirm data is correct
                 df_comp(rx, pd.DataFrame(tp.x, columns=tp.names_x))
