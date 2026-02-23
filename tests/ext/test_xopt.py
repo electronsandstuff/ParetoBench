@@ -8,7 +8,8 @@ from xopt.generators.ga.nsga2 import NSGA2Generator
 from xopt.resources.test_functions.tnk import evaluate_TNK, tnk_vocs
 import numpy as np
 
-from paretobench.ext.xopt import import_cnsga_history, import_nsga2_history
+from paretobench.ext.xopt import import_cnsga_history, import_nsga2_history, XoptProblemWrapper
+from paretobench.problem import Problem
 
 
 def test_import_nsga2_history():
@@ -176,3 +177,45 @@ def test_import_cnsga_history():
                 df_comp(rf, pd.DataFrame(tp.f, columns=tp.names_f))
                 rg.columns = [x.removeprefix("constraint_") for x in rg.columns]
                 df_comp(rg, pd.DataFrame(tp.g_canonical, columns=tp.names_g))
+
+
+def test_xopt_problem_wrapper():
+    prob = Problem.from_line_fmt("CTP1")
+    wrapper = XoptProblemWrapper(prob)
+
+    # Verify VOCS structure
+    vocs = wrapper.vocs
+
+    assert vocs.variable_names == [f"x{i}" for i in range(prob.n_vars)]
+    for i, (lb, ub) in enumerate(zip(prob.var_lower_bounds, prob.var_upper_bounds)):
+        np.testing.assert_allclose(list(vocs.variables[f"x{i}"]), [lb, ub])
+
+    assert vocs.objective_names == [f"f{i}" for i in range(prob.n_objs)]
+    assert all(vocs.objectives[name] != "MAXIMIZE" for name in vocs.objective_names)
+
+    assert vocs.constraint_names == [f"g{i}" for i in range(prob.n_constraints)]
+    assert all(vocs.constraints[name][0] == "LESS_THAN" for name in vocs.constraint_names)
+    assert all(vocs.constraints[name][1] == 0 for name in vocs.constraint_names)
+
+    rng = np.random.default_rng(42)
+    lbs, ubs = prob.var_lower_bounds, prob.var_upper_bounds
+    expected_keys = {f"f{i}" for i in range(prob.n_objs)} | {f"g{i}" for i in range(prob.n_constraints)}
+
+    # Run with scalar values
+    x_scalar = rng.uniform(lbs, ubs)
+    result = wrapper({f"x{i}": float(x_scalar[i]) for i in range(prob.n_vars)})
+    assert set(result.keys()) == expected_keys
+    pop = prob(x_scalar)
+    for i in range(prob.n_objs):
+        np.testing.assert_allclose(result[f"f{i}"], pop.f[:, i])
+    for i in range(prob.n_constraints):
+        np.testing.assert_allclose(result[f"g{i}"], pop.g[:, i])
+
+    # Test vectorized wrapper
+    x_arr = rng.uniform(lbs, ubs, size=(8, prob.n_vars))
+    result = wrapper({f"x{i}": x_arr[:, i] for i in range(prob.n_vars)})
+    pop = prob(x_arr)
+    for i in range(prob.n_objs):
+        np.testing.assert_allclose(result[f"f{i}"], pop.f[:, i])
+    for i in range(prob.n_constraints):
+        np.testing.assert_allclose(result[f"g{i}"], pop.g[:, i])
