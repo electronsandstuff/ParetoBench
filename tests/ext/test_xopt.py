@@ -78,6 +78,16 @@ def test_import_nsga2_history():
                         cols = sorted(df1.columns)
                         np.testing.assert_allclose(lexsorted(df1[cols].to_numpy()), lexsorted(df2[cols].to_numpy()))
 
+                    # Confirm names are in the correct groups
+                    assert list(tp.names_x) == list(tnk_vocs.variable_names)
+                    assert list(tp.names_f) == list(tnk_vocs.objective_names)
+                    assert list(tp.names_g) == list(tnk_vocs.constraint_names)
+
+                    # Confirm other metadata
+                    assert tp.obj_directions == "--"
+                    assert tp.constraint_directions == "><"
+                    assert all(tp.constraint_targets == [0.0, 0.5])
+
                     # Confirm data is correct
                     df_comp(rx, pd.DataFrame(tp.x, columns=tp.names_x))
                     rf.columns = [x.removeprefix("objective_") for x in rf.columns]
@@ -148,6 +158,17 @@ def test_import_cnsga_history():
                     cols = sorted(df1.columns)
                     np.testing.assert_allclose(lexsorted(df1[cols].to_numpy()), lexsorted(df2[cols].to_numpy()))
 
+                # Confirm names are in the correct groups
+                assert list(tp.names_x) == list(tnk_vocs.variable_names)
+                assert list(tp.names_f) == list(tnk_vocs.objective_names)
+                assert list(tp.names_g) == list(tnk_vocs.constraint_names)
+
+                # Confirm other metadata
+                assert tp.obj_directions == "--"
+                assert tp.constraint_directions == "><"
+                assert all(tp.constraint_targets == [0.0, 0.5])
+
+                # Confirm data is correct
                 df_comp(rx, pd.DataFrame(tp.x, columns=tp.names_x))
                 rf.columns = [x.removeprefix("objective_") for x in rf.columns]
                 df_comp(rf, pd.DataFrame(tp.f, columns=tp.names_f))
