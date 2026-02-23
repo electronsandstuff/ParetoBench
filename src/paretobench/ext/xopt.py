@@ -353,3 +353,29 @@ def import_nsga2_history(
     hist = History(reports=pops, problem=problem)
     logger.info(f"Successfully loaded History object in {time.perf_counter()-start_t:.2f}s: {hist}")
     return hist
+
+
+def import_nsga2_history_dir(
+    output_dir: str | os.PathLike[str],
+    problem: str = "",
+    errors_as_constraints: bool = False,
+):
+    """
+    Import all populations from the output of NSGA2Generator by specifying output directory.
+
+    Parameters
+    ----------
+    output_dir : Union[str, os.PathLike[str]]
+        `output_dir` parameter used when running `NSGA2Generator.
+    problem : str, optional
+        Name of the optimization problem, by default "".
+    errors_as_constraints : bool, optional
+        If True, imports the 'xopt_error' column as an additional constraint
+        for each population, by default False.
+    """
+    return import_nsga2_history(
+        populations_path=os.path.join(output_dir, "populations.csv"),
+        vocs=os.path.join(output_dir, "vocs.txt"),
+        problem=problem,
+        errors_as_constraints=errors_as_constraints,
+    )
