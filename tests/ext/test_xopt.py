@@ -1,6 +1,7 @@
 import os
 import tempfile
 import pandas as pd
+import pytest
 from xopt.base import Xopt
 from xopt.evaluator import Evaluator
 from xopt.generators.ga.cnsga import CNSGAGenerator
@@ -179,8 +180,9 @@ def test_import_cnsga_history():
                 df_comp(rg, pd.DataFrame(tp.g_canonical, columns=tp.names_g))
 
 
-def test_xopt_problem_wrapper():
-    prob = Problem.from_line_fmt("CTP1")
+@pytest.mark.parametrize("prob_name", ["CTP1", "ZDT1", "WFG1", "CF1"])
+def test_xopt_problem_wrapper(prob_name):
+    prob = Problem.from_line_fmt(prob_name)
     wrapper = XoptProblemWrapper(prob)
 
     # Verify VOCS structure
