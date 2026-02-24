@@ -1,6 +1,5 @@
 from datetime import datetime
 from functools import partial
-from typing import Union, Optional, TextIO
 from xopt import VOCS, Xopt
 import logging
 import numpy as np
@@ -148,7 +147,7 @@ def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraint
 
 
 def import_cnsga_population(
-    path: Union[str, os.PathLike[str]],
+    path: str | os.PathLike[str],
     vocs: VOCS | str | os.PathLike[str] | None = None,
     errors_as_constraints: bool = False,
 ):
@@ -157,7 +156,7 @@ def import_cnsga_population(
 
     Parameters
     ----------
-    path : Union[str, os.PathLike[str]]
+    path : str | os.PathLike[str]
         Path to the CSV file containing the population data.
     vocs : VOCS
         VOCS object defining the variables, objectives, and constraints.
@@ -178,9 +177,9 @@ def import_cnsga_population(
 
 
 def import_cnsga_history(
-    output_path: Union[str, os.PathLike[str]],
-    vocs: Optional[VOCS] = None,
-    config: Union[None, str, TextIO] = None,
+    output_path: str | os.PathLike[str],
+    vocs: VOCS | str | os.PathLike[str] | None = None,
+    config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
 ):
@@ -190,14 +189,13 @@ def import_cnsga_history(
 
     Parameters
     ----------
-    output_path : Union[str, os.PathLike[str]]
+    output_path : str | os.PathLike[str]
         Directory containing the CNSGA population CSV files.
-    vocs : VOCS | str | os.PathLike[str], optional
+    vocs : VOCS | str | os.PathLike[str] | None, optional
         VOCS object defining the variables, objectives, and constraints. Either python object or path to json file.
         If None, must provide config, by default None.
-    config : Union[None, str, os.PathLike[str]], optional
-        YAML config file or open file object with the information (passed to `Xopt.from_yaml`)
-        If None, must provide vocs, by default None.
+    config : str | os.PathLike[str] | None, optional
+        YAML config file path to load VOCs from. If None, must provide vocs, by default None.
     problem : str, optional
         Name of the optimization problem, by default "".
     errors_as_constraints : bool, optional
@@ -287,7 +285,7 @@ def import_cnsga_history(
 def import_nsga2_history(
     populations_path: str | os.PathLike[str],
     vocs: VOCS | str | os.PathLike[str] | None = None,
-    config: Union[None, str, TextIO] = None,
+    config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
 ):
@@ -296,14 +294,13 @@ def import_nsga2_history(
 
     Parameters
     ----------
-    populations_path : Union[str, os.PathLike[str]]
+    populations_path : str | os.PathLike[str]
         Path to the populations file.
-    vocs : VOCS | str | os.PathLike[str], optional
+    vocs : VOCS | str | os.PathLike[str] | None, optional
         VOCS object defining the variables, objectives, and constraints. Either python object or path to json file.
         If None, must provide config, by default None.
-    config : Union[None, str, os.PathLike[str]], optional
-        YAML config file or open file object with the information (passed to `Xopt.from_yaml`)
-        If None, must provide vocs, by default None.
+    config : str | os.PathLike[str] | None, optional
+        YAML config file path to load VOCs from. If None, must provide vocs, by default None.
     problem : str, optional
         Name of the optimization problem, by default "".
     errors_as_constraints : bool, optional
@@ -365,7 +362,7 @@ def import_nsga2_history_dir(
 
     Parameters
     ----------
-    output_dir : Union[str, os.PathLike[str]]
+    output_dir : str | os.PathLike[str]
         `output_dir` parameter used when running `NSGA2Generator.
     problem : str, optional
         Name of the optimization problem, by default "".
