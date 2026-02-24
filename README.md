@@ -21,9 +21,9 @@ pip install paretobench
 ```
 conda create env -f environment.yml
 ```
-2) Install the package in editing mode
+2) Install the package in editing mode (with dependencies required for running tests)
 ```
-pip install -e .
+pip install -e .[test]
 ```
 
 ## Usage

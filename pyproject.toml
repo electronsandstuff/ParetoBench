@@ -27,6 +27,13 @@ dependencies = [
 Homepage = "https://github.com/electronsandstuff/ParetoBench"
 Repository = "https://github.com/electronsandstuff/ParetoBench"
 
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "pytest-cov",
+  "xopt",
+]
+
 [tool.ruff]
 line-length = 120
 indent-width = 4
