@@ -94,7 +94,7 @@ class XoptProblemWrapper:
 
 def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraints: bool = False):
     """
-    Import a population file from Xopt's CNSGA geneator into a ParetoBench Population object.
+    Import a population file from an Xopt-style dataframe and VOCs object into a ParetoBench Population object.
 
     Parameters
     ----------
@@ -152,7 +152,7 @@ def import_cnsga_population(
     errors_as_constraints: bool = False,
 ):
     """
-    Import a population file from Xopt's CNSGA geneator into a ParetoBench Population object.
+    Import a population file from Xopt's CNSGA generator into a ParetoBench Population object.
 
     Parameters
     ----------
