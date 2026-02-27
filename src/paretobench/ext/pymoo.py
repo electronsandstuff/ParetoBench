@@ -51,3 +51,6 @@ class PymooProblemWrapper(PymooProblem):
     @classmethod
     def from_line_fmt(cls, prob_name: str):
         return cls(Problem.from_line_fmt(prob_name))
+
+    def __repr__(self):
+        return f"PymooProblemWrapper({self.prob.to_line_fmt()})"
