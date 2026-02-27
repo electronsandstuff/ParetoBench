@@ -15,7 +15,6 @@ from paretobench.ext.xopt import (
     XoptProblemWrapper,
     import_nsga2_history_dir,
 )
-from paretobench.problem import Problem
 
 
 def test_import_nsga2_history():
@@ -268,8 +267,8 @@ def test_import_cnsga_history():
 
 @pytest.mark.parametrize("prob_name", ["CTP1", "ZDT1", "WFG1", "CF1"])
 def test_xopt_problem_wrapper(prob_name):
-    prob = Problem.from_line_fmt(prob_name)
-    wrapper = XoptProblemWrapper(prob)
+    wrapper = XoptProblemWrapper.from_line_fmt(prob_name)
+    prob = wrapper.prob
 
     # Verify VOCS structure
     vocs = wrapper.vocs
