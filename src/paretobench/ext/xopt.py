@@ -45,6 +45,10 @@ class XoptProblemWrapper:
         """
         self.prob = problem
 
+    @classmethod
+    def from_line_fmt(cls, prob_name: str):
+        return cls(Problem.from_line_fmt(prob_name))
+
     @property
     def vocs(self) -> VOCS:
         """Return the VOCS object."""

@@ -47,3 +47,7 @@ class PymooProblemWrapper(PymooProblem):
         # Set the constraints (if any)
         if self.prob.n_constraints > 0:
             out["G"] = pop.g
+
+    @classmethod
+    def from_line_fmt(cls, prob_name: str):
+        return cls(Problem.from_line_fmt(prob_name))

@@ -2,13 +2,12 @@ import numpy as np
 import pytest
 
 from paretobench.ext.pymoo import PymooProblemWrapper
-from paretobench.problem import Problem
 
 
 @pytest.mark.parametrize("prob_name", ["CTP1", "ZDT1", "WFG1", "CF1"])
 def test_pymoo_problem_wrapper(prob_name):
-    prob = Problem.from_line_fmt(prob_name)
-    wrapper = PymooProblemWrapper(prob)
+    wrapper = PymooProblemWrapper.from_line_fmt(prob_name)
+    prob = wrapper.prob
 
     # Check metadata matches
     assert wrapper.n_var == prob.n_vars
