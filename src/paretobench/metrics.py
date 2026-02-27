@@ -78,8 +78,17 @@ class Hypervolume(Metric):
         if pop.m != 2:
             raise NotImplementedError(f"Hypervolume metric only supports 2D populations (2 objectives), got {pop.m}")
 
+        # Safety check for ref point and population
+        if len(self.ref_point.shape) != 1 or self.ref_point.shape[0] != pop.m:
+            raise ValueError(
+                f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
+            )
+
+        # Clip the objectives w/ the ref point
+        f_clip = np.minimum(self.ref_point, pop.f)
+
         # Sort points by first objective ascending
-        f_sorted = pop.f[np.argsort(pop.f[:, 0])]
+        f_sorted = f_clip[np.argsort(f_clip[:, 0])]
 
         # Sweep line algorithm: stack reference point above sorted front, then accumulate rectangles
         V = np.vstack([self.ref_point, f_sorted])
