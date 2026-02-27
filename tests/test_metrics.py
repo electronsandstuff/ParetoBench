@@ -47,6 +47,35 @@ def test_inverted_generational_distance():
     assert val == np.mean([0, 0, np.sqrt(0.5**2 + 0.5**2)])
 
 
+def test_hypervolume_single_point():
+    """Check easy to calculate single point hypervolume (area of rectangle)"""
+    hv = pb.Hypervolume(ref_point=np.array([2.0, 2.0]))
+    pop = pb.Population(f=np.array([[1.0, 1.0]]))
+    assert hv(pop, None) == pytest.approx(1.0)
+
+
+def test_hypervolume_two_points():
+    """Two non-dominated points with easily computed hypervolume."""
+    hv = pb.Hypervolume(ref_point=np.array([3.0, 3.0]))
+    pop = pb.Population(f=np.array([[1.0, 2.0], [2.0, 1.0]]))
+    assert hv(pop, None) == pytest.approx(3.0)
+
+
+def test_hypervolume_outside_ref():
+    """Two hypervolume with all points outside of reference point"""
+    hv = pb.Hypervolume(ref_point=np.array([1.0, 1.0]))
+    pop = pb.Population(f=np.array([[1.0, 2.0], [2.0, 1.0]]))
+    assert hv(pop, None) == pytest.approx(0.0)
+
+
+def test_hypervolume_not_2d_raises():
+    """Non-2D population raises NotImplementedError."""
+    hv = pb.Hypervolume(ref_point=np.array([2.0, 2.0, 2.0]))
+    pop = pb.Population(f=np.array([[1.0, 1.0, 1.0]]))
+    with pytest.raises(NotImplementedError):
+        hv(pop, None)
+
+
 @pytest.mark.parametrize("input_type", ["Experiment", "file", "single"])
 def test_eval_metrics_experiments(input_type):
     """
