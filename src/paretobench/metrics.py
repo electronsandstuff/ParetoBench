@@ -8,6 +8,7 @@ import pandas as pd
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
+from .utils import get_nondominated_inds
 
 
 class Metric:
@@ -58,6 +59,80 @@ class InvertedGenerationalDistance(Metric):
     @property
     def name(self):
         return "igd"
+
+
+class Hypervolume(Metric):
+    """
+    Calculates the hypervolume indicator. Currently only supported for 2D problems.
+    """
+
+    def __init__(self, ref_point: np.ndarray):
+        """
+        Parameters
+        ----------
+        ref_point : np.ndarray
+            Reference point for the hypervolume calculation.
+        """
+        self.ref_point = np.asarray(ref_point, dtype=float)
+
+    @staticmethod
+    def _hv_recursive(objs, ref):
+        # 2D case
+        if objs.shape[1] == 2:
+            # Sort points by first objective ascending
+            objs_sorted = objs[np.argsort(objs[:, 0])]
+
+            # Sweep line algorithm: stack reference point above sorted front, then accumulate rectangles
+            objs_sorted = np.vstack([ref, objs_sorted])
+            height = objs_sorted[:-1, 1] - objs_sorted[1:, 1]
+            width = ref[0] - objs_sorted[1:, 0]
+            return (height * width).sum()
+
+        else:
+            # Sort by first objective ascending for sweep
+            objs_sorted = objs[np.argsort(-objs[:, 0]), :]
+
+            hv = 0.0
+            for idx in range(objs_sorted.shape[0]):
+                # Depth of this slab
+                if idx == 0:
+                    depth = ref[0] - objs_sorted[idx, 0]
+                else:
+                    depth = objs_sorted[idx - 1, 0] - objs_sorted[idx, 0]
+
+                # Project to lower dimensions and calculate area of slab
+                proj = objs_sorted[idx:, 1:]
+                proj = proj[get_nondominated_inds(proj), :]
+                area = Hypervolume._hv_recursive(proj, ref[1:])
+
+                # Combine and add in hypervolume
+                hv += depth * area
+
+            return hv
+
+    def __call__(self, pop: Population, problem: Union[Problem, str]):
+        # Safety check for ref point and population
+        if len(self.ref_point.shape) != 1 or self.ref_point.shape[0] != pop.m:
+            raise ValueError(
+                f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
+            )
+
+        # Filter to only the non-dominated individuals
+        pop = pop.get_nondominated_set()
+
+        # Process the objectives and reference point into canonical form (minimization problem)
+        objs = pop.f_canonical
+        ref = np.array([{"+": -1, "-": 1}[dir] * x for x, dir in zip(self.ref_point, pop.obj_directions)])
+
+        # Clip inside of ref point
+        objs_clip = np.minimum(ref, objs)
+
+        # Call the recursive method
+        return Hypervolume._hv_recursive(objs_clip, ref)
+
+    @property
+    def name(self):
+        return "hypervolume"
 
 
 @dataclass

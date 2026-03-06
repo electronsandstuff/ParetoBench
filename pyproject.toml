@@ -31,7 +31,8 @@ test = [
   "pytest",
   "pytest-cov",
   "xopt",
-  "pymoo"
+  "moocore",
+  "pymoo",
 ]
 
 [tool.ruff]

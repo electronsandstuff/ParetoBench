@@ -3,6 +3,7 @@ import os
 import paretobench as pb
 import pytest
 import tempfile
+import moocore
 
 from .utils import generate_moga_experiments, example_metric
 
@@ -45,6 +46,62 @@ def test_inverted_generational_distance():
     test_pop = pb.Population(f=np.array([[0.0, 0.0], [0.0, 1.0], [1.0, 0.0]]))
     val = igd(test_pop, ProblemExample())
     assert val == np.mean([0, 0, np.sqrt(0.5**2 + 0.5**2)])
+
+
+@pytest.mark.parametrize(
+    "ref_point, f, expected",
+    [
+        # Single point: area of rectangle (2-1)*(2-1) = 1.0
+        ([2.0, 2.0], [[1.0, 1.0]], 1.0),
+        # Two non-dominated points: L-shaped area = 3.0
+        ([3.0, 3.0], [[1.0, 2.0], [2.0, 1.0]], 3.0),
+        # All points outside ref point: zero hypervolume
+        ([1.0, 1.0], [[1.0, 2.0], [2.0, 1.0]], 0.0),
+        # Single point: box volume (2-1)^3 = 1.0
+        ([2.0, 2.0, 2.0], [[1.0, 1.0, 1.0]], 1.0),
+        # All points outside ref point: zero hypervolume
+        ([1.0, 1.0, 1.0], [[2.0, 2.0, 2.0]], 0.0),
+        # Two non-dominated points (inclusion-exclusion):
+        ([3.0, 3.0, 3.0], [[1.0, 2.0, 2.0], [2.0, 1.0, 2.0]], 3.0),
+        ([2.0, 2.0, 2.0], [[0.0, 1.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 0.0]], 4.0),
+    ],
+)
+def test_hypervolume(ref_point, f, expected):
+    """Hypervolume with analytically computed expected values."""
+    hv = pb.Hypervolume(ref_point=np.array(ref_point))
+    pop = pb.Population(f=np.array(f))
+    assert hv(pop, None) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "n_dim, n_points, seed",
+    [
+        (2, 20, 42),
+        (3, 20, 42),
+        (4, 50, 42),
+        (5, 50, 42),
+    ],
+)
+def test_hypervolume_vs_moocore(n_dim, n_points, seed):
+    """Compare hypervolume against moocore on random data."""
+    rng = np.random.default_rng(seed)
+    f = rng.random((n_points, n_dim))
+    ref_point = np.ones(n_dim) * 1.1
+    hv = pb.Hypervolume(ref_point=ref_point)
+    pop = pb.Population(f=f).get_nondominated_set()
+    assert hv(pop, None) == pytest.approx(moocore.hypervolume(f, ref=ref_point))
+
+
+def test_hypervolume_obj_directions():
+    # Mixed directions: minimize obj0, maximize obj1
+    pop_mixed = pb.Population(f=np.array([[1.0, 3.0]]), obj_directions="-+")
+    hv_mixed = pb.Hypervolume(ref_point=np.array([2.0, 2.0]))
+
+    # Equivalent all-minimize: negate obj1 and ref1
+    pop_min = pb.Population(f=np.array([[1.0, -3.0]]))
+    hv_min = pb.Hypervolume(ref_point=np.array([2.0, -2.0]))
+
+    assert hv_mixed(pop_mixed, None) == pytest.approx(hv_min(pop_min, None))
 
 
 @pytest.mark.parametrize("input_type", ["Experiment", "file", "single"])
