@@ -47,25 +47,29 @@ def test_inverted_generational_distance():
     assert val == np.mean([0, 0, np.sqrt(0.5**2 + 0.5**2)])
 
 
-def test_hypervolume_single_point():
-    """Check easy to calculate single point hypervolume (area of rectangle)"""
-    hv = pb.Hypervolume(ref_point=np.array([2.0, 2.0]))
-    pop = pb.Population(f=np.array([[1.0, 1.0]]))
-    assert hv(pop, None) == pytest.approx(1.0)
-
-
-def test_hypervolume_two_points():
-    """Two non-dominated points with easily computed hypervolume."""
-    hv = pb.Hypervolume(ref_point=np.array([3.0, 3.0]))
-    pop = pb.Population(f=np.array([[1.0, 2.0], [2.0, 1.0]]))
-    assert hv(pop, None) == pytest.approx(3.0)
-
-
-def test_hypervolume_outside_ref():
-    """Two hypervolume with all points outside of reference point"""
-    hv = pb.Hypervolume(ref_point=np.array([1.0, 1.0]))
-    pop = pb.Population(f=np.array([[1.0, 2.0], [2.0, 1.0]]))
-    assert hv(pop, None) == pytest.approx(0.0)
+@pytest.mark.parametrize(
+    "ref_point, f, expected",
+    [
+        # Single point: area of rectangle (2-1)*(2-1) = 1.0
+        ([2.0, 2.0], [[1.0, 1.0]], 1.0),
+        # Two non-dominated points: L-shaped area = 3.0
+        ([3.0, 3.0], [[1.0, 2.0], [2.0, 1.0]], 3.0),
+        # All points outside ref point: zero hypervolume
+        ([1.0, 1.0], [[1.0, 2.0], [2.0, 1.0]], 0.0),
+        # Single point: box volume (2-1)^3 = 1.0
+        ([2.0, 2.0, 2.0], [[1.0, 1.0, 1.0]], 1.0),
+        # All points outside ref point: zero hypervolume
+        ([1.0, 1.0, 1.0], [[2.0, 2.0, 2.0]], 0.0),
+        # Two non-dominated points (inclusion-exclusion):
+        ([3.0, 3.0, 3.0], [[1.0, 2.0, 2.0], [2.0, 1.0, 2.0]], 3.0),
+        ([2.0, 2.0, 2.0], [[0.0, 1.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 0.0]], 4.0),
+    ],
+)
+def test_hypervolume(ref_point, f, expected):
+    """Hypervolume with analytically computed expected values."""
+    hv = pb.Hypervolume(ref_point=np.array(ref_point))
+    pop = pb.Population(f=np.array(f))
+    assert hv(pop, None) == pytest.approx(expected)
 
 
 def test_hypervolume_not_2d_raises():
