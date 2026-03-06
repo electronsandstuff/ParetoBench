@@ -3,6 +3,7 @@ import os
 import paretobench as pb
 import pytest
 import tempfile
+import moocore
 
 from .utils import generate_moga_experiments, example_metric
 
@@ -72,12 +73,23 @@ def test_hypervolume(ref_point, f, expected):
     assert hv(pop, None) == pytest.approx(expected)
 
 
-def test_hypervolume_not_2d_raises():
-    """Non-2D population raises NotImplementedError."""
-    hv = pb.Hypervolume(ref_point=np.array([2.0, 2.0, 2.0]))
-    pop = pb.Population(f=np.array([[1.0, 1.0, 1.0]]))
-    with pytest.raises(NotImplementedError):
-        hv(pop, None)
+@pytest.mark.parametrize(
+    "n_dim, n_points, seed",
+    [
+        (2, 5, 0),
+        (2, 20, 1),
+        (3, 5, 2),
+        (3, 20, 3),
+    ],
+)
+def test_hypervolume_vs_moocore(n_dim, n_points, seed):
+    """Cross-check hypervolume against moocore on random data."""
+    rng = np.random.default_rng(seed)
+    f = rng.random((n_points, n_dim))
+    ref_point = np.ones(n_dim) * 1.1
+    hv = pb.Hypervolume(ref_point=ref_point)
+    pop = pb.Population(f=f).get_nondominated_set()
+    assert hv(pop, None) == pytest.approx(moocore.hypervolume(f, ref=ref_point))
 
 
 @pytest.mark.parametrize("input_type", ["Experiment", "file", "single"])
