@@ -8,6 +8,7 @@ import pandas as pd
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
+from .utils import get_nondominated_inds
 
 
 class Metric:
@@ -74,6 +75,41 @@ class Hypervolume(Metric):
         """
         self.ref_point = np.asarray(ref_point, dtype=float)
 
+    @staticmethod
+    def _hv_recursive(objs, ref):
+        # 2D case
+        if objs.shape[1] == 2:
+            # Sort points by first objective ascending
+            objs_sorted = objs[np.argsort(objs[:, 0])]
+
+            # Sweep line algorithm: stack reference point above sorted front, then accumulate rectangles
+            objs_sorted = np.vstack([ref, objs_sorted])
+            height = objs_sorted[:-1, 1] - objs_sorted[1:, 1]
+            width = ref[0] - objs_sorted[1:, 0]
+            return (height * width).sum()
+
+        else:
+            # Sort by first objective ascending for sweep
+            objs_sorted = objs[np.argsort(-objs[:, 0]), :]
+
+            hv = 0.0
+            for idx in range(objs_sorted.shape[0]):
+                # Depth of this slab
+                if idx == 0:
+                    depth = ref[0] - objs_sorted[idx, 0]
+                else:
+                    depth = objs_sorted[idx - 1, 0] - objs_sorted[idx, 0]
+
+                # Project to lower dimensions and calculate area of slab
+                proj = objs_sorted[idx:, 1:]
+                proj = proj[get_nondominated_inds(proj), :]
+                area = Hypervolume._hv_recursive(proj, ref[1:])
+
+                # Combine and add in hypervolume
+                hv += depth * area
+
+            return hv
+
     def __call__(self, pop: Population, problem: Union[Problem, str]):
         # Safety check for ref point and population
         if len(self.ref_point.shape) != 1 or self.ref_point.shape[0] != pop.m:
@@ -88,22 +124,11 @@ class Hypervolume(Metric):
         objs = pop.f_canonical
         ref = np.array([{"+": -1, "-": 1}[dir] * x for x, dir in zip(self.ref_point, pop.obj_directions)])
 
-        # 2D case
-        if pop.m == 2:
-            # Clip the objectives w/ the ref point
-            f_clip = np.minimum(ref, objs)
+        # Clip inside of ref point
+        objs_clip = np.minimum(ref, objs)
 
-            # Sort points by first objective ascending
-            f_sorted = f_clip[np.argsort(f_clip[:, 0])]
-
-            # Sweep line algorithm: stack reference point above sorted front, then accumulate rectangles
-            V = np.vstack([ref, f_sorted])
-            height = V[:-1, 1] - V[1:, 1]
-            width = ref[0] - V[1:, 0]
-            return (height * width).sum()
-
-        else:
-            raise NotImplementedError(f"Hypervolume metric only supports 2D populations (2 objectives), got {pop.m}")
+        # Call the recursive method
+        return Hypervolume._hv_recursive(objs_clip, ref)
 
     @property
     def name(self):
