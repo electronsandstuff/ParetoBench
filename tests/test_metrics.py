@@ -83,13 +83,25 @@ def test_hypervolume(ref_point, f, expected):
     ],
 )
 def test_hypervolume_vs_moocore(n_dim, n_points, seed):
-    """Cross-check hypervolume against moocore on random data."""
+    """Compare hypervolume against moocore on random data."""
     rng = np.random.default_rng(seed)
     f = rng.random((n_points, n_dim))
     ref_point = np.ones(n_dim) * 1.1
     hv = pb.Hypervolume(ref_point=ref_point)
     pop = pb.Population(f=f).get_nondominated_set()
     assert hv(pop, None) == pytest.approx(moocore.hypervolume(f, ref=ref_point))
+
+
+def test_hypervolume_obj_directions():
+    # Mixed directions: minimize obj0, maximize obj1
+    pop_mixed = pb.Population(f=np.array([[1.0, 3.0]]), obj_directions="-+")
+    hv_mixed = pb.Hypervolume(ref_point=np.array([2.0, 2.0]))
+
+    # Equivalent all-minimize: negate obj1 and ref1
+    pop_min = pb.Population(f=np.array([[1.0, -3.0]]))
+    hv_min = pb.Hypervolume(ref_point=np.array([2.0, -2.0]))
+
+    assert hv_mixed(pop_mixed, None) == pytest.approx(hv_min(pop_min, None))
 
 
 @pytest.mark.parametrize("input_type", ["Experiment", "file", "single"])
