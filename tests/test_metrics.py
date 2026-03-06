@@ -76,10 +76,10 @@ def test_hypervolume(ref_point, f, expected):
 @pytest.mark.parametrize(
     "n_dim, n_points, seed",
     [
-        (2, 5, 0),
-        (2, 20, 1),
-        (3, 5, 2),
-        (3, 20, 3),
+        (2, 20, 42),
+        (3, 20, 42),
+        (4, 50, 42),
+        (5, 50, 42),
     ],
 )
 def test_hypervolume_vs_moocore(n_dim, n_points, seed):
