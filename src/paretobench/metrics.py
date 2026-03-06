@@ -81,18 +81,25 @@ class Hypervolume(Metric):
                 f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
             )
 
+        # Filter to only the non-dominated individuals
+        pop = pop.get_nondominated_set()
+
+        # Process the objectives and reference point into canonical form (minimization problem)
+        objs = pop.f_canonical
+        ref = np.array([{"+": -1, "-": 1}[dir] * x for x, dir in zip(self.ref_point, pop.obj_directions)])
+
         # 2D case
         if pop.m == 2:
             # Clip the objectives w/ the ref point
-            f_clip = np.minimum(self.ref_point, pop.f)
+            f_clip = np.minimum(ref, objs)
 
             # Sort points by first objective ascending
             f_sorted = f_clip[np.argsort(f_clip[:, 0])]
 
             # Sweep line algorithm: stack reference point above sorted front, then accumulate rectangles
-            V = np.vstack([self.ref_point, f_sorted])
+            V = np.vstack([ref, f_sorted])
             height = V[:-1, 1] - V[1:, 1]
-            width = self.ref_point[0] - V[1:, 0]
+            width = ref[0] - V[1:, 0]
             return (height * width).sum()
 
         else:
