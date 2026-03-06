@@ -20,7 +20,6 @@ dependencies = [
   "h5py",
   "pandas",
   "scipy",
-  "jinja2"
 ]
 
 [project.urls]
@@ -32,6 +31,7 @@ test = [
   "pytest",
   "pytest-cov",
   "xopt",
+  "pymoo"
 ]
 
 [tool.ruff]
