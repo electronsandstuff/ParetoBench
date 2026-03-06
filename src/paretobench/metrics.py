@@ -75,26 +75,28 @@ class Hypervolume(Metric):
         self.ref_point = np.asarray(ref_point, dtype=float)
 
     def __call__(self, pop: Population, problem: Union[Problem, str]):
-        if pop.m != 2:
-            raise NotImplementedError(f"Hypervolume metric only supports 2D populations (2 objectives), got {pop.m}")
-
         # Safety check for ref point and population
         if len(self.ref_point.shape) != 1 or self.ref_point.shape[0] != pop.m:
             raise ValueError(
                 f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
             )
 
-        # Clip the objectives w/ the ref point
-        f_clip = np.minimum(self.ref_point, pop.f)
+        # 2D case
+        if pop.m == 2:
+            # Clip the objectives w/ the ref point
+            f_clip = np.minimum(self.ref_point, pop.f)
 
-        # Sort points by first objective ascending
-        f_sorted = f_clip[np.argsort(f_clip[:, 0])]
+            # Sort points by first objective ascending
+            f_sorted = f_clip[np.argsort(f_clip[:, 0])]
 
-        # Sweep line algorithm: stack reference point above sorted front, then accumulate rectangles
-        V = np.vstack([self.ref_point, f_sorted])
-        height = V[:-1, 1] - V[1:, 1]
-        width = self.ref_point[0] - V[1:, 0]
-        return (height * width).sum()
+            # Sweep line algorithm: stack reference point above sorted front, then accumulate rectangles
+            V = np.vstack([self.ref_point, f_sorted])
+            height = V[:-1, 1] - V[1:, 1]
+            width = self.ref_point[0] - V[1:, 0]
+            return (height * width).sum()
+
+        else:
+            raise NotImplementedError(f"Hypervolume metric only supports 2D populations (2 objectives), got {pop.m}")
 
     @property
     def name(self):
