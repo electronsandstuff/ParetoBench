@@ -63,7 +63,7 @@ class InvertedGenerationalDistance(Metric):
 
 class Hypervolume(Metric):
     """
-    Calculates the hypervolume indicator. Currently only supported for 2D problems.
+    Calculates the hypervolume indicator.
     """
 
     def __init__(self, ref_point: np.ndarray):
