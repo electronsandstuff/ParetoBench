@@ -89,7 +89,7 @@ class Hypervolume(Metric):
             return (height * width).sum()
 
         else:
-            # Sort by first objective ascending for sweep
+            # Sort by first objective descending (starting from ref point)
             objs_sorted = objs[np.argsort(-objs[:, 0]), :]
 
             hv = 0.0
