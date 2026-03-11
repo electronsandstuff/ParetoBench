@@ -246,8 +246,8 @@ class SRN(Problem):
     @property
     def reference(self):
         return (
-            "Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002). A fast and elitist multiobjective genetic "
-            "algorithm: NSGA-II. IEEE Transactions on Evolutionary Computation, 6(2), 182–197."
+            "Srinivas, N., & Deb, K. (1994). Muiltiobjective optimization using nondominated sorting in genetic algorithms. "
+            "Evolutionary computation, 2(3), 221-248."
         )
 
 
