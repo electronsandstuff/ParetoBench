@@ -221,13 +221,13 @@ def eval_metrics(
     """
     # Handle all input types for `metrics` converting it to a dict mapping names to callables
     if isinstance(metrics, Metric):
-        metrics = {metrics.name: metrics}
+        _metrics = {metrics.name: metrics}
     elif callable(metrics):
-        metrics = {"metric": metrics}
+        _metrics = {"metric": metrics}
     elif isinstance(metrics, tuple) and isinstance(metrics[0], str) and callable(metrics[1]):
-        metrics = {metrics[0]: metrics[1]}
+        _metrics = {metrics[0]: metrics[1]}
     elif isinstance(metrics, list):
-        d_metrics = {}
+        _metrics = {}
         for idx, metric in enumerate(metrics):
             # Get key and value depending on type of metric
             if isinstance(metric, Metric):
@@ -244,10 +244,9 @@ def eval_metrics(
                 raise TypeError(f"Unrecognized type for `metrics[{idx}]`: {type(metric)}")
 
             # Check that we aren't overwriting another metric and add to dict
-            if key in d_metrics:
+            if key in _metrics:
                 raise ValueError(f'Duplicate name for `metrics[{idx}]`: "{key}"')
-            d_metrics[key] = val
-        metrics = d_metrics
+            _metrics[key] = val
     else:
         raise TypeError(f"Unrecognized type for `metrics`: {type(metrics)}")
 
@@ -286,7 +285,7 @@ def eval_metrics(
                 EvalMetricsJob(
                     run=run,
                     run_idx=run_idx,
-                    metrics=metrics.copy(),
+                    metrics=_metrics.copy(),
                     exp_name=exp.name,
                     exp_idx=exp_idx,
                     fname=fname,
