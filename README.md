@@ -82,7 +82,18 @@ See more information in the following notebooks.
 ### Analytical Pareto Fronts
 When possible, the benchmark problems include analytical Pareto fronts.
 
-![](assets\pareto_front_zdt3.png)
+<table>
+<tr>
+<td><img src="assets/pareto_front_zdt1.png" width="250"/></td>
+<td><img src="assets/pareto_front_zdt2.png" width="250"/></td>
+<td><img src="assets/pareto_front_zdt3.png" width="250"/></td>
+</tr>
+<tr>
+<td><img src="assets/pareto_front_wfg1.png" width="250"/></td>
+<td><img src="assets/pareto_front_wfg2.png" width="250"/></td>
+<td><img src="assets/pareto_front_cf5.png" width="250"/></td>
+</tr>
+</table>
 
 ## Parameter Naming Conventions
 To help standardize the code in this package, the following naming convention is used throughout for parameters.
