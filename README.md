@@ -11,6 +11,17 @@ ParetoBench is a Python library that provides a collection of tools for the benc
 - Tools for calculating convergence metrics on results and running statistical analyses on them to compare algorithms
 - Plotting utilities for objectives/decision variables and for both populations and series of populations (history objects)
 
+## Installation
+ParetoBench is available from pip and conda.
+```
+pip install paretobench
+```
+or
+```
+conda install paretobench
+```
+
+
 ## Benchmark Problems
 
 | Problem | Objectives | Variables | Constraints | PF | Description |
@@ -33,17 +44,17 @@ ParetoBench is a Python library that provides a collection of tools for the benc
 | TNK | 2 | 2 | 2 | - | Tanaka constrained problem |
 | WATER | 5 | 3 | 7 | - | Water resource management problem |
 
-## Installation
-ParetoBench is available from pip and conda.
-```
-pip install paretobench
-```
-or
-```
-conda install paretobench
-```
+## Parameter Naming Conventions
+To help standardize the code in this package, the following naming convention is used throughout for parameters.
 
-## Installation for Developers
+Some names are reserved for specific purposes. These are the following.
+ - `n`: The dimension of the input vector to the problem, ie the number of decision variables.
+ - `m`: The number of objectives.
+
+All parameters should follow the PEP 8 naming scheme for variables. Whenever this leads to a parameter being named something different than what it was called in the problem's defining paper, this change must be documented in the class.
+
+## For Developers
+### Installation
 1) Install the development conda environment.
 ```
 conda create env -f environment.yml
@@ -53,17 +64,7 @@ conda create env -f environment.yml
 pip install -e .[test]
 ```
 
-## Usage
-Please see the code in `example_notebooks` for usage instructions.
-
-# Testing
+### Testing
 Tests are written with the pytest framework. They can be run by calling `pytest` from the base of this repo with the package installed.
 
-# Parameter Naming Conventions
-To help standardize the code in this package, the following naming convention is used throughout for parameters.
 
-Some names are reserved for specific purposes. These are the following.
- - `n`: The dimension of the input vector to the problem, ie the number of decision variables.
- - `m`: The number of objectives.
-
-All parameters should follow the PEP 8 naming scheme for variables. Whenever this leads to a parameter being named something different than what it was called in the problem's defining paper, this change must be documented in the class.
