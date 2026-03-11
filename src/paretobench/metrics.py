@@ -176,7 +176,7 @@ class EvalMetricsJob:
 
 
 def eval_metrics(
-    experiments: Union[Union[Experiment, str], List[Union[Experiment, str]], History],
+    runs: Union[Union[Experiment, str], List[Union[Experiment, str]], History],
     metrics: Union[
         Metric,
         Callable,
@@ -252,19 +252,19 @@ def eval_metrics(
         raise TypeError(f"Unrecognized type for `metrics`: {type(metrics)}")
 
     # Handle the experiments
-    if isinstance(experiments, History):
-        _experiments = [Experiment(runs=[experiments], name="default_experiment")]
-    elif isinstance(experiments, Experiment):
-        _experiments = [experiments]
-    elif isinstance(experiments, list):
-        if not all([isinstance(x, Experiment) for x in experiments]):
-            types = set(str(type(x)) for x in experiments)
-            raise ValueError(f"All experiments must have type `Experiment`, got types {types}")
-        if not experiments:
+    if isinstance(runs, History):
+        _experiments = [Experiment(runs=[runs], name="default_experiment")]
+    elif isinstance(runs, Experiment):
+        _experiments = [runs]
+    elif isinstance(runs, list):
+        if not all([isinstance(x, Experiment) for x in runs]):
+            types = set(str(type(x)) for x in runs)
+            raise ValueError(f"All runs must have type `Experiment`, got types {types}")
+        if not runs:
             return pd.DataFrame(columns=["problem", "fevals", "run_idx", "pop_idx", "exp_name", "exp_idx", "fname"])
-        _experiments = experiments
+        _experiments = runs
     else:
-        raise ValueError(f"Unrecognized type for `experiments`: {type(experiments)}")
+        raise ValueError(f"Unrecognized type for `runs`: {type(runs)}")
 
     # Load each of the experiments and analyze
     dfs = []
@@ -323,4 +323,4 @@ def eval_metrics_experiments(
     """
     Legacy name for `eval_metrics`.
     """
-    return eval_metrics(experiments=experiments, metrics=metrics, n_procs=n_procs)
+    return eval_metrics(runs=experiments, metrics=metrics, n_procs=n_procs)
