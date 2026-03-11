@@ -25,7 +25,7 @@ conda install paretobench
 Objects and a file format for storing data from multi-objective optimization algorithms are included in the package.
 - `Population` - The atomic class of the library. Represents a single generation in a genetic algorithm complete with variables (`x`), objectives (`f`), and constraints (`g`).
 - `History` - A collection of populations representing the history of one run of a genetic algorithm.
-- `Experiment` - A benchmarking experiment with multiples histories representing multiple evaluations of a genetic algorithm, potentially on multiple problems as is used in benchmarking.
+- `Experiment` - A benchmarking experiment with multiple histories representing multiple evaluations of a genetic algorithm, potentially on multiple problems as is used in benchmarking.
 
 The `Experiment` objects may be saved to a standardized HDF5-backed format for long-term storage and interchange between codes.
 
