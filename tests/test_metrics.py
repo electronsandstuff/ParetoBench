@@ -104,50 +104,45 @@ def test_hypervolume_obj_directions():
     assert hv_mixed(pop_mixed, None) == pytest.approx(hv_min(pop_min, None))
 
 
-@pytest.mark.parametrize("input_type", ["Experiment", "file", "single"])
-def test_eval_metrics_experiments(input_type):
-    """
-    This test generates some Experiment objects and uses eval_metrics_experiments to evaluate them with a test metric. It
-    confirms that the right fields are generated.
+def test_eval_metrics_list():
+    """Passing a list of Experiment objects produces the right number of rows with empty fname."""
+    runs = generate_moga_experiments()
+    df = pb.eval_metrics(runs, metrics=("test", example_metric))
+    assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
+    assert (df["fname"] == "").all()
 
-    Parameters
-    ----------
-    input_type : str
-        What type of input to use (Experiments, files, or a single object)
-    """
-    # Create some test objects
-    if input_type == "single":
-        runs = generate_moga_experiments(names=["test"])
-    else:
-        runs = generate_moga_experiments()
 
+def test_eval_metrics_files():
+    """Passing a list of file paths produces the right number of rows with correct fnames."""
+    runs = generate_moga_experiments()
     with tempfile.TemporaryDirectory() as dir:
-        # Handle creating the input (files or moga run objects)
-        if input_type == "file":
-            fun_ins = []
-            for idx, run in enumerate(runs):
-                fname = os.path.join(dir, f"run-{idx}.h5")
-                run.save(fname)
-                fun_ins.append(fname)
-        elif input_type == "Experiment":
-            fun_ins = runs
-        elif input_type == "single":
-            fun_ins = runs[0]
-        else:
-            raise ValueError(f'Unrecognized input_type: "{ input_type }"')
+        fnames = []
+        for idx, run in enumerate(runs):
+            fname = os.path.join(dir, f"run-{idx}.h5")
+            run.save(fname)
+            fnames.append(fname)
+        df = pb.eval_metrics(fnames, metrics=("test", example_metric))
+    assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
+    actual_fnames = df.apply(lambda x: fnames[x["exp_idx"]], axis=1)
+    assert (df["fname"] == actual_fnames).all()
 
-        # Try running a metric calc
-        df = pb.eval_metrics_experiments(fun_ins, metrics=("test", example_metric))
 
-    # Make sure we get the expected number of rows
+def test_eval_metrics_single_experiment():
+    """Passing a single Experiment object produces the right number of rows."""
+    runs = generate_moga_experiments(names=["test"])
+    df = pb.eval_metrics(runs[0], metrics=("test", example_metric))
     assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
 
-    # Check that the filename field works correctly
-    if input_type == "file":
-        actual_fnames = df.apply(lambda x: fun_ins[x["exp_idx"]], axis=1)
-        assert (df["fname"] == actual_fnames).all()
-    elif input_type == "Experiment":
-        assert (df["fname"] == "").all()
+
+def test_eval_metrics_single_file():
+    """Passing a single file path produces the right number of rows with a correct fname."""
+    runs = generate_moga_experiments(names=["test"])
+    with tempfile.TemporaryDirectory() as dir:
+        fname = os.path.join(dir, "run.h5")
+        runs[0].save(fname)
+        df = pb.eval_metrics(fname, metrics=("test", example_metric))
+    assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
+    assert (df["fname"] == fname).all()
 
 
 def test_eval_metrics_population():
