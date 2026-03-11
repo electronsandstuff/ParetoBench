@@ -9,6 +9,31 @@ from xopt.generators.ga.nsga2 import NSGA2Generator
 from xopt.resources.test_functions.tnk import evaluate_TNK, tnk_vocs
 import numpy as np
 
+# Handle Xopt 2.x and 3.x style VOCS
+try:
+    from xopt.vocs import get_variable_data, get_objective_data, get_constraint_data
+
+    def _variable_data(vocs, data):
+        return get_variable_data(vocs, data)
+
+    def _objective_data(vocs, data):
+        return get_objective_data(vocs, data, return_raw=False)
+
+    def _constraint_data(vocs, data):
+        return get_constraint_data(vocs, data)
+
+except ImportError:
+
+    def _variable_data(vocs, data):
+        return vocs.variable_data(data)
+
+    def _objective_data(vocs, data):
+        return vocs.objective_data(data)
+
+    def _constraint_data(vocs, data):
+        return vocs.constraint_data(data)
+
+
 from paretobench.ext.xopt import (
     import_cnsga_history,
     import_nsga2_history,
@@ -47,9 +72,9 @@ def test_import_nsga2_history():
                 fevals += population_size
 
                 # Get data from the population to test against
-                xopt_xs.append(xx.generator.vocs.variable_data(xx.generator.pop))
-                xopt_fs.append(xx.generator.vocs.objective_data(xx.generator.pop))
-                xopt_gs.append(xx.generator.vocs.constraint_data(xx.generator.pop))
+                xopt_xs.append(_variable_data(xx.generator.vocs, xx.generator.pop))
+                xopt_fs.append(_objective_data(xx.generator.vocs, xx.generator.pop))
+                xopt_gs.append(_constraint_data(xx.generator.vocs, xx.generator.pop))
 
             # Save xopt to yaml file
             xx.dump(os.path.join(output_dir, "xopt.yml"))
@@ -137,9 +162,9 @@ def test_import_nsga2_history_dir():
                 fevals += population_size
 
                 # Get data from the population to test against
-                xopt_xs.append(xx.generator.vocs.variable_data(xx.generator.pop))
-                xopt_fs.append(xx.generator.vocs.objective_data(xx.generator.pop))
-                xopt_gs.append(xx.generator.vocs.constraint_data(xx.generator.pop))
+                xopt_xs.append(_variable_data(xx.generator.vocs, xx.generator.pop))
+                xopt_fs.append(_objective_data(xx.generator.vocs, xx.generator.pop))
+                xopt_gs.append(_constraint_data(xx.generator.vocs, xx.generator.pop))
 
             # Verify that the data files are created
             assert os.path.exists(os.path.join(output_dir, "populations.csv"))
@@ -214,9 +239,9 @@ def test_import_cnsga_history():
         for _ in range(n_generations):
             for _ in range(population_size):
                 xx.step()
-            xopt_xs.append(xx.generator.vocs.variable_data(xx.generator.population))
-            xopt_fs.append(xx.generator.vocs.objective_data(xx.generator.population))
-            xopt_gs.append(xx.generator.vocs.constraint_data(xx.generator.population))
+            xopt_xs.append(_variable_data(xx.generator.vocs, xx.generator.population))
+            xopt_fs.append(_objective_data(xx.generator.vocs, xx.generator.population))
+            xopt_gs.append(_constraint_data(xx.generator.vocs, xx.generator.population))
 
         # Save vocs to json for file-based loading test
         vocs_path = os.path.join(output_dir, "vocs.json")
