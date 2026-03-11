@@ -13,7 +13,8 @@ from paretobench import Problem, Population, History
 
 # Handle xopt 2.x and 3.x constraint/objective accessor styles
 try:
-    from xopt.vocs import GreaterThanConstraint, LessThanConstraint, MaximizeObjective, MinimizeObjective
+    from xopt.vocs import GreaterThanConstraint
+    from gest_api.vocs import LessThanConstraint, MaximizeObjective, MinimizeObjective
 
     def _constraint_value(c):
         return c.value
