@@ -29,6 +29,10 @@ Objects and a file format for storing data from multi-objective optimization alg
 
 The `Experiment` objects may be saved to a standardized HDF5-backed format for long-term storage and interchange between codes.
 
+Learn more about the containers in the following example notebook.
+
+[container_objects.ipynb](example_notebooks\container_objects.ipynb)
+
 
 ## Plotting
 Tools for plotting the data from multi-objective optimization algorithms are also included.
