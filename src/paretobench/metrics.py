@@ -176,7 +176,7 @@ class EvalMetricsJob:
 
 
 def eval_metrics(
-    runs: Union[Union[Experiment, str], List[Union[Experiment, str]], History],
+    runs: Union[Union[Experiment, str], List[Union[Experiment, str]], History, Population],
     metrics: Union[
         Metric,
         Callable,
@@ -251,7 +251,9 @@ def eval_metrics(
         raise TypeError(f"Unrecognized type for `metrics`: {type(metrics)}")
 
     # Handle the experiments
-    if isinstance(runs, History):
+    if isinstance(runs, Population):
+        _experiments = [Experiment(runs=[History(reports=runs, problem="default_problem")], name="default_experiment")]
+    elif isinstance(runs, History):
         _experiments = [Experiment(runs=[runs], name="default_experiment")]
     elif isinstance(runs, Experiment):
         _experiments = [runs]
