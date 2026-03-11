@@ -176,7 +176,7 @@ class EvalMetricsJob:
 
 
 def eval_metrics_experiments(
-    experiments: Union[Union[Experiment, str], List[Union[Experiment, str]]],
+    experiments: Union[Union[Experiment, str], List[Union[Experiment, str]], History],
     metrics: Union[
         Metric,
         Callable,
@@ -251,13 +251,24 @@ def eval_metrics_experiments(
     else:
         raise TypeError(f"Unrecognized type for `metrics`: {type(metrics)}")
 
-    # Handle single valued experiments
-    if not isinstance(experiments, list):
-        experiments = [experiments]
+    # Handle the experiments
+    if isinstance(experiments, History):
+        _experiments = [Experiment(runs=[experiments], name="default_experiment")]
+    elif isinstance(experiments, Experiment):
+        _experiments = [experiments]
+    elif isinstance(experiments, list):
+        if not all([isinstance(x, Experiment) for x in experiments]):
+            types = set(str(type(x)) for x in experiments)
+            raise ValueError(f"All experiments must have type `Experiment`, got types {types}")
+        if not experiments:
+            return pd.DataFrame(columns=["problem", "fevals", "run_idx", "pop_idx", "exp_name", "exp_idx", "fname"])
+        _experiments = experiments
+    else:
+        raise ValueError(f"Unrecognized type for `experiments`: {type(experiments)}")
 
     # Load each of the experiments and analyze
     dfs = []
-    for exp_idx, exp_in in enumerate(experiments):
+    for exp_idx, exp_in in enumerate(_experiments):
         # Load the experiment if it's a file
         if isinstance(exp_in, (str, os.PathLike)):
             exp = Experiment.load(exp_in)
