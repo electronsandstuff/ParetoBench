@@ -1,11 +1,11 @@
-from scipy.stats import ranksums
 from typing import Union, Dict, List, Tuple, Any, Callable
 import numpy as np
 import pandas as pd
 import paretobench
 
-from .exceptions import UnknownProblemError
-from .problem import Problem
+from paretobench.exceptions import UnknownProblemError
+from paretobench.problem import Problem
+from paretobench.stats import ranksums
 
 
 def normalize_problem_name(name: str) -> str:
