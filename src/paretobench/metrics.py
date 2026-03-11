@@ -5,6 +5,8 @@ import concurrent.futures
 import numpy as np
 import os
 import pandas as pd
+from pathlib import Path
+import warnings
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
@@ -175,8 +177,8 @@ class EvalMetricsJob:
         return rows
 
 
-def eval_metrics_experiments(
-    experiments: Union[Union[Experiment, str], List[Union[Experiment, str]]],
+def eval_metrics(
+    runs: Union[Union[Experiment, str], List[Union[Experiment, str]], History, Population],
     metrics: Union[
         Metric,
         Callable,
@@ -186,27 +188,36 @@ def eval_metrics_experiments(
     n_procs=1,
 ):
     """
-    Evaluates a set of metrics on all of the nondominated solutions in the populations contained in `experiments`.  Calculation
-    includes some basic parallelism using the `multiprocessing` library and can be enabled with the `n_procs` parameter.
+    Evaluates a set of metrics on all of the nondominated solutions in the runs. The parameter `runs` can be
+    any of the following types.
+     * `Population` - Will show up in `default_experiment` with `default_problem`
+     * `History` - Will show up in `default_experiment`
+     * `Experiment`
+     * List of paths to files containing experiments
 
-    The metrics should have the following signature: `metric(pop: Population, problem: str)`
-    The problem will be a definition of a problem in "single line" format and the population will contain only nondominated
+    Within one `History` object, all non-dominated solutions up until the latest population are considered
+    in the metric evaluation. The calculation includes some basic parallelism using the `multiprocessing`
+    library and can be enabled with the `n_procs` parameter. Parallelism happens at the level of the history
+    objects within an experiment.
+
+    The metrics should have the following signature: `metric(pop: Population, problem: str)`. The problem will
+    be a definition of a problem in "single line" format and the population will contain only nondominated
     solutions.
 
     The resulting dataframe will have the following columns.
-    * `problem`: The problem (in single line format)
-    * `exp_idx`: The index of this experiment in the list
-    * `exp_name`: The attribute `Experiment.name` for this evaluation
-    * `run_idx`: The index of the run within the experiment
-    * `pop_idx`: An index for the Population object within the run
-    * `fevals`: The number of function evaluations used to achieve this result
-    * `fname`: The filename the experiment was loaded from. Empty string if not loaded from file.
-    * One column with the name of each metric and the values stored in it
+     * `problem`: The problem (in single line format)
+     * `exp_idx`: The index of this experiment in the list
+     * `exp_name`: The attribute `Experiment.name` for this evaluation
+     * `run_idx`: The index of the run within the experiment
+     * `pop_idx`: An index for the Population object within the run
+     * `fevals`: The number of function evaluations used to achieve this result
+     * `fname`: The filename the experiment was loaded from. Empty string if not loaded from file.
+     * One column with the name of each metric and the values stored in it
 
     Parameters
     ----------
-    experiments : Union[Union[Experiment, str], List[Union[Experiment, str]]]
-        The experiment or list of experiments. May either be loaded experiment objects or filenames.
+    runs : Union[Union[Experiment, str], List[Union[Experiment, str]], History, Population]
+        All the populations to be evaluated. See above for allowed values.
     metrics : Union[Metric, Callable, List[Union[Metric, Tuple[str, Callable]]]]
         The metric functions (see note above for signature). Either single metric, or list of Metrics, or list of tuples with
         metric names and the callables. The single metric can be metric object, callable (will be named 'metric' in table) or
@@ -221,13 +232,13 @@ def eval_metrics_experiments(
     """
     # Handle all input types for `metrics` converting it to a dict mapping names to callables
     if isinstance(metrics, Metric):
-        metrics = {metrics.name: metrics}
+        _metrics = {metrics.name: metrics}
     elif callable(metrics):
-        metrics = {"metric": metrics}
+        _metrics = {"metric": metrics}
     elif isinstance(metrics, tuple) and isinstance(metrics[0], str) and callable(metrics[1]):
-        metrics = {metrics[0]: metrics[1]}
+        _metrics = {metrics[0]: metrics[1]}
     elif isinstance(metrics, list):
-        d_metrics = {}
+        _metrics = {}
         for idx, metric in enumerate(metrics):
             # Get key and value depending on type of metric
             if isinstance(metric, Metric):
@@ -244,24 +255,43 @@ def eval_metrics_experiments(
                 raise TypeError(f"Unrecognized type for `metrics[{idx}]`: {type(metric)}")
 
             # Check that we aren't overwriting another metric and add to dict
-            if key in d_metrics:
+            if key in _metrics:
                 raise ValueError(f'Duplicate name for `metrics[{idx}]`: "{key}"')
-            d_metrics[key] = val
-        metrics = d_metrics
+            _metrics[key] = val
     else:
         raise TypeError(f"Unrecognized type for `metrics`: {type(metrics)}")
 
-    # Handle single valued experiments
-    if not isinstance(experiments, list):
-        experiments = [experiments]
+    # Handle the experiments
+    if isinstance(runs, Population):
+        _experiments = [
+            Experiment(runs=[History(reports=[runs], problem="default_problem")], name="default_experiment")
+        ]
+    elif isinstance(runs, History):
+        _experiments = [Experiment(runs=[runs], name="default_experiment")]
+    elif isinstance(runs, Experiment):
+        _experiments = [runs]
+    elif isinstance(runs, list):
+        if all([isinstance(x, Experiment) for x in runs]):
+            _experiments = runs
+        elif all([isinstance(x, (str, os.PathLike)) for x in runs]):
+            _experiments = [Path(x) for x in runs]
+        else:
+            types = set(str(type(x)) for x in runs)
+            raise ValueError(f"All runs must have type `Experiment`, got types {types}")
+        if not runs:
+            return pd.DataFrame(columns=["problem", "fevals", "run_idx", "pop_idx", "exp_name", "exp_idx", "fname"])
+    elif isinstance(runs, (str, os.PathLike)):
+        _experiments = [Path(runs)]
+    else:
+        raise ValueError(f"Unrecognized type for `runs`: {type(runs)}")
 
     # Load each of the experiments and analyze
     dfs = []
-    for exp_idx, exp_in in enumerate(experiments):
+    for exp_idx, exp_in in enumerate(_experiments):
         # Load the experiment if it's a file
-        if isinstance(exp_in, (str, os.PathLike)):
+        if isinstance(exp_in, Path):
             exp = Experiment.load(exp_in)
-            fname = exp_in
+            fname = str(exp_in)
         elif isinstance(exp_in, Experiment):
             exp = exp_in
             fname = ""
@@ -275,7 +305,7 @@ def eval_metrics_experiments(
                 EvalMetricsJob(
                     run=run,
                     run_idx=run_idx,
-                    metrics=metrics.copy(),
+                    metrics=_metrics.copy(),
                     exp_name=exp.name,
                     exp_idx=exp_idx,
                     fname=fname,
@@ -297,3 +327,24 @@ def eval_metrics_experiments(
 
     # Combine and return
     return pd.concat(dfs)
+
+
+def eval_metrics_experiments(
+    experiments: Union[Union[Experiment, str], List[Union[Experiment, str]], History],
+    metrics: Union[
+        Metric,
+        Callable,
+        Tuple[str, Callable],
+        List[Union[Metric, Tuple[str, Callable]]],
+    ],
+    n_procs=1,
+):
+    """
+    Legacy name for `eval_metrics`.
+    """
+    warnings.warn(
+        "eval_metrics_experiments is deprecated and will be removed in a future release of ParetoBench. Please use eval_metrics instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return eval_metrics(runs=experiments, metrics=metrics, n_procs=n_procs)
