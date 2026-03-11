@@ -12,6 +12,7 @@ import numpy as np
 # Handle Xopt 2.x and 3.x style VOCS
 try:
     from xopt.vocs import get_variable_data, get_objective_data, get_constraint_data
+    from xopt.vocs import MaximizeObjective, LessThanConstraint
 
     def _variable_data(vocs, data):
         return get_variable_data(vocs, data)
@@ -21,6 +22,18 @@ try:
 
     def _constraint_data(vocs, data):
         return get_constraint_data(vocs, data)
+
+    def _variable_bounds(var):
+        return var.domain
+
+    def _is_not_maximize(obj):
+        return not isinstance(obj, MaximizeObjective)
+
+    def _constraint_type(c):
+        return "LESS_THAN" if isinstance(c, LessThanConstraint) else "GREATER_THAN"
+
+    def _constraint_value(c):
+        return c.value
 
 except ImportError:
 
@@ -32,6 +45,18 @@ except ImportError:
 
     def _constraint_data(vocs, data):
         return vocs.constraint_data(data)
+
+    def _variable_bounds(var):
+        return list(var)
+
+    def _is_not_maximize(obj):
+        return obj != "MAXIMIZE"
+
+    def _constraint_type(c):
+        return c[0]
+
+    def _constraint_value(c):
+        return c[1]
 
 
 from paretobench.ext.xopt import (
@@ -300,14 +325,14 @@ def test_xopt_problem_wrapper(prob_name):
 
     assert set(vocs.variable_names) == {f"x{i}" for i in range(prob.n_vars)}
     for i, (lb, ub) in enumerate(zip(prob.var_lower_bounds, prob.var_upper_bounds)):
-        np.testing.assert_allclose(list(vocs.variables[f"x{i}"]), [lb, ub])
+        np.testing.assert_allclose(_variable_bounds(vocs.variables[f"x{i}"]), [lb, ub])
 
     assert set(vocs.objective_names) == {f"f{i}" for i in range(prob.n_objs)}
-    assert all(vocs.objectives[name] != "MAXIMIZE" for name in vocs.objective_names)
+    assert all(_is_not_maximize(vocs.objectives[name]) for name in vocs.objective_names)
 
     assert set(vocs.constraint_names) == {f"g{i}" for i in range(prob.n_constraints)}
-    assert all(vocs.constraints[name][0] == "LESS_THAN" for name in vocs.constraint_names)
-    assert all(vocs.constraints[name][1] == 0 for name in vocs.constraint_names)
+    assert all(_constraint_type(vocs.constraints[name]) == "LESS_THAN" for name in vocs.constraint_names)
+    assert all(_constraint_value(vocs.constraints[name]) == 0 for name in vocs.constraint_names)
 
     rng = np.random.default_rng(42)
     lbs, ubs = prob.var_lower_bounds, prob.var_upper_bounds
