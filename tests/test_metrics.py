@@ -166,6 +166,14 @@ def test_eval_metrics_history():
     assert (df["problem"] == history.problem).all()
 
 
+def test_eval_metrics_empty_list():
+    df = pb.eval_metrics([], metrics=("test", example_metric))
+    assert len(df) == 0
+    assert "problem" in df.columns
+    assert "fevals" in df.columns
+    assert "run_idx" in df.columns
+
+
 def test_eval_metrics_invalid_runs_type():
     """Passing an unrecognized type for `runs` raises ValueError."""
     with pytest.raises(ValueError, match="Unrecognized type for `runs`"):
