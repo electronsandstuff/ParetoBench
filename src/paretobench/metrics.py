@@ -175,7 +175,7 @@ class EvalMetricsJob:
         return rows
 
 
-def eval_metrics_experiments(
+def eval_metrics(
     experiments: Union[Union[Experiment, str], List[Union[Experiment, str]], History],
     metrics: Union[
         Metric,
@@ -308,3 +308,19 @@ def eval_metrics_experiments(
 
     # Combine and return
     return pd.concat(dfs)
+
+
+def eval_metrics_experiments(
+    experiments: Union[Union[Experiment, str], List[Union[Experiment, str]], History],
+    metrics: Union[
+        Metric,
+        Callable,
+        Tuple[str, Callable],
+        List[Union[Metric, Tuple[str, Callable]]],
+    ],
+    n_procs=1,
+):
+    """
+    Legacy name for `eval_metrics`.
+    """
+    return eval_metrics(experiments=experiments, metrics=metrics, n_procs=n_procs)
