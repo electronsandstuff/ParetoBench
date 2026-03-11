@@ -1,4 +1,5 @@
 [![](https://img.shields.io/pypi/v/paretobench.svg)](https://pypi.org/pypi/paretobench/)
+[![](https://anaconda.org/conda-forge/paretobench/badges/version.svg)](https://anaconda.org/channels/conda-forge/packages/paretobench/overview)
 [![](https://img.shields.io/pypi/pyversions/paretobench.svg)](https://pypi.org/pypi/paretobench/)
 [![](https://img.shields.io/pypi/l/paretobench.svg)](https://pypi.org/pypi/paretobench/)
 
@@ -11,12 +12,100 @@ ParetoBench is a Python library that provides a collection of tools for the benc
 - Plotting utilities for objectives/decision variables and for both populations and series of populations (history objects)
 
 ## Installation
-Please install our package from pip.
+ParetoBench is available from pip and conda.
 ```
 pip install paretobench
 ```
+or
+```
+conda install paretobench
+```
 
-## Installation for Developers
+## Containers and File Format
+Objects and a file format for storing data from multi-objective optimization algorithms are included in the package.
+- `Population` - The atomic class of the library. Represents a single generation in a genetic algorithm complete with variables (`x`), objectives (`f`), and constraints (`g`).
+- `History` - A collection of populations representing the history of one run of a genetic algorithm.
+- `Experiment` - A benchmarking experiment with multiple histories representing multiple evaluations of a genetic algorithm, potentially on multiple problems as is used in benchmarking.
+
+The `Experiment` objects may be saved to a standardized HDF5-backed format for long-term storage and interchange between codes.
+
+Learn more about the containers in the following example notebook.
+
+[container_objects.ipynb](example_notebooks/container_objects.ipynb)
+
+
+## Plotting
+Tools for plotting the data from multi-objective optimization algorithms are also included.
+- Pairwise decision variables plots for `Population` and `History` objects
+    - Variable boundaries
+    - Color coding or animation for showing multiple populations
+    - Markers and alpha to distinguish non-dominated / infeasible solutions
+- Objective scatter plots for `Population` and `History` objects
+    - Analytical Pareto fronts for library problems
+    - Attainment surfaces in 2D and 3D
+    - Color coding or animation for showing multiple populations
+    - Markers and alpha to distinguish non-dominated / infeasible solutions
+
+
+See more information in the following notebooks.
+- [plotting_populations.ipynb](example_notebooks/plotting_populations.ipynb)
+- [plotting_histories.ipynb](example_notebooks/plotting_histories.ipynb)
+
+<table><tr>
+<td><img src="assets/plotting-decision-vars-bounds.png" width="250"/></td>
+<td><img src="assets/plotting-2d-history-attainment.png" width="250"/></td>
+<td><img src="assets/plotting-3d-attainment-surface.png" width="250"/></td>
+</tr></table>
+
+## Benchmark Problems
+
+| Problem | Objectives | Variables | Constraints | PF | Description |
+|---------|:---:|:---:|:---:|:---:|---|
+| ZDT[1-3] | 2 | ≥2 | 0 | Y | Classic 2-objective suite; convex, non-convex, and disconnected fronts |
+| ZDT4 | 2 | 10 | 0 | Y | Many local Pareto fronts |
+| ZDT6 | 2 | 10 | 0 | Y | Non-uniform spacing along front |
+| DTLZ[1-7] | ≥2 | ≥m | 0 | Y | Scalable suite with varied front geometry and difficulty |
+| DTLZ[8-9] | ≥2 | ≥m | ≥1 | Y | Scalable constrained problems |
+| WFG[1-9] | ≥2 | ≥2m | 0 | Y | Scalable suite with diverse transformations and front shapes |
+| CF[1-7] | 2 | ≥2 | 1-2 | Y | CEC 2009 constrained 2-objective problems |
+| CF[8-10] | 3 | ≥3 | 1 | Y | CEC 2009 constrained 3-objective problems |
+| CTP[1-7] | 2 | ≥2 | ≥1 | - | Constrained problems with varied feasible regions |
+| SCH | 2 | 1 | 0 | - | Schaffer's function |
+| FON | 2 | 3 | 0 | - | Fonseca-Fleming function |
+| POL | 2 | 2 | 0 | - | Poloni's two-objective function |
+| KUR | 2 | ≥2 | 0 | - | Kursawe's function |
+| CONSTR | 2 | 2 | 2 | - | Simple constrained 2-objective problem |
+| SRN | 2 | 2 | 2 | - | Srinivas-Deb constrained problem |
+| TNK | 2 | 2 | 2 | - | Tanaka constrained problem |
+| WATER | 5 | 3 | 7 | - | Water resource management problem |
+
+### Analytical Pareto Fronts
+When possible, the benchmark problems include analytical Pareto fronts.
+
+<table>
+<tr>
+<td><img src="assets/pareto_front_zdt1.png" width="250"/></td>
+<td><img src="assets/pareto_front_zdt2.png" width="250"/></td>
+<td><img src="assets/pareto_front_zdt3.png" width="250"/></td>
+</tr>
+<tr>
+<td><img src="assets/pareto_front_wfg1.png" width="250"/></td>
+<td><img src="assets/pareto_front_wfg2.png" width="250"/></td>
+<td><img src="assets/pareto_front_cf5.png" width="250"/></td>
+</tr>
+</table>
+
+## Parameter Naming Conventions
+To help standardize the code in this package, the following naming convention is used throughout for parameters.
+
+Some names are reserved for specific purposes. These are the following.
+ - `n`: The dimension of the input vector to the problem, ie the number of decision variables.
+ - `m`: The number of objectives.
+
+All parameters should follow the PEP 8 naming scheme for variables. Whenever this leads to a parameter being named something different than what it was called in the problem's defining paper, this change must be documented in the class.
+
+## For Developers
+### Installation
 1) Install the development conda environment.
 ```
 conda create env -f environment.yml
@@ -26,32 +115,7 @@ conda create env -f environment.yml
 pip install -e .[test]
 ```
 
-## Usage
-Please see the code in `example_notebooks` for usage instructions.
-
-# Testing
+### Testing
 Tests are written with the pytest framework. They can be run by calling `pytest` from the base of this repo with the package installed.
 
-# Parameter Naming Conventions
-To help standardize the code in this package, the following naming convention is used for parameters.
 
-Some names are reserved for specific purposes. These are the following.
- - `n`: The dimension of the input vector to the problem, ie the number of decision variables.
- - `m`: The number of objectives.
-
-All parameters should follow the PEP 8 naming scheme for variables. Whenever this leads to a parameter being named something different than what it was called in the problem's defining paper, this change must be documented in the class.
-
-# "Single Line" Serialization and Deserialization of Problems
-Sometimes it is useful to be able to specify problems with all of their parameters in a short single line string. Examples of applications include defining problems for testing optimizers in a config file, referring to problems in logging, and saving problems along with all parameters in file formats. To support this need, ParetoBench includes a simple serialization/deserialization format for problem parameters as well as a standard format for writing the problem's name and list of parameters into a single line string.
-
-## The Serialization Format
-The scope of this format is restricted to dicts containing floats, strings, ints, and bools. This is enough to allow the saving / loading of parameters for all of the problem objects without having to define a more complicated standard.
-
-All of the keys and values are written in pairs of the form `<key>=<value>` and are combined into a single string with the pairs separated by commas. White space is allowed around all of the elements (the keys, values, and pairs) and will be removed on deserialization. The keys may only be alphanumeric strings plus the underscore character. For int and float values, they can take on any value which is correctly interpreted by the respective python conversion functions. Floats must contain the decimal point character. Strings must be contained between two double quotes. The double quote character and backslash character must both be escaped with a single backslash character.
-
-## The "Single Line" Format for Problem Definition
-Problems along with their parameters are serialized in the format `NAME (<SERIALIZED PARAMETERS>)`. The name will always be the name of the python class in this library which should also match the literature name for the problem. It must be an alphanumeric string and can include the underscore character. The string "serialized parameters" is generated from the class's parameters using the above described serialization format. White space may be included around and in between any of these objects and will be parsed out.
-
-Not all parameters need to be defined. Default values in the classes will be used for any parameters not specified. Problems can also be specified by name only (ie `NAME`) and this corresponds to the problem with all default parameters. The standard also allows for the format `NAME ()` for objects without parameters or all default parameters.
-
-It should be noted that many single line format strings can describe same problem object. For instance, by rearranging the parameters. This means that the line format should never be used to compare problems or be used as the key to a dictionary for instance as you will end up with duplicates. Additionally, the default values of parameters are not guaranteed to remain constant and cannot be relied on to define a problem. For the purposes of saving problems, all parameters should be defined.
