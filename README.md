@@ -1,4 +1,5 @@
 [![](https://img.shields.io/pypi/v/paretobench.svg)](https://pypi.org/pypi/paretobench/)
+[![](https://anaconda.org/conda-forge/paretobench/badges/version.svg)](https://anaconda.org/channels/conda-forge/packages/paretobench/overview)
 [![](https://img.shields.io/pypi/pyversions/paretobench.svg)](https://pypi.org/pypi/paretobench/)
 [![](https://img.shields.io/pypi/l/paretobench.svg)](https://pypi.org/pypi/paretobench/)
 
@@ -11,9 +12,13 @@ ParetoBench is a Python library that provides a collection of tools for the benc
 - Plotting utilities for objectives/decision variables and for both populations and series of populations (history objects)
 
 ## Installation
-Please install our package from pip.
+ParetoBench is available from pip and conda.
 ```
 pip install paretobench
+```
+or
+```
+conda install paretobench
 ```
 
 ## Installation for Developers
