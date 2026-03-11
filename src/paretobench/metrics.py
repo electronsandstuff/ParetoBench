@@ -5,6 +5,7 @@ import concurrent.futures
 import numpy as np
 import os
 import pandas as pd
+from pathlib import Path
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
@@ -269,12 +270,17 @@ def eval_metrics(
     elif isinstance(runs, Experiment):
         _experiments = [runs]
     elif isinstance(runs, list):
-        if not all([isinstance(x, Experiment) for x in runs]):
+        if all([isinstance(x, Experiment) for x in runs]):
+            _experiments = runs
+        elif all([isinstance(x, (str, os.PathLike)) for x in runs]):
+            _experiments = [Path(x) for x in runs]
+        else:
             types = set(str(type(x)) for x in runs)
             raise ValueError(f"All runs must have type `Experiment`, got types {types}")
         if not runs:
             return pd.DataFrame(columns=["problem", "fevals", "run_idx", "pop_idx", "exp_name", "exp_idx", "fname"])
-        _experiments = runs
+    elif isinstance(runs, (str, os.PathLike)):
+        _experiments = [Path(runs)]
     else:
         raise ValueError(f"Unrecognized type for `runs`: {type(runs)}")
 
@@ -282,9 +288,9 @@ def eval_metrics(
     dfs = []
     for exp_idx, exp_in in enumerate(_experiments):
         # Load the experiment if it's a file
-        if isinstance(exp_in, (str, os.PathLike)):
+        if isinstance(exp_in, Path):
             exp = Experiment.load(exp_in)
-            fname = exp_in
+            fname = str(exp_in)
         elif isinstance(exp_in, Experiment):
             exp = exp_in
             fname = ""
