@@ -11,6 +11,47 @@ import warnings
 
 from paretobench import Problem, Population, History
 
+# Handle xopt 2.x and 3.x constraint/objective accessor styles
+try:
+    from xopt.vocs import GreaterThanConstraint
+    from gest_api.vocs import LessThanConstraint, MaximizeObjective, MinimizeObjective
+
+    def _constraint_value(c):
+        return c.value
+
+    def _constraint_direction(c):
+        if isinstance(c, GreaterThanConstraint):
+            return ">"
+        elif isinstance(c, LessThanConstraint):
+            return "<"
+        raise ValueError(f"Unrecognized constraint type: {type(c)}")
+
+    def _objective_direction(obj):
+        if isinstance(obj, MaximizeObjective):
+            return "+"
+        elif isinstance(obj, MinimizeObjective):
+            return "-"
+        raise ValueError(f"Unrecognized objective type: {type(obj)}")
+
+except ImportError:
+
+    def _constraint_value(c):
+        return c[1]
+
+    def _constraint_direction(c):
+        if c[0] == "GREATER_THAN":
+            return ">"
+        elif c[0] == "LESS_THAN":
+            return "<"
+        raise ValueError(f"Unrecognized constraint type: {c[0]}")
+
+    def _objective_direction(obj):
+        if obj == "MAXIMIZE":
+            return "+"
+        elif obj == "MINIMIZE":
+            return "-"
+        raise ValueError(f"Unrecognized objective type: {obj}")
+
 
 logger = logging.getLogger(__name__)
 
@@ -118,10 +159,8 @@ def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraint
     # Get base constraints if they exist
     g = df[vocs.constraint_names].to_numpy() if vocs.constraints else None
     names_g = vocs.constraint_names
-    constraint_targets = [vocs.constraints[name][1] for name in vocs.constraint_names]
-    constraint_directions = [
-        ">" if vocs.constraints[name][0] == "GREATER_THAN" else "<" for name in vocs.constraint_names
-    ]
+    constraint_targets = [_constraint_value(vocs.constraints[name]) for name in vocs.constraint_names]
+    constraint_directions = [_constraint_direction(vocs.constraints[name]) for name in vocs.constraint_names]
 
     # Handle error column if requested
     if errors_as_constraints:
@@ -144,7 +183,7 @@ def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraint
         names_x=vocs.variable_names,
         names_f=vocs.objective_names,
         names_g=names_g,
-        obj_directions="".join(["+" if vocs.objectives[name] == "MAXIMIZE" else "-" for name in vocs.objective_names]),
+        obj_directions="".join([_objective_direction(vocs.objectives[name]) for name in vocs.objective_names]),
         constraint_directions="".join(constraint_directions),
         constraint_targets=np.array(constraint_targets),
     )
