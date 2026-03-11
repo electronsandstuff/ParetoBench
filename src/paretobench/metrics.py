@@ -186,27 +186,36 @@ def eval_metrics(
     n_procs=1,
 ):
     """
-    Evaluates a set of metrics on all of the nondominated solutions in the populations contained in `experiments`.  Calculation
-    includes some basic parallelism using the `multiprocessing` library and can be enabled with the `n_procs` parameter.
+    Evaluates a set of metrics on all of the nondominated solutions in the runs. The parameter `runs` can be
+    any of the following types.
+     * `Population` - Will show up in `default_experiment` with `default_problem`
+     * `History` - Will show up in `default_experiment`
+     * `Experiment`
+     * List of paths to files containing experiments
 
-    The metrics should have the following signature: `metric(pop: Population, problem: str)`
-    The problem will be a definition of a problem in "single line" format and the population will contain only nondominated
+    Within one `History` object, all non-dominated solutions up until the latest population are considered
+    in the metric evaluation. The calculation includes some basic parallelism using the `multiprocessing`
+    library and can be enabled with the `n_procs` parameter. Parallelism happens at the level of the history
+    objects within an experiment.
+
+    The metrics should have the following signature: `metric(pop: Population, problem: str)`. The problem will
+    be a definition of a problem in "single line" format and the population will contain only nondominated
     solutions.
 
     The resulting dataframe will have the following columns.
-    * `problem`: The problem (in single line format)
-    * `exp_idx`: The index of this experiment in the list
-    * `exp_name`: The attribute `Experiment.name` for this evaluation
-    * `run_idx`: The index of the run within the experiment
-    * `pop_idx`: An index for the Population object within the run
-    * `fevals`: The number of function evaluations used to achieve this result
-    * `fname`: The filename the experiment was loaded from. Empty string if not loaded from file.
-    * One column with the name of each metric and the values stored in it
+     * `problem`: The problem (in single line format)
+     * `exp_idx`: The index of this experiment in the list
+     * `exp_name`: The attribute `Experiment.name` for this evaluation
+     * `run_idx`: The index of the run within the experiment
+     * `pop_idx`: An index for the Population object within the run
+     * `fevals`: The number of function evaluations used to achieve this result
+     * `fname`: The filename the experiment was loaded from. Empty string if not loaded from file.
+     * One column with the name of each metric and the values stored in it
 
     Parameters
     ----------
-    experiments : Union[Union[Experiment, str], List[Union[Experiment, str]]]
-        The experiment or list of experiments. May either be loaded experiment objects or filenames.
+    runs : Union[Union[Experiment, str], List[Union[Experiment, str]], History, Population]
+        All the populations to be evaluated. See above for allowed values.
     metrics : Union[Metric, Callable, List[Union[Metric, Tuple[str, Callable]]]]
         The metric functions (see note above for signature). Either single metric, or list of Metrics, or list of tuples with
         metric names and the callables. The single metric can be metric object, callable (will be named 'metric' in table) or
