@@ -150,6 +150,39 @@ def test_eval_metrics_experiments(input_type):
         assert (df["fname"] == "").all()
 
 
+def test_eval_metrics_population():
+    """Passing a Population directly produces one row with default experiment/problem names."""
+    pop = pb.Population.from_random(n_objectives=2, n_decision_vars=3, n_constraints=0, pop_size=10)
+    df = pb.eval_metrics(pop, metrics=("test", example_metric))
+    assert len(df) == 1
+    assert (df["exp_name"] == "default_experiment").all()
+    assert (df["problem"] == "default_problem").all()
+
+
+def test_eval_metrics_history():
+    """Passing a History directly produces one row per population with the history's problem name."""
+    n_populations = 5
+    history = pb.History.from_random(
+        n_populations=n_populations, n_objectives=2, n_decision_vars=3, n_constraints=0, pop_size=10
+    )
+    df = pb.eval_metrics(history, metrics=("test", example_metric))
+    assert len(df) == n_populations
+    assert (df["exp_name"] == "default_experiment").all()
+    assert (df["problem"] == history.problem).all()
+
+
+def test_eval_metrics_invalid_runs_type():
+    """Passing an unrecognized type for `runs` raises ValueError."""
+    with pytest.raises(ValueError, match="Unrecognized type for `runs`"):
+        pb.eval_metrics(runs=12345, metrics=example_metric)
+
+
+def test_eval_metrics_invalid_runs_list_type():
+    """Passing a list with a non-Experiment element raises ValueError."""
+    with pytest.raises(ValueError, match="All runs must have type `Experiment`"):
+        pb.eval_metrics(runs=[pb.Experiment(runs=[], name=""), 123], metrics=example_metric)
+
+
 def test_eval_metrics_experiments_invalid_metric_type():
     # Test unrecognized `metrics` type
     with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):
@@ -168,19 +201,6 @@ def test_eval_metrics_experiments_invalid_callable_in_tuple():
     # Test if the second element of the tuple is not callable
     with pytest.raises(TypeError, match="`metrics\\[0\\]\\[1\\]` is not callable"):
         pb.eval_metrics_experiments(experiments=[], metrics=[("valid_name", 123)])
-
-
-def test_eval_metrics_experiments_invalid_experiment_type():
-    # Test unrecognized `experiments` type (e.g., int)
-    with pytest.raises(ValueError, match="Incompatible experiment type: idx=0"):
-        pb.eval_metrics_experiments(experiments=123, metrics=lambda pop, problem: None)
-
-    # Test list with an invalid experiment type inside
-    with pytest.raises(ValueError, match="Incompatible experiment type: idx=1"):
-        pb.eval_metrics_experiments(
-            experiments=[pb.Experiment(runs=[], name=""), 123],
-            metrics=lambda pop, problem: None,
-        )
 
 
 def test_eval_metrics_experiments_duplicate_metric_name():

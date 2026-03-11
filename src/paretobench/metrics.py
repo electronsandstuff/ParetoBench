@@ -261,7 +261,9 @@ def eval_metrics(
 
     # Handle the experiments
     if isinstance(runs, Population):
-        _experiments = [Experiment(runs=[History(reports=runs, problem="default_problem")], name="default_experiment")]
+        _experiments = [
+            Experiment(runs=[History(reports=[runs], problem="default_problem")], name="default_experiment")
+        ]
     elif isinstance(runs, History):
         _experiments = [Experiment(runs=[runs], name="default_experiment")]
     elif isinstance(runs, Experiment):
