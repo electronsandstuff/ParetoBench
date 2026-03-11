@@ -75,6 +75,11 @@ See more information in the following notebooks.
 | TNK | 2 | 2 | 2 | - | Tanaka constrained problem |
 | WATER | 5 | 3 | 7 | - | Water resource management problem |
 
+### Analytical Pareto Fronts
+When possible, the benchmark problems include analytical Pareto fronts.
+
+![](assets\pareto_front_zdt3.png)
+
 ## Parameter Naming Conventions
 To help standardize the code in this package, the following naming convention is used throughout for parameters.
 
