@@ -178,27 +178,27 @@ def test_eval_metrics_invalid_runs_list_type():
         pb.eval_metrics(runs=[pb.Experiment(runs=[], name=""), 123], metrics=example_metric)
 
 
-def test_eval_metrics_experiments_invalid_metric_type():
+def test_eval_metrics_invalid_metric_type():
     # Test unrecognized `metrics` type
     with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):
-        pb.eval_metrics_experiments(experiments=[], metrics={"test": 1234})
+        pb.eval_metrics(runs=[], metrics={"test": 1234})
     with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):
-        pb.eval_metrics_experiments(experiments=[], metrics=1234)
+        pb.eval_metrics(runs=[], metrics=1234)
 
 
-def test_eval_metrics_experiments_invalid_tuple_type():
+def test_eval_metrics_invalid_tuple_type():
     # Test if first element of the tuple in metrics is not a string
     with pytest.raises(TypeError, match="Unrecognized type for `metrics"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[(123, lambda x: x)])
+        pb.eval_metrics(runs=[], metrics=[(123, lambda x: x)])
 
 
-def test_eval_metrics_experiments_invalid_callable_in_tuple():
+def test_eval_metrics_invalid_callable_in_tuple():
     # Test if the second element of the tuple is not callable
     with pytest.raises(TypeError, match="`metrics\\[0\\]\\[1\\]` is not callable"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[("valid_name", 123)])
+        pb.eval_metrics(runs=[], metrics=[("valid_name", 123)])
 
 
-def test_eval_metrics_experiments_duplicate_metric_name():
+def test_eval_metrics_duplicate_metric_name():
     # Make a mock metric
     class DummyMetric:
         def __init__(self, name):
@@ -208,13 +208,13 @@ def test_eval_metrics_experiments_duplicate_metric_name():
     with pytest.raises(ValueError, match=r'Duplicate name for `metrics\[1\]`: "metric1"'):
         metric1 = ("metric1", lambda pop, problem: None)
         metric2 = ("metric1", lambda pop, problem: None)
-        pb.eval_metrics_experiments(experiments=[], metrics=[metric1, metric2])
+        pb.eval_metrics(runs=[], metrics=[metric1, metric2])
 
 
-def test_eval_metrics_experiments_unrecognized_metric_type_in_list():
+def test_eval_metrics_unrecognized_metric_type_in_list():
     # Test for unrecognized type in the list of metrics
     with pytest.raises(TypeError, match=r"Unrecognized type for `metrics\[0\]`"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[123])
+        pb.eval_metrics(runs=[], metrics=[123])
 
     with pytest.raises(TypeError, match=r"Unrecognized type for `metrics\[1\]`"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[("valid_metric", lambda pop, problem: None), 123])
+        pb.eval_metrics(runs=[], metrics=[("valid_metric", lambda pop, problem: None), 123])
