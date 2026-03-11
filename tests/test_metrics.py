@@ -178,6 +178,12 @@ def test_eval_metrics_invalid_runs_list_type():
         pb.eval_metrics(runs=[pb.Experiment(runs=[], name=""), 123], metrics=example_metric)
 
 
+def test_eval_metrics_experiments_deprecation_warning():
+    """Calling eval_metrics_experiments raises a DeprecationWarning."""
+    with pytest.warns(DeprecationWarning, match="eval_metrics_experiments is deprecated"):
+        pb.eval_metrics_experiments(experiments=[], metrics=example_metric)
+
+
 def test_eval_metrics_invalid_metric_type():
     # Test unrecognized `metrics` type
     with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):

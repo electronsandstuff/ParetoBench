@@ -6,6 +6,7 @@ import numpy as np
 import os
 import pandas as pd
 from pathlib import Path
+import warnings
 
 from .containers import Experiment, History, Population
 from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
@@ -341,4 +342,9 @@ def eval_metrics_experiments(
     """
     Legacy name for `eval_metrics`.
     """
+    warnings.warn(
+        "eval_metrics_experiments is deprecated and will be removed in a future release of ParetoBench. Please use eval_metrics instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return eval_metrics(runs=experiments, metrics=metrics, n_procs=n_procs)
