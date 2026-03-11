@@ -61,19 +61,19 @@ See more information in the following notebooks.
 
 | Problem | Objectives | Variables | Constraints | PF | Description |
 |---------|:---:|:---:|:---:|:---:|---|
-| ZDT[1-3] | 2 | >=2 | 0 | Y | Classic 2-objective suite; convex, non-convex, and disconnected fronts |
+| ZDT[1-3] | 2 | ≥2 | 0 | Y | Classic 2-objective suite; convex, non-convex, and disconnected fronts |
 | ZDT4 | 2 | 10 | 0 | Y | Many local Pareto fronts |
 | ZDT6 | 2 | 10 | 0 | Y | Non-uniform spacing along front |
-| DTLZ[1-7] | >=2 | >=m | 0 | Y | Scalable suite with varied front geometry and difficulty |
-| DTLZ[8-9] | >=2 | >=m | >=1 | Y | Scalable constrained problems |
-| WFG[1-9] | >=2 | >=2m | 0 | Y | Scalable suite with diverse transformations and front shapes |
-| CF[1-7] | 2 | >=2 | 1-2 | Y | CEC 2009 constrained 2-objective problems |
-| CF[8-10] | 3 | >=3 | 1 | Y | CEC 2009 constrained 3-objective problems |
-| CTP[1-7] | 2 | >=2 | >=1 | - | Constrained problems with varied feasible regions |
+| DTLZ[1-7] | ≥2 | ≥m | 0 | Y | Scalable suite with varied front geometry and difficulty |
+| DTLZ[8-9] | ≥2 | ≥m | ≥1 | Y | Scalable constrained problems |
+| WFG[1-9] | ≥2 | ≥2m | 0 | Y | Scalable suite with diverse transformations and front shapes |
+| CF[1-7] | 2 | ≥2 | 1-2 | Y | CEC 2009 constrained 2-objective problems |
+| CF[8-10] | 3 | ≥3 | 1 | Y | CEC 2009 constrained 3-objective problems |
+| CTP[1-7] | 2 | ≥2 | ≥1 | - | Constrained problems with varied feasible regions |
 | SCH | 2 | 1 | 0 | - | Schaffer's function |
 | FON | 2 | 3 | 0 | - | Fonseca-Fleming function |
 | POL | 2 | 2 | 0 | - | Poloni's two-objective function |
-| KUR | 2 | >=2 | 0 | - | Kursawe's function |
+| KUR | 2 | ≥2 | 0 | - | Kursawe's function |
 | CONSTR | 2 | 2 | 2 | - | Simple constrained 2-objective problem |
 | SRN | 2 | 2 | 2 | - | Srinivas-Deb constrained problem |
 | TNK | 2 | 2 | 2 | - | Tanaka constrained problem |
