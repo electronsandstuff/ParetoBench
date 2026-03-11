@@ -30,6 +30,29 @@ Objects and a file format for storing data from multi-objective optimization alg
 The `Experiment` objects may be saved to a standardized HDF5-backed format for long-term storage and interchange between codes.
 
 
+## Plotting
+Tools for plotting the data from multi-objective optimization algorithms are also included.
+- Pairwise decision variables plots for `Population` and `History` objects
+    - Variable boundaries
+    - Color coding or animation for showing multiple populations
+    - Markers and alpha to distinguish non-dominated / infeasible solutions
+- Objective scatter plots for `Population` and `History` objects
+    - Analytical Pareto fronts for library problems
+    - Attainment surfaces in 2D and 3D
+    - Color coding or animation for showing multiple populations
+    - Markers and alpha to distinguish non-dominated / infeasible solutions
+
+
+See more information in the following notebooks.
+- [plotting_populations.ipynb](example_notebooks\plotting_populations.ipynb)
+- [plotting_histories.ipynb](example_notebooks\plotting_histories.ipynb)
+
+<table><tr>
+<td><img src="assets/plotting-decision-vars-bounds.png" width="250"/></td>
+<td><img src="assets/plotting-2d-history-attainment.png" width="250"/></td>
+<td><img src="assets/plotting-3d-attainment-surface.png" width="250"/></td>
+</tr></table>
+
 ## Benchmark Problems
 
 | Problem | Objectives | Variables | Constraints | PF | Description |
