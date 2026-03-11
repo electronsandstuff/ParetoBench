@@ -9,6 +9,56 @@ from xopt.generators.ga.nsga2 import NSGA2Generator
 from xopt.resources.test_functions.tnk import evaluate_TNK, tnk_vocs
 import numpy as np
 
+# Handle Xopt 2.x and 3.x style VOCS
+try:
+    from xopt.vocs import get_variable_data, get_objective_data, get_constraint_data
+    from xopt.vocs import MaximizeObjective, LessThanConstraint
+
+    def _variable_data(vocs, data):
+        return get_variable_data(vocs, data)
+
+    def _objective_data(vocs, data):
+        return get_objective_data(vocs, data, return_raw=False)
+
+    def _constraint_data(vocs, data):
+        return get_constraint_data(vocs, data)
+
+    def _variable_bounds(var):
+        return var.domain
+
+    def _is_not_maximize(obj):
+        return not isinstance(obj, MaximizeObjective)
+
+    def _constraint_type(c):
+        return "LESS_THAN" if isinstance(c, LessThanConstraint) else "GREATER_THAN"
+
+    def _constraint_value(c):
+        return c.value
+
+except ImportError:
+
+    def _variable_data(vocs, data):
+        return vocs.variable_data(data)
+
+    def _objective_data(vocs, data):
+        return vocs.objective_data(data)
+
+    def _constraint_data(vocs, data):
+        return vocs.constraint_data(data)
+
+    def _variable_bounds(var):
+        return list(var)
+
+    def _is_not_maximize(obj):
+        return obj != "MAXIMIZE"
+
+    def _constraint_type(c):
+        return c[0]
+
+    def _constraint_value(c):
+        return c[1]
+
+
 from paretobench.ext.xopt import (
     import_cnsga_history,
     import_nsga2_history,
@@ -47,9 +97,9 @@ def test_import_nsga2_history():
                 fevals += population_size
 
                 # Get data from the population to test against
-                xopt_xs.append(xx.generator.vocs.variable_data(xx.generator.pop))
-                xopt_fs.append(xx.generator.vocs.objective_data(xx.generator.pop))
-                xopt_gs.append(xx.generator.vocs.constraint_data(xx.generator.pop))
+                xopt_xs.append(_variable_data(xx.generator.vocs, xx.generator.pop))
+                xopt_fs.append(_objective_data(xx.generator.vocs, xx.generator.pop))
+                xopt_gs.append(_constraint_data(xx.generator.vocs, xx.generator.pop))
 
             # Save xopt to yaml file
             xx.dump(os.path.join(output_dir, "xopt.yml"))
@@ -137,9 +187,9 @@ def test_import_nsga2_history_dir():
                 fevals += population_size
 
                 # Get data from the population to test against
-                xopt_xs.append(xx.generator.vocs.variable_data(xx.generator.pop))
-                xopt_fs.append(xx.generator.vocs.objective_data(xx.generator.pop))
-                xopt_gs.append(xx.generator.vocs.constraint_data(xx.generator.pop))
+                xopt_xs.append(_variable_data(xx.generator.vocs, xx.generator.pop))
+                xopt_fs.append(_objective_data(xx.generator.vocs, xx.generator.pop))
+                xopt_gs.append(_constraint_data(xx.generator.vocs, xx.generator.pop))
 
             # Verify that the data files are created
             assert os.path.exists(os.path.join(output_dir, "populations.csv"))
@@ -214,9 +264,9 @@ def test_import_cnsga_history():
         for _ in range(n_generations):
             for _ in range(population_size):
                 xx.step()
-            xopt_xs.append(xx.generator.vocs.variable_data(xx.generator.population))
-            xopt_fs.append(xx.generator.vocs.objective_data(xx.generator.population))
-            xopt_gs.append(xx.generator.vocs.constraint_data(xx.generator.population))
+            xopt_xs.append(_variable_data(xx.generator.vocs, xx.generator.population))
+            xopt_fs.append(_objective_data(xx.generator.vocs, xx.generator.population))
+            xopt_gs.append(_constraint_data(xx.generator.vocs, xx.generator.population))
 
         # Save vocs to json for file-based loading test
         vocs_path = os.path.join(output_dir, "vocs.json")
@@ -275,14 +325,14 @@ def test_xopt_problem_wrapper(prob_name):
 
     assert set(vocs.variable_names) == {f"x{i}" for i in range(prob.n_vars)}
     for i, (lb, ub) in enumerate(zip(prob.var_lower_bounds, prob.var_upper_bounds)):
-        np.testing.assert_allclose(list(vocs.variables[f"x{i}"]), [lb, ub])
+        np.testing.assert_allclose(_variable_bounds(vocs.variables[f"x{i}"]), [lb, ub])
 
     assert set(vocs.objective_names) == {f"f{i}" for i in range(prob.n_objs)}
-    assert all(vocs.objectives[name] != "MAXIMIZE" for name in vocs.objective_names)
+    assert all(_is_not_maximize(vocs.objectives[name]) for name in vocs.objective_names)
 
     assert set(vocs.constraint_names) == {f"g{i}" for i in range(prob.n_constraints)}
-    assert all(vocs.constraints[name][0] == "LESS_THAN" for name in vocs.constraint_names)
-    assert all(vocs.constraints[name][1] == 0 for name in vocs.constraint_names)
+    assert all(_constraint_type(vocs.constraints[name]) == "LESS_THAN" for name in vocs.constraint_names)
+    assert all(_constraint_value(vocs.constraints[name]) == 0 for name in vocs.constraint_names)
 
     rng = np.random.default_rng(42)
     lbs, ubs = prob.var_lower_bounds, prob.var_upper_bounds
