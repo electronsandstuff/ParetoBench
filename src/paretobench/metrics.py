@@ -22,16 +22,26 @@ class InvertedGenerationalDistance(Metric):
     Calculates the inverted generational distance for the population to the Pareto front in the named problem.
     """
 
-    def __init__(self, n_pf=1000):
+    def __init__(self, n_pf=1000, feasible_only=True):
         """
         Parameters
         ----------
         n_pf : int, optional
             Number of points to calculate on the Pareto front, by default 1000
+        feasible_only : bool, optional
+            If True, only feasible individuals are used in the metric calculation. Returns nan if no feasible
+            individuals exist, by default True
         """
         self.n_pf = n_pf
+        self.feasible_only = feasible_only
 
     def __call__(self, pop: Population, problem: Union[Problem, str]):
+        # Filter to feasible individuals
+        if self.feasible_only:
+            pop = pop[pop.get_feasible_indices()]
+            if len(pop) == 0:
+                return np.nan
+
         # Handle the problem
         if isinstance(problem, str):
             prob = Problem.from_line_fmt(problem)
@@ -66,14 +76,18 @@ class Hypervolume(Metric):
     Calculates the hypervolume indicator.
     """
 
-    def __init__(self, ref_point: np.ndarray):
+    def __init__(self, ref_point: np.ndarray, feasible_only=True):
         """
         Parameters
         ----------
         ref_point : np.ndarray
             Reference point for the hypervolume calculation.
+        feasible_only : bool, optional
+            If True, only feasible individuals are used in the metric calculation. Returns nan if no feasible
+            individuals exist, by default True
         """
         self.ref_point = np.asarray(ref_point, dtype=float)
+        self.feasible_only = feasible_only
 
     @staticmethod
     def _hv_recursive(objs, ref):
@@ -116,6 +130,12 @@ class Hypervolume(Metric):
             raise ValueError(
                 f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
             )
+
+        # Filter to feasible individuals
+        if self.feasible_only:
+            pop = pop[pop.get_feasible_indices()]
+            if len(pop) == 0:
+                return np.nan
 
         # Filter to only the non-dominated individuals
         pop = pop.get_nondominated_set()
