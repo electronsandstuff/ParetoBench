@@ -104,86 +104,115 @@ def test_hypervolume_obj_directions():
     assert hv_mixed(pop_mixed, None) == pytest.approx(hv_min(pop_min, None))
 
 
-@pytest.mark.parametrize("input_type", ["Experiment", "file", "single"])
-def test_eval_metrics_experiments(input_type):
-    """
-    This test generates some Experiment objects and uses eval_metrics_experiments to evaluate them with a test metric. It
-    confirms that the right fields are generated.
+def test_eval_metrics_list():
+    """Passing a list of Experiment objects produces the right number of rows with empty fname."""
+    runs = generate_moga_experiments()
+    df = pb.eval_metrics(runs, metrics=("test", example_metric))
+    assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
+    assert (df["fname"] == "").all()
 
-    Parameters
-    ----------
-    input_type : str
-        What type of input to use (Experiments, files, or a single object)
-    """
-    # Create some test objects
-    if input_type == "single":
-        runs = generate_moga_experiments(names=["test"])
-    else:
-        runs = generate_moga_experiments()
 
+def test_eval_metrics_files():
+    """Passing a list of file paths produces the right number of rows with correct fnames."""
+    runs = generate_moga_experiments()
     with tempfile.TemporaryDirectory() as dir:
-        # Handle creating the input (files or moga run objects)
-        if input_type == "file":
-            fun_ins = []
-            for idx, run in enumerate(runs):
-                fname = os.path.join(dir, f"run-{idx}.h5")
-                run.save(fname)
-                fun_ins.append(fname)
-        elif input_type == "Experiment":
-            fun_ins = runs
-        elif input_type == "single":
-            fun_ins = runs[0]
-        else:
-            raise ValueError(f'Unrecognized input_type: "{ input_type }"')
+        fnames = []
+        for idx, run in enumerate(runs):
+            fname = os.path.join(dir, f"run-{idx}.h5")
+            run.save(fname)
+            fnames.append(fname)
+        df = pb.eval_metrics(fnames, metrics=("test", example_metric))
+    assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
+    actual_fnames = df.apply(lambda x: fnames[x["exp_idx"]], axis=1)
+    assert (df["fname"] == actual_fnames).all()
 
-        # Try running a metric calc
-        df = pb.eval_metrics_experiments(fun_ins, metrics=("test", example_metric))
 
-    # Make sure we get the expected number of rows
+def test_eval_metrics_single_experiment():
+    """Passing a single Experiment object produces the right number of rows."""
+    runs = generate_moga_experiments(names=["test"])
+    df = pb.eval_metrics(runs[0], metrics=("test", example_metric))
     assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
 
-    # Check that the filename field works correctly
-    if input_type == "file":
-        actual_fnames = df.apply(lambda x: fun_ins[x["exp_idx"]], axis=1)
-        assert (df["fname"] == actual_fnames).all()
-    elif input_type == "Experiment":
-        assert (df["fname"] == "").all()
+
+def test_eval_metrics_single_file():
+    """Passing a single file path produces the right number of rows with a correct fname."""
+    runs = generate_moga_experiments(names=["test"])
+    with tempfile.TemporaryDirectory() as dir:
+        fname = os.path.join(dir, "run.h5")
+        runs[0].save(fname)
+        df = pb.eval_metrics(fname, metrics=("test", example_metric))
+    assert len(df) == sum(sum(len(evl.reports) for evl in run.runs) for run in runs)
+    assert (df["fname"] == fname).all()
 
 
-def test_eval_metrics_experiments_invalid_metric_type():
+def test_eval_metrics_population():
+    """Passing a Population directly produces one row with default experiment/problem names."""
+    pop = pb.Population.from_random(n_objectives=2, n_decision_vars=3, n_constraints=0, pop_size=10)
+    df = pb.eval_metrics(pop, metrics=("test", example_metric))
+    assert len(df) == 1
+    assert (df["exp_name"] == "default_experiment").all()
+    assert (df["problem"] == "default_problem").all()
+
+
+def test_eval_metrics_history():
+    """Passing a History directly produces one row per population with the history's problem name."""
+    n_populations = 5
+    history = pb.History.from_random(
+        n_populations=n_populations, n_objectives=2, n_decision_vars=3, n_constraints=0, pop_size=10
+    )
+    df = pb.eval_metrics(history, metrics=("test", example_metric))
+    assert len(df) == n_populations
+    assert (df["exp_name"] == "default_experiment").all()
+    assert (df["problem"] == history.problem).all()
+
+
+def test_eval_metrics_empty_list():
+    df = pb.eval_metrics([], metrics=("test", example_metric))
+    assert len(df) == 0
+    assert "problem" in df.columns
+    assert "fevals" in df.columns
+    assert "run_idx" in df.columns
+
+
+def test_eval_metrics_invalid_runs_type():
+    """Passing an unrecognized type for `runs` raises ValueError."""
+    with pytest.raises(ValueError, match="Unrecognized type for `runs`"):
+        pb.eval_metrics(runs=12345, metrics=example_metric)
+
+
+def test_eval_metrics_invalid_runs_list_type():
+    """Passing a list with a non-Experiment element raises ValueError."""
+    with pytest.raises(ValueError, match="All runs must have type `Experiment`"):
+        pb.eval_metrics(runs=[pb.Experiment(runs=[], name=""), 123], metrics=example_metric)
+
+
+def test_eval_metrics_experiments_deprecation_warning():
+    """Calling eval_metrics_experiments raises a DeprecationWarning."""
+    with pytest.warns(DeprecationWarning, match="eval_metrics_experiments is deprecated"):
+        pb.eval_metrics_experiments(experiments=[], metrics=example_metric)
+
+
+def test_eval_metrics_invalid_metric_type():
     # Test unrecognized `metrics` type
     with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):
-        pb.eval_metrics_experiments(experiments=[], metrics={"test": 1234})
+        pb.eval_metrics(runs=[], metrics={"test": 1234})
     with pytest.raises(TypeError, match="Unrecognized type for `metrics`"):
-        pb.eval_metrics_experiments(experiments=[], metrics=1234)
+        pb.eval_metrics(runs=[], metrics=1234)
 
 
-def test_eval_metrics_experiments_invalid_tuple_type():
+def test_eval_metrics_invalid_tuple_type():
     # Test if first element of the tuple in metrics is not a string
     with pytest.raises(TypeError, match="Unrecognized type for `metrics"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[(123, lambda x: x)])
+        pb.eval_metrics(runs=[], metrics=[(123, lambda x: x)])
 
 
-def test_eval_metrics_experiments_invalid_callable_in_tuple():
+def test_eval_metrics_invalid_callable_in_tuple():
     # Test if the second element of the tuple is not callable
     with pytest.raises(TypeError, match="`metrics\\[0\\]\\[1\\]` is not callable"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[("valid_name", 123)])
+        pb.eval_metrics(runs=[], metrics=[("valid_name", 123)])
 
 
-def test_eval_metrics_experiments_invalid_experiment_type():
-    # Test unrecognized `experiments` type (e.g., int)
-    with pytest.raises(ValueError, match="Incompatible experiment type: idx=0"):
-        pb.eval_metrics_experiments(experiments=123, metrics=lambda pop, problem: None)
-
-    # Test list with an invalid experiment type inside
-    with pytest.raises(ValueError, match="Incompatible experiment type: idx=1"):
-        pb.eval_metrics_experiments(
-            experiments=[pb.Experiment(runs=[], name=""), 123],
-            metrics=lambda pop, problem: None,
-        )
-
-
-def test_eval_metrics_experiments_duplicate_metric_name():
+def test_eval_metrics_duplicate_metric_name():
     # Make a mock metric
     class DummyMetric:
         def __init__(self, name):
@@ -193,13 +222,13 @@ def test_eval_metrics_experiments_duplicate_metric_name():
     with pytest.raises(ValueError, match=r'Duplicate name for `metrics\[1\]`: "metric1"'):
         metric1 = ("metric1", lambda pop, problem: None)
         metric2 = ("metric1", lambda pop, problem: None)
-        pb.eval_metrics_experiments(experiments=[], metrics=[metric1, metric2])
+        pb.eval_metrics(runs=[], metrics=[metric1, metric2])
 
 
-def test_eval_metrics_experiments_unrecognized_metric_type_in_list():
+def test_eval_metrics_unrecognized_metric_type_in_list():
     # Test for unrecognized type in the list of metrics
     with pytest.raises(TypeError, match=r"Unrecognized type for `metrics\[0\]`"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[123])
+        pb.eval_metrics(runs=[], metrics=[123])
 
     with pytest.raises(TypeError, match=r"Unrecognized type for `metrics\[1\]`"):
-        pb.eval_metrics_experiments(experiments=[], metrics=[("valid_metric", lambda pop, problem: None), 123])
+        pb.eval_metrics(runs=[], metrics=[("valid_metric", lambda pop, problem: None), 123])

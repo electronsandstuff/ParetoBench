@@ -14,12 +14,11 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
 ]
 dependencies = [
-  "numpy",
-  "matplotlib",
-  "pydantic",
   "h5py",
+  "matplotlib",
+  "numpy",
   "pandas",
-  "scipy",
+  "pydantic",
 ]
 
 [project.urls]
@@ -28,11 +27,12 @@ Repository = "https://github.com/electronsandstuff/ParetoBench"
 
 [project.optional-dependencies]
 test = [
-  "pytest",
-  "pytest-cov",
-  "xopt",
   "moocore",
   "pymoo",
+  "pytest-cov",
+  "pytest",
+  "scipy",
+  "xopt",
 ]
 
 [tool.ruff]
