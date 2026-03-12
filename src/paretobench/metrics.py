@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from operator import methodcaller
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Any, List, Union, Callable, Tuple
 import concurrent.futures
 import numpy as np
@@ -14,7 +14,9 @@ from paretobench.utils import get_nondominated_inds
 
 
 class Metric(BaseModel):
-    feasible_only: bool = True
+    feasible_only: bool = Field(
+        True, description="Include only feasible individuals in metric calculation. Returns NaN if none exist."
+    )
 
     @property
     def name(self):
@@ -36,7 +38,7 @@ class InvertedGenerationalDistance(Metric):
     Calculates the inverted generational distance for the population to the Pareto front in the named problem.
     """
 
-    n_pf: int = 1000
+    n_pf: int = Field(1000, description="Number of points to sample from the problem's Pareto front.")
 
     def _call(self, pop: Population, problem: Union[Problem, str]):
         # Handle the problem
@@ -73,7 +75,7 @@ class Hypervolume(Metric):
     Calculates the hypervolume indicator.
     """
 
-    ref_point: NumpyArray
+    ref_point: NumpyArray = Field(description="Reference point. Must be a 1D array with one value per objective.")
 
     @field_validator("ref_point", mode="after")
     @classmethod
