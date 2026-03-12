@@ -14,8 +14,20 @@ from paretobench.utils import get_nondominated_inds
 
 
 class Metric(BaseModel):
+    feasible_only: bool = True
+
     @property
     def name(self):
+        raise NotImplementedError
+
+    def __call__(self, pop: Population, problem: Union[Problem, str]):
+        if self.feasible_only:
+            pop = pop[pop.get_feasible_indices()]
+            if len(pop) == 0:
+                return np.nan
+        return self._call(pop, problem)
+
+    def _call(self, pop: Population, problem: Union[Problem, str]):
         raise NotImplementedError
 
 
@@ -25,15 +37,8 @@ class InvertedGenerationalDistance(Metric):
     """
 
     n_pf: int = 1000
-    feasible_only: bool = True
 
-    def __call__(self, pop: Population, problem: Union[Problem, str]):
-        # Filter to feasible individuals
-        if self.feasible_only:
-            pop = pop[pop.get_feasible_indices()]
-            if len(pop) == 0:
-                return np.nan
-
+    def _call(self, pop: Population, problem: Union[Problem, str]):
         # Handle the problem
         if isinstance(problem, str):
             prob = Problem.from_line_fmt(problem)
@@ -69,7 +74,6 @@ class Hypervolume(Metric):
     """
 
     ref_point: NumpyArray
-    feasible_only: bool = True
 
     @field_validator("ref_point", mode="after")
     @classmethod
@@ -113,18 +117,12 @@ class Hypervolume(Metric):
 
             return hv
 
-    def __call__(self, pop: Population, problem: Union[Problem, str]):
+    def _call(self, pop: Population, problem: Union[Problem, str]):
         # Safety check for ref point and population
         if len(self.ref_point.shape) != 1 or self.ref_point.shape[0] != pop.m:
             raise ValueError(
                 f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
             )
-
-        # Filter to feasible individuals
-        if self.feasible_only:
-            pop = pop[pop.get_feasible_indices()]
-            if len(pop) == 0:
-                return np.nan
 
         # Filter to only the non-dominated individuals
         pop = pop.get_nondominated_set()
