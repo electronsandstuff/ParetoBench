@@ -1,17 +1,19 @@
 from dataclasses import dataclass
 from operator import methodcaller
+from pydantic import BaseModel, field_validator
 from typing import Dict, Any, List, Union, Callable, Tuple
 import concurrent.futures
 import numpy as np
 import os
 import pandas as pd
 
-from .containers import Experiment, History, Population
-from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
-from .utils import get_nondominated_inds
+from paretobench.containers import Experiment, History, Population
+from paretobench.problem import Problem, ProblemWithPF, ProblemWithFixedPF
+from paretobench.pydantic import NumpyArray
+from paretobench.utils import get_nondominated_inds
 
 
-class Metric:
+class Metric(BaseModel):
     @property
     def name(self):
         raise NotImplementedError
@@ -22,18 +24,8 @@ class InvertedGenerationalDistance(Metric):
     Calculates the inverted generational distance for the population to the Pareto front in the named problem.
     """
 
-    def __init__(self, n_pf=1000, feasible_only=True):
-        """
-        Parameters
-        ----------
-        n_pf : int, optional
-            Number of points to calculate on the Pareto front, by default 1000
-        feasible_only : bool, optional
-            If True, only feasible individuals are used in the metric calculation. Returns nan if no feasible
-            individuals exist, by default True
-        """
-        self.n_pf = n_pf
-        self.feasible_only = feasible_only
+    n_pf: int = 1000
+    feasible_only: bool = True
 
     def __call__(self, pop: Population, problem: Union[Problem, str]):
         # Filter to feasible individuals
@@ -76,18 +68,15 @@ class Hypervolume(Metric):
     Calculates the hypervolume indicator.
     """
 
-    def __init__(self, ref_point: np.ndarray, feasible_only=True):
-        """
-        Parameters
-        ----------
-        ref_point : np.ndarray
-            Reference point for the hypervolume calculation.
-        feasible_only : bool, optional
-            If True, only feasible individuals are used in the metric calculation. Returns nan if no feasible
-            individuals exist, by default True
-        """
-        self.ref_point = np.asarray(ref_point, dtype=float)
-        self.feasible_only = feasible_only
+    ref_point: NumpyArray
+    feasible_only: bool = True
+
+    @field_validator("ref_point", mode="after")
+    @classmethod
+    def validate_ref_point_shape(cls, value: np.ndarray):
+        if len(value.shape) != 1:
+            raise ValueError(f"Incompatible shape for ref_point. Got {value.shape}")
+        return value
 
     @staticmethod
     def _hv_recursive(objs, ref):
