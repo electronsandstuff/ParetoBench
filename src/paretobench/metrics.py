@@ -18,6 +18,10 @@ class Metric:
     def name(self):
         raise NotImplementedError
 
+    def get_plot_label(self) -> str:
+        """Returns label for y axis of plots with the metric."""
+        raise NotImplementedError
+
 
 class InvertedGenerationalDistance(Metric):
     """
@@ -61,6 +65,9 @@ class InvertedGenerationalDistance(Metric):
     @property
     def name(self):
         return "igd"
+
+    def get_plot_label(self) -> str:
+        return "IGD (Unitless)"
 
 
 class Hypervolume(Metric):
@@ -135,6 +142,9 @@ class Hypervolume(Metric):
     @property
     def name(self):
         return "hypervolume"
+
+    def get_plot_label(self) -> str:
+        return "Hypervolume (Unitless)"
 
 
 @dataclass
