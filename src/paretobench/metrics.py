@@ -85,9 +85,6 @@ class Hypervolume(Metric):
     """
 
     ref_point: NumpyArray = Field(description="Reference point. Must be a 1D array with one value per objective.")
-    feasible_only: bool = Field(
-        True, description="Include only feasible individuals in metric calculation. Returns NaN if none exist."
-    )
 
     @field_validator("ref_point", mode="after")
     @classmethod
@@ -139,10 +136,9 @@ class Hypervolume(Metric):
             )
 
         # Clean out infeasible solutions
-        if self.feasible_only:
-            pop = pop[pop.get_feasible_indices()]
-            if len(pop) == 0:
-                return np.nan
+        pop = pop[pop.get_feasible_indices()]
+        if len(pop) == 0:
+            return np.nan
 
         # Filter to only the non-dominated individuals
         pop = pop.get_nondominated_set()
