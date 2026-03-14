@@ -16,22 +16,21 @@ from paretobench.utils import get_nondominated_inds
 
 
 class Metric(BaseModel):
-    feasible_only: bool = Field(
-        True, description="Include only feasible individuals in metric calculation. Returns NaN if none exist."
-    )
-
     @property
     def name(self):
         raise NotImplementedError
 
     def __call__(self, pop: Population, problem: Union[Problem, str]):
-        if self.feasible_only:
-            pop = pop[pop.get_feasible_indices()]
-            if len(pop) == 0:
-                return np.nan
-        return self._call(pop, problem)
+        """
+        Evaluate the metric.
 
-    def _call(self, pop: Population, problem: Union[Problem, str]):
+        Parameters
+        ----------
+        pop : Population
+            The individuals to evaluate
+        problem : Union[Problem, str]
+            The problem being solved (used, for instance, to get Pareto front)
+        """
         raise NotImplementedError
 
 
@@ -42,7 +41,7 @@ class InvertedGenerationalDistance(Metric):
 
     n_pf: int = Field(1000, description="Number of points to sample from the problem's Pareto front.")
 
-    def _call(self, pop: Population, problem: Union[Problem, str]):
+    def __call__(self, pop: Population, problem: Union[Problem, str]):
         # Handle the problem
         if isinstance(problem, str):
             prob = Problem.from_line_fmt(problem)
@@ -58,6 +57,14 @@ class InvertedGenerationalDistance(Metric):
             pf = prob.get_pareto_front()
         else:
             raise ValueError(f'Could not load Pareto front from object of type "{type(prob)}"')
+
+        # Remove infeasible individuals
+        pop = pop[pop.get_feasible_indices()]
+        if len(pop) == 0:
+            return np.nan
+
+        # Get nondominated individuals
+        pop = pop.get_nondominated_set()
 
         # Calculate the IGD metric
         # Compute pairwise distance between every point in the front and reference
@@ -78,6 +85,9 @@ class Hypervolume(Metric):
     """
 
     ref_point: NumpyArray = Field(description="Reference point. Must be a 1D array with one value per objective.")
+    feasible_only: bool = Field(
+        True, description="Include only feasible individuals in metric calculation. Returns NaN if none exist."
+    )
 
     @field_validator("ref_point", mode="after")
     @classmethod
@@ -121,12 +131,18 @@ class Hypervolume(Metric):
 
             return hv
 
-    def _call(self, pop: Population, problem: Union[Problem, str]):
+    def __call__(self, pop: Population, problem: Union[Problem, str]):
         # Safety check for ref point and population
         if len(self.ref_point.shape) != 1 or self.ref_point.shape[0] != pop.m:
             raise ValueError(
                 f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
             )
+
+        # Clean out infeasible solutions
+        if self.feasible_only:
+            pop = pop[pop.get_feasible_indices()]
+            if len(pop) == 0:
+                return np.nan
 
         # Filter to only the non-dominated individuals
         pop = pop.get_nondominated_set()
