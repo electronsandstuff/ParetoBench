@@ -43,7 +43,7 @@ def test_inverted_generational_distance():
     assert val == actual2
 
     # Do multiple points
-    test_pop = pb.Population(f=np.array([[0.0, 0.0], [0.0, 1.0], [1.0, 0.0]]))
+    test_pop = pb.Population(f=np.array([[0.0, 1.0], [1.0, 0.0]]))
     val = igd(test_pop, ProblemExample())
     assert val == np.mean([0, 0, np.sqrt(0.5**2 + 0.5**2)])
 
