@@ -20,6 +20,10 @@ class Metric(BaseModel):
     def name(self):
         raise NotImplementedError
 
+    def get_plot_label(self) -> str:
+        """Returns label for y axis of plots with the metric."""
+        raise NotImplementedError
+
     def __call__(self, pop: Population, problem: Union[Problem, str]):
         """
         Evaluate the metric.
@@ -77,6 +81,9 @@ class InvertedGenerationalDistance(Metric):
     @property
     def name(self):
         return "igd"
+
+    def get_plot_label(self) -> str:
+        return "IGD"
 
 
 class Hypervolume(Metric):
@@ -156,6 +163,9 @@ class Hypervolume(Metric):
     @property
     def name(self):
         return "hypervolume"
+
+    def get_plot_label(self) -> str:
+        return "Hypervolume"
 
 
 @dataclass

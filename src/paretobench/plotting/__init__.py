@@ -8,6 +8,7 @@ from .history import (
     history_obj_scatter,
     history_dvar_pairs,
 )
+from .metrics import plot_metric_history
 
 __all__ = [
     "population_dvar_pairs",
@@ -16,4 +17,5 @@ __all__ = [
     "history_obj_animation",
     "history_obj_scatter",
     "history_dvar_pairs",
+    "plot_metric_history",
 ]
