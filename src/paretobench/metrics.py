@@ -67,7 +67,7 @@ class InvertedGenerationalDistance(Metric):
         return "igd"
 
     def get_plot_label(self) -> str:
-        return "IGD (Unitless)"
+        return "IGD"
 
 
 class Hypervolume(Metric):
@@ -144,7 +144,7 @@ class Hypervolume(Metric):
         return "hypervolume"
 
     def get_plot_label(self) -> str:
-        return "Hypervolume (Unitless)"
+        return "Hypervolume"
 
 
 @dataclass
