@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from operator import methodcaller
+from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Any, List, Union, Callable, Tuple
 import concurrent.futures
 import numpy as np
@@ -8,14 +9,28 @@ import pandas as pd
 from pathlib import Path
 import warnings
 
-from .containers import Experiment, History, Population
-from .problem import Problem, ProblemWithPF, ProblemWithFixedPF
-from .utils import get_nondominated_inds
+from paretobench.containers import Experiment, History, Population
+from paretobench.problem import Problem, ProblemWithPF, ProblemWithFixedPF
+from paretobench.pydantic import NumpyArray
+from paretobench.utils import get_nondominated_inds
 
 
-class Metric:
+class Metric(BaseModel):
     @property
     def name(self):
+        raise NotImplementedError
+
+    def __call__(self, pop: Population, problem: Union[Problem, str]):
+        """
+        Evaluate the metric.
+
+        Parameters
+        ----------
+        pop : Population
+            The individuals to evaluate
+        problem : Union[Problem, str]
+            The problem being solved (used, for instance, to get Pareto front)
+        """
         raise NotImplementedError
 
 
@@ -24,14 +39,7 @@ class InvertedGenerationalDistance(Metric):
     Calculates the inverted generational distance for the population to the Pareto front in the named problem.
     """
 
-    def __init__(self, n_pf=1000):
-        """
-        Parameters
-        ----------
-        n_pf : int, optional
-            Number of points to calculate on the Pareto front, by default 1000
-        """
-        self.n_pf = n_pf
+    n_pf: int = Field(1000, description="Number of points to sample from the problem's Pareto front.")
 
     def __call__(self, pop: Population, problem: Union[Problem, str]):
         # Handle the problem
@@ -49,6 +57,14 @@ class InvertedGenerationalDistance(Metric):
             pf = prob.get_pareto_front()
         else:
             raise ValueError(f'Could not load Pareto front from object of type "{type(prob)}"')
+
+        # Remove infeasible individuals
+        pop = pop[pop.get_feasible_indices()]
+        if len(pop) == 0:
+            return np.nan
+
+        # Get nondominated individuals
+        pop = pop.get_nondominated_set()
 
         # Calculate the IGD metric
         # Compute pairwise distance between every point in the front and reference
@@ -68,14 +84,14 @@ class Hypervolume(Metric):
     Calculates the hypervolume indicator.
     """
 
-    def __init__(self, ref_point: np.ndarray):
-        """
-        Parameters
-        ----------
-        ref_point : np.ndarray
-            Reference point for the hypervolume calculation.
-        """
-        self.ref_point = np.asarray(ref_point, dtype=float)
+    ref_point: NumpyArray = Field(description="Reference point. Must be a 1D array with one value per objective.")
+
+    @field_validator("ref_point", mode="after")
+    @classmethod
+    def validate_ref_point_shape(cls, value: np.ndarray):
+        if len(value.shape) != 1:
+            raise ValueError(f"Incompatible shape for ref_point. Got {value.shape}")
+        return value
 
     @staticmethod
     def _hv_recursive(objs, ref):
@@ -118,6 +134,11 @@ class Hypervolume(Metric):
             raise ValueError(
                 f"Incompatible shapes between ref_point and population objectives (ref_point.shape={self.ref_point.shape}, pop.m={pop.m})"
             )
+
+        # Clean out infeasible solutions
+        pop = pop[pop.get_feasible_indices()]
+        if len(pop) == 0:
+            return np.nan
 
         # Filter to only the non-dominated individuals
         pop = pop.get_nondominated_set()
