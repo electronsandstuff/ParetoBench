@@ -453,9 +453,9 @@ def import_nsga2_history_multi(
     """
     Import populations from several NSGA2Generator runs sharing one VOCS into a single History.
 
-    The runs are appended consecutively: each run's generations are offset by the running
-    maximum so that populations are concatenated in order and fevals accumulate monotonically
-    across the whole combined history.
+    The populations files are concatenated and grouped by `xopt_generation`, so the generation
+    numbering must be continuous across the runs (as produced by checkpoint restarts). fevals
+    accumulate monotonically across the whole combined history.
 
     Parameters
     ----------
@@ -476,11 +476,8 @@ def import_nsga2_history_multi(
     _vocs = _resolve_vocs(vocs, config)
 
     dfs = []
-    gen_offset = 0
     for path in populations_paths:
         df = pd.read_csv(path)
-        df["xopt_generation"] = df["xopt_generation"] + gen_offset
-        gen_offset = int(df["xopt_generation"].max())
         dfs.append(df)
     combined = pd.concat(dfs, ignore_index=True)
 

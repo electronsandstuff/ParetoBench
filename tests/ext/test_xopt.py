@@ -81,6 +81,26 @@ def _run_nsga2_to_dir(output_dir, population_size=16, n_generations=3, vocs=tnk_
     assert os.path.exists(os.path.join(output_dir, "vocs.txt"))
 
 
+def _split_run_by_generation(src_dir, dst_dirs, boundaries):
+    """
+    Split src_dir's populations.csv into dst_dirs at the given generation boundaries.
+
+    Emulates a checkpoint restart: xopt_generation numbering stays continuous across the
+    resulting directories. boundaries has len(dst_dirs) - 1 entries; generations up to and
+    including boundaries[i] go to dst_dirs[i]. vocs.txt is copied to each directory.
+    """
+    pop_df = pd.read_csv(os.path.join(src_dir, "populations.csv"))
+    with open(os.path.join(src_dir, "vocs.txt")) as f:
+        vocs_txt = f.read()
+    edges = [-np.inf, *boundaries, np.inf]
+    for i, dst in enumerate(dst_dirs):
+        os.makedirs(dst, exist_ok=True)
+        mask = (pop_df["xopt_generation"] > edges[i]) & (pop_df["xopt_generation"] <= edges[i + 1])
+        pop_df[mask].to_csv(os.path.join(dst, "populations.csv"), index=False)
+        with open(os.path.join(dst, "vocs.txt"), "w") as f:
+            f.write(vocs_txt)
+
+
 def test_import_nsga2_history():
     population_size = 32
     n_generations = 5
@@ -332,44 +352,38 @@ def test_import_cnsga_history():
 def test_import_nsga2_history_dir_list():
     population_size = 16
     with tempfile.TemporaryDirectory() as parent:
+        # A single continuous run
+        full_dir = os.path.join(parent, "full")
+        os.makedirs(full_dir)
+        _run_nsga2_to_dir(full_dir, population_size=population_size, n_generations=5)
+        full = import_nsga2_history_dir(full_dir)
+
+        # The same run split into two checkpoint directories (generations stay continuous)
         dir_a = os.path.join(parent, "run_0")
         dir_b = os.path.join(parent, "run_1")
-        os.makedirs(dir_a)
-        os.makedirs(dir_b)
-        _run_nsga2_to_dir(dir_a, population_size=population_size, n_generations=3)
-        _run_nsga2_to_dir(dir_b, population_size=population_size, n_generations=2)
+        _split_run_by_generation(full_dir, [dir_a, dir_b], [3])
 
-        hist_a = import_nsga2_history_dir(dir_a)
-        hist_b = import_nsga2_history_dir(dir_b)
         combined = import_nsga2_history_dir([dir_a, dir_b])
 
-        # Report count is the sum of the individual runs
-        assert len(combined) == len(hist_a) + len(hist_b)
-
-        # Populations equal the per-run reports, appended in order
-        for src, dst in zip(list(hist_a.reports) + list(hist_b.reports), combined.reports):
+        # Reloading the split checkpoints reconstructs the single continuous history exactly
+        assert len(combined) == len(full)
+        for src, dst in zip(full.reports, combined.reports):
             np.testing.assert_allclose(src.x, dst.x)
             np.testing.assert_allclose(src.f, dst.f)
             np.testing.assert_allclose(src.g, dst.g)
-
-        # fevals accumulate monotonically and continuously across the run boundary
-        fevals = [r.fevals for r in combined.reports]
-        assert fevals == sorted(fevals)
-        boundary = len(hist_a.reports)
-        assert combined.reports[boundary].fevals == (
-            combined.reports[boundary - 1].fevals + len(combined.reports[boundary])
-        )
+            assert src.fevals == dst.fevals
 
 
 def test_import_nsga2_history_dir_glob():
     population_size = 16
     with tempfile.TemporaryDirectory() as parent:
+        full_dir = os.path.join(parent, "full")
+        os.makedirs(full_dir)
+        _run_nsga2_to_dir(full_dir, population_size=population_size, n_generations=5)
+
         dir_a = os.path.join(parent, "run_0")
         dir_b = os.path.join(parent, "run_1")
-        os.makedirs(dir_a)
-        os.makedirs(dir_b)
-        _run_nsga2_to_dir(dir_a, population_size=population_size, n_generations=3)
-        _run_nsga2_to_dir(dir_b, population_size=population_size, n_generations=2)
+        _split_run_by_generation(full_dir, [dir_a, dir_b], [3])
 
         combined_list = import_nsga2_history_dir([dir_a, dir_b])
         combined_glob = import_nsga2_history_dir(os.path.join(parent, "run_*"))
