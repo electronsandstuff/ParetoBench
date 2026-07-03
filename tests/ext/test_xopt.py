@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import pandas as pd
@@ -65,6 +66,19 @@ from paretobench.ext.xopt import (
     XoptProblemWrapper,
     import_nsga2_history_dir,
 )
+
+
+def _run_nsga2_to_dir(output_dir, population_size=16, n_generations=3, vocs=tnk_vocs):
+    """Run NSGA2Generator into output_dir producing populations.csv and vocs.txt."""
+    generator = NSGA2Generator(vocs=vocs, output_dir=output_dir, population_size=population_size)
+    xx = Xopt(generator=generator, evaluator=Evaluator(function=evaluate_TNK, max_workers=1), vocs=vocs)
+    try:
+        for _ in range(n_generations * population_size):
+            xx.step()
+    finally:
+        xx.generator.close_log_file()
+    assert os.path.exists(os.path.join(output_dir, "populations.csv"))
+    assert os.path.exists(os.path.join(output_dir, "vocs.txt"))
 
 
 def test_import_nsga2_history():
@@ -313,6 +327,77 @@ def test_import_cnsga_history():
                 df_comp(rf, pd.DataFrame(tp.f, columns=tp.names_f))
                 rg.columns = [x.removeprefix("constraint_") for x in rg.columns]
                 df_comp(rg, pd.DataFrame(tp.g_canonical, columns=tp.names_g))
+
+
+def test_import_nsga2_history_dir_list():
+    population_size = 16
+    with tempfile.TemporaryDirectory() as parent:
+        dir_a = os.path.join(parent, "run_0")
+        dir_b = os.path.join(parent, "run_1")
+        os.makedirs(dir_a)
+        os.makedirs(dir_b)
+        _run_nsga2_to_dir(dir_a, population_size=population_size, n_generations=3)
+        _run_nsga2_to_dir(dir_b, population_size=population_size, n_generations=2)
+
+        hist_a = import_nsga2_history_dir(dir_a)
+        hist_b = import_nsga2_history_dir(dir_b)
+        combined = import_nsga2_history_dir([dir_a, dir_b])
+
+        # Report count is the sum of the individual runs
+        assert len(combined) == len(hist_a) + len(hist_b)
+
+        # Populations equal the per-run reports, appended in order
+        for src, dst in zip(list(hist_a.reports) + list(hist_b.reports), combined.reports):
+            np.testing.assert_allclose(src.x, dst.x)
+            np.testing.assert_allclose(src.f, dst.f)
+            np.testing.assert_allclose(src.g, dst.g)
+
+        # fevals accumulate monotonically and continuously across the run boundary
+        fevals = [r.fevals for r in combined.reports]
+        assert fevals == sorted(fevals)
+        boundary = len(hist_a.reports)
+        assert combined.reports[boundary].fevals == (
+            combined.reports[boundary - 1].fevals + len(combined.reports[boundary])
+        )
+
+
+def test_import_nsga2_history_dir_glob():
+    population_size = 16
+    with tempfile.TemporaryDirectory() as parent:
+        dir_a = os.path.join(parent, "run_0")
+        dir_b = os.path.join(parent, "run_1")
+        os.makedirs(dir_a)
+        os.makedirs(dir_b)
+        _run_nsga2_to_dir(dir_a, population_size=population_size, n_generations=3)
+        _run_nsga2_to_dir(dir_b, population_size=population_size, n_generations=2)
+
+        combined_list = import_nsga2_history_dir([dir_a, dir_b])
+        combined_glob = import_nsga2_history_dir(os.path.join(parent, "run_*"))
+
+        assert len(combined_glob) == len(combined_list)
+        for a, b in zip(combined_list.reports, combined_glob.reports):
+            np.testing.assert_allclose(a.x, b.x)
+            assert a.fevals == b.fevals
+
+
+def test_import_nsga2_history_dir_vocs_mismatch():
+    population_size = 16
+    with tempfile.TemporaryDirectory() as parent:
+        dir_a = os.path.join(parent, "run_0")
+        dir_b = os.path.join(parent, "run_1")
+        os.makedirs(dir_a)
+        os.makedirs(dir_b)
+        _run_nsga2_to_dir(dir_a, population_size=population_size, n_generations=2)
+
+        # Second run directory with a VOCS whose variable names differ
+        vocs_dict = json.loads(tnk_vocs.model_dump_json())
+        first = next(iter(vocs_dict["variables"]))
+        vocs_dict["variables"]["renamed_" + first] = vocs_dict["variables"].pop(first)
+        with open(os.path.join(dir_b, "vocs.txt"), "w") as f:
+            f.write(json.dumps(vocs_dict))
+
+        with pytest.raises(ValueError):
+            import_nsga2_history_dir([dir_a, dir_b])
 
 
 @pytest.mark.parametrize("prob_name", ["CTP1", "ZDT1", "WFG1", "CF1"])

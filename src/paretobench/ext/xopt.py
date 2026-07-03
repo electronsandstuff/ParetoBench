@@ -1,6 +1,7 @@
 from datetime import datetime
 from functools import partial
 from xopt import VOCS, Xopt
+import glob
 import logging
 import numpy as np
 import os
@@ -325,6 +326,89 @@ def import_cnsga_history(
     return hist
 
 
+def _resolve_vocs(
+    vocs: VOCS | str | os.PathLike[str] | None = None,
+    config: str | os.PathLike[str] | None = None,
+) -> VOCS:
+    """
+    Resolve a VOCS object from a VOCS instance, a json file path, or an Xopt config yaml.
+
+    Parameters
+    ----------
+    vocs : VOCS | str | os.PathLike[str] | None, optional
+        VOCS object or path to a json file. If None, must provide config, by default None.
+    config : str | os.PathLike[str] | None, optional
+        YAML config file path to load VOCs from. If None, must provide vocs, by default None.
+
+    Returns
+    -------
+    VOCS
+        Resolved VOCS object.
+    """
+    # Handle vocs in json file (ie output from NSGA2Generator)
+    if isinstance(vocs, (str, os.PathLike)):
+        with open(vocs) as f:
+            return VOCS.model_validate_json(f.read())
+
+    # Passed an actual VOCS object
+    if isinstance(vocs, VOCS):
+        return vocs
+
+    # Get vocs from config file
+    if config is not None:
+        with open(config) as f:
+            xx = Xopt.from_yaml(f)
+        return xx.vocs
+
+    raise ValueError("Must specify one of vocs or config")
+
+
+def _history_from_populations_df(
+    pop_df: pd.DataFrame,
+    vocs: VOCS,
+    problem: str = "",
+    errors_as_constraints: bool = False,
+) -> History:
+    """
+    Build a History object from a populations dataframe grouped by generation.
+
+    Parameters
+    ----------
+    pop_df : pd.DataFrame
+        Dataframe containing the population data with an 'xopt_generation' column.
+    vocs : VOCS
+        VOCS object defining the variables, objectives, and constraints.
+    problem : str, optional
+        Name of the optimization problem, by default "".
+    errors_as_constraints : bool, optional
+        If True, imports the 'xopt_error' column as an additional constraint
+        for each population, by default False.
+
+    Returns
+    -------
+    History
+        History object containing one report per generation with accumulated fevals.
+    """
+    pops = []
+    for idx, (gen, grp) in enumerate(pop_df.groupby(by="xopt_generation", sort=True)):
+        # Sanity check that we are at the expected generation
+        if idx + 1 != gen:
+            warnings.warn(
+                f"Non-consecutive groups detected - populations file is possibly corrupt. (generation at index {idx} is {gen})"
+            )
+
+        # Convert to population
+        pops.append(population_from_dataframe(grp, vocs, errors_as_constraints=errors_as_constraints))
+
+    # Update fevals
+    fevals = 0
+    for pop in pops:
+        fevals += len(pop)
+        pop.fevals = fevals
+
+    return History(reports=pops, problem=problem)
+
+
 def import_nsga2_history(
     populations_path: str | os.PathLike[str],
     vocs: VOCS | str | os.PathLike[str] | None = None,
@@ -351,71 +435,119 @@ def import_nsga2_history(
         for each population, by default False.
     """
     start_t = time.perf_counter()
-
-    # Handle vocs in json file (ie output from NSGA2Generator)
-    if isinstance(vocs, (str, os.PathLike)):
-        with open(vocs) as f:
-            _vocs = VOCS.model_validate_json(f.read())
-
-    # Passed an actual VOCS object
-    elif isinstance(vocs, VOCS):
-        _vocs = vocs
-
-    # Get vocs from config file
-    elif config is not None:
-        with open(config) as f:
-            xx = Xopt.from_yaml(f)
-        _vocs = xx.vocs
-
-    else:
-        raise ValueError("Must specify one of vocs or config")
-
-    # Load all population data
-    pop_df = pd.read_csv(populations_path)
-
-    pops = []
-    for idx, (gen, grp) in enumerate(pop_df.groupby(by="xopt_generation", sort=True)):
-        # Sanity check that we are at the expected generation
-        if idx + 1 != gen:
-            warnings.warn(
-                f"Non-consecutive groups detected - populations file is possibly corrupt. (generation at index {idx} is {gen})"
-            )
-
-        # Convert to population
-        pops.append(population_from_dataframe(grp, _vocs, errors_as_constraints=errors_as_constraints))
-
-    # Update fevals
-    fevals = 0
-    for pop in pops:
-        fevals += len(pop)
-        pop.fevals = fevals
-
-    hist = History(reports=pops, problem=problem)
+    _vocs = _resolve_vocs(vocs, config)
+    hist = _history_from_populations_df(
+        pd.read_csv(populations_path), _vocs, problem=problem, errors_as_constraints=errors_as_constraints
+    )
     logger.info(f"Successfully loaded History object in {time.perf_counter()-start_t:.2f}s: {hist}")
     return hist
 
 
-def import_nsga2_history_dir(
-    output_dir: str | os.PathLike[str],
+def import_nsga2_history_multi(
+    populations_paths: list[str | os.PathLike[str]],
+    vocs: VOCS | str | os.PathLike[str] | None = None,
+    config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
 ):
     """
-    Import all populations from the output of NSGA2Generator by specifying output directory.
+    Import populations from several NSGA2Generator runs sharing one VOCS into a single History.
+
+    The runs are appended consecutively: each run's generations are offset by the running
+    maximum so that populations are concatenated in order and fevals accumulate monotonically
+    across the whole combined history.
 
     Parameters
     ----------
-    output_dir : str | os.PathLike[str]
-        `output_dir` parameter used when running `NSGA2Generator.
+    populations_paths : list[str | os.PathLike[str]]
+        Paths to the populations files, loaded and appended in the order given.
+    vocs : VOCS | str | os.PathLike[str] | None, optional
+        VOCS object shared by all runs. Either python object or path to json file.
+        If None, must provide config, by default None.
+    config : str | os.PathLike[str] | None, optional
+        YAML config file path to load VOCs from. If None, must provide vocs, by default None.
     problem : str, optional
         Name of the optimization problem, by default "".
     errors_as_constraints : bool, optional
         If True, imports the 'xopt_error' column as an additional constraint
         for each population, by default False.
     """
-    return import_nsga2_history(
-        populations_path=os.path.join(output_dir, "populations.csv"),
-        vocs=os.path.join(output_dir, "vocs.txt"),
+    start_t = time.perf_counter()
+    _vocs = _resolve_vocs(vocs, config)
+
+    dfs = []
+    gen_offset = 0
+    for path in populations_paths:
+        df = pd.read_csv(path)
+        df["xopt_generation"] = df["xopt_generation"] + gen_offset
+        gen_offset = int(df["xopt_generation"].max())
+        dfs.append(df)
+    combined = pd.concat(dfs, ignore_index=True)
+
+    hist = _history_from_populations_df(combined, _vocs, problem=problem, errors_as_constraints=errors_as_constraints)
+    logger.info(f"Successfully loaded History object in {time.perf_counter()-start_t:.2f}s: {hist}")
+    return hist
+
+
+def import_nsga2_history_dir(
+    output_dir: str | os.PathLike[str] | list[str | os.PathLike[str]],
+    problem: str = "",
+    errors_as_constraints: bool = False,
+):
+    """
+    Import all populations from the output of NSGA2Generator (or multiple runs of NSGA2Generator) by specifying output
+    directory. When multiple runs are loaded, they must have matching VOCS and `xopt_generation` must be correct as it is
+    used to separate out the different generations. Output from multiple directories made by running `NSGA2Generator` from
+    checkpoints will work correctly with this function.
+
+    Parameters
+    ----------
+    output_dir : str | os.PathLike[str] | list[str | os.PathLike[str]]
+        `output_dir` parameter used when running `NSGA2Generator`. This may be:
+        - A single path to one run directory (`populations.csv` + `vocs.txt`).
+        - A list of paths to multiple run directories of the same problem. The populations
+          are appended consecutively into one History.
+        - A glob path containing '*', which is expanded to the matching directories
+          (sorted alphabetically) and loaded as a list.
+    problem : str, optional
+        Name of the optimization problem, by default "".
+    errors_as_constraints : bool, optional
+        If True, imports the 'xopt_error' column as an additional constraint
+        for each population, by default False.
+    """
+    # Glob path -> expand to directories and recurse with the list
+    if isinstance(output_dir, (str, os.PathLike)) and "*" in os.fspath(output_dir):
+        dirs = sorted(p for p in glob.glob(os.fspath(output_dir)) if os.path.isdir(p))
+        if not dirs:
+            raise ValueError(f"Glob pattern '{output_dir}' matched no directories")
+        return import_nsga2_history_dir(dirs, problem=problem, errors_as_constraints=errors_as_constraints)
+
+    # Single path -> current behavior
+    if isinstance(output_dir, (str, os.PathLike)):
+        return import_nsga2_history(
+            populations_path=os.path.join(output_dir, "populations.csv"),
+            vocs=os.path.join(output_dir, "vocs.txt"),
+            problem=problem,
+            errors_as_constraints=errors_as_constraints,
+        )
+
+    # List of paths -> validate VOCS compatibility, then load consecutively
+    dirs = list(output_dir)
+    if not dirs:
+        raise ValueError("output_dir list is empty")
+    ref_names = None
+    ref_vocs = None
+    for run_dir in dirs:
+        vocs = _resolve_vocs(vocs=os.path.join(run_dir, "vocs.txt"))
+        names = (tuple(vocs.variable_names), tuple(vocs.objective_names), tuple(vocs.constraint_names))
+        if ref_names is None:
+            ref_names, ref_vocs = names, vocs
+        elif names != ref_names:
+            raise ValueError(f"Incompatible VOCS between run directories: {ref_names} vs {names} (dir '{run_dir}')")
+
+    return import_nsga2_history_multi(
+        [os.path.join(run_dir, "populations.csv") for run_dir in dirs],
+        vocs=ref_vocs,
         problem=problem,
         errors_as_constraints=errors_as_constraints,
     )
