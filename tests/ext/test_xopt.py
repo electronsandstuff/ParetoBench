@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import pandas as pd
@@ -65,6 +66,39 @@ from paretobench.ext.xopt import (
     XoptProblemWrapper,
     import_nsga2_history_dir,
 )
+
+
+def _run_nsga2_to_dir(output_dir, population_size=16, n_generations=3, vocs=tnk_vocs):
+    """Run NSGA2Generator into output_dir producing populations.csv and vocs.txt."""
+    generator = NSGA2Generator(vocs=vocs, output_dir=output_dir, population_size=population_size)
+    xx = Xopt(generator=generator, evaluator=Evaluator(function=evaluate_TNK, max_workers=1), vocs=vocs)
+    try:
+        for _ in range(n_generations * population_size):
+            xx.step()
+    finally:
+        xx.generator.close_log_file()
+    assert os.path.exists(os.path.join(output_dir, "populations.csv"))
+    assert os.path.exists(os.path.join(output_dir, "vocs.txt"))
+
+
+def _split_run_by_generation(src_dir, dst_dirs, boundaries):
+    """
+    Split src_dir's populations.csv into dst_dirs at the given generation boundaries.
+
+    Emulates a checkpoint restart: xopt_generation numbering stays continuous across the
+    resulting directories. boundaries has len(dst_dirs) - 1 entries; generations up to and
+    including boundaries[i] go to dst_dirs[i]. vocs.txt is copied to each directory.
+    """
+    pop_df = pd.read_csv(os.path.join(src_dir, "populations.csv"))
+    with open(os.path.join(src_dir, "vocs.txt")) as f:
+        vocs_txt = f.read()
+    edges = [-np.inf, *boundaries, np.inf]
+    for i, dst in enumerate(dst_dirs):
+        os.makedirs(dst, exist_ok=True)
+        mask = (pop_df["xopt_generation"] > edges[i]) & (pop_df["xopt_generation"] <= edges[i + 1])
+        pop_df[mask].to_csv(os.path.join(dst, "populations.csv"), index=False)
+        with open(os.path.join(dst, "vocs.txt"), "w") as f:
+            f.write(vocs_txt)
 
 
 def test_import_nsga2_history():
@@ -313,6 +347,71 @@ def test_import_cnsga_history():
                 df_comp(rf, pd.DataFrame(tp.f, columns=tp.names_f))
                 rg.columns = [x.removeprefix("constraint_") for x in rg.columns]
                 df_comp(rg, pd.DataFrame(tp.g_canonical, columns=tp.names_g))
+
+
+def test_import_nsga2_history_dir_list():
+    population_size = 16
+    with tempfile.TemporaryDirectory() as parent:
+        # A single continuous run
+        full_dir = os.path.join(parent, "full")
+        os.makedirs(full_dir)
+        _run_nsga2_to_dir(full_dir, population_size=population_size, n_generations=5)
+        full = import_nsga2_history_dir(full_dir)
+
+        # The same run split into two checkpoint directories (generations stay continuous)
+        dir_a = os.path.join(parent, "run_0")
+        dir_b = os.path.join(parent, "run_1")
+        _split_run_by_generation(full_dir, [dir_a, dir_b], [3])
+
+        combined = import_nsga2_history_dir([dir_a, dir_b])
+
+        # Reloading the split checkpoints reconstructs the single continuous history exactly
+        assert len(combined) == len(full)
+        for src, dst in zip(full.reports, combined.reports):
+            np.testing.assert_allclose(src.x, dst.x)
+            np.testing.assert_allclose(src.f, dst.f)
+            np.testing.assert_allclose(src.g, dst.g)
+            assert src.fevals == dst.fevals
+
+
+def test_import_nsga2_history_dir_glob():
+    population_size = 16
+    with tempfile.TemporaryDirectory() as parent:
+        full_dir = os.path.join(parent, "full")
+        os.makedirs(full_dir)
+        _run_nsga2_to_dir(full_dir, population_size=population_size, n_generations=5)
+
+        dir_a = os.path.join(parent, "run_0")
+        dir_b = os.path.join(parent, "run_1")
+        _split_run_by_generation(full_dir, [dir_a, dir_b], [3])
+
+        combined_list = import_nsga2_history_dir([dir_a, dir_b])
+        combined_glob = import_nsga2_history_dir(os.path.join(parent, "run_*"))
+
+        assert len(combined_glob) == len(combined_list)
+        for a, b in zip(combined_list.reports, combined_glob.reports):
+            np.testing.assert_allclose(a.x, b.x)
+            assert a.fevals == b.fevals
+
+
+def test_import_nsga2_history_dir_vocs_mismatch():
+    population_size = 16
+    with tempfile.TemporaryDirectory() as parent:
+        dir_a = os.path.join(parent, "run_0")
+        dir_b = os.path.join(parent, "run_1")
+        os.makedirs(dir_a)
+        os.makedirs(dir_b)
+        _run_nsga2_to_dir(dir_a, population_size=population_size, n_generations=2)
+
+        # Second run directory with a VOCS whose variable names differ
+        vocs_dict = json.loads(tnk_vocs.model_dump_json())
+        first = next(iter(vocs_dict["variables"]))
+        vocs_dict["variables"]["renamed_" + first] = vocs_dict["variables"].pop(first)
+        with open(os.path.join(dir_b, "vocs.txt"), "w") as f:
+            f.write(json.dumps(vocs_dict))
+
+        with pytest.raises(ValueError):
+            import_nsga2_history_dir([dir_a, dir_b])
 
 
 @pytest.mark.parametrize("prob_name", ["CTP1", "ZDT1", "WFG1", "CF1"])
