@@ -52,9 +52,9 @@ See more information in the following notebooks.
 - [plotting_histories.ipynb](https://electronsandstuff.github.io/ParetoBench/examples/plotting_histories/)
 
 <table><tr>
-<td><img src="assets/plotting-decision-vars-bounds.png" width="250"/></td>
-<td><img src="assets/plotting-2d-history-attainment.png" width="250"/></td>
-<td><img src="assets/plotting-3d-attainment-surface.png" width="250"/></td>
+<td><img src="docs/assets/plotting-decision-vars-bounds.png" width="250"/></td>
+<td><img src="docs/assets/plotting-2d-history-attainment.png" width="250"/></td>
+<td><img src="docs/assets/plotting-3d-attainment-surface.png" width="250"/></td>
 </tr></table>
 
 ## Benchmark Problems
@@ -84,14 +84,14 @@ When possible, the benchmark problems include analytical Pareto fronts.
 
 <table>
 <tr>
-<td><img src="assets/pareto_front_zdt1.png" width="250"/></td>
-<td><img src="assets/pareto_front_zdt2.png" width="250"/></td>
-<td><img src="assets/pareto_front_zdt3.png" width="250"/></td>
+<td><img src="docs/assets/pareto_front_zdt1.png" width="250"/></td>
+<td><img src="docs/assets/pareto_front_zdt2.png" width="250"/></td>
+<td><img src="docs/assets/pareto_front_zdt3.png" width="250"/></td>
 </tr>
 <tr>
-<td><img src="assets/pareto_front_wfg1.png" width="250"/></td>
-<td><img src="assets/pareto_front_wfg2.png" width="250"/></td>
-<td><img src="assets/pareto_front_cf5.png" width="250"/></td>
+<td><img src="docs/assets/pareto_front_wfg1.png" width="250"/></td>
+<td><img src="docs/assets/pareto_front_wfg2.png" width="250"/></td>
+<td><img src="docs/assets/pareto_front_cf5.png" width="250"/></td>
 </tr>
 </table>
 
