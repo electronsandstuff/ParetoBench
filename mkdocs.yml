@@ -1,0 +1,24 @@
+site_name: ParetoBench
+site_url: https://electronsandstuff.github.io/ParetoBench/
+repo_url: https://github.com/electronsandstuff/ParetoBench
+repo_name: electronsandstuff/ParetoBench
+
+theme:
+  name: material
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      execute: true
+      allow_errors: false
+
+nav:
+  - Home: index.md
+  - Examples:
+      - Problems: examples/problems.ipynb
+      - Container Objects: examples/container_objects.ipynb
+      - Plotting Populations: examples/plotting_populations.ipynb
+      - Plotting Histories: examples/plotting_histories.ipynb
+      - Plotting Metrics: examples/plotting_metrics.ipynb
+      - IGD Analysis: examples/inverted_generational_distance_analysis.ipynb
+      - Duplicate Detection: examples/duplicate_detection.ipynb

@@ -11,4 +11,8 @@ repos:
   rev: v4.5.0
   hooks:
     - id: check-added-large-files
-      args: ['--maxkb=2000'] 
+      args: ['--maxkb=2000']
+- repo: https://github.com/kynan/nbstripout
+  rev: 0.8.1
+  hooks:
+    - id: nbstripout 

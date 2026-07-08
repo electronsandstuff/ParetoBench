@@ -6,6 +6,7 @@
 __pycache__
 /large_files/
 *.h5
+!/docs/examples/data/*.h5
 venv
 profile*
 *-checkpoint.ipynb

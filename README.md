@@ -31,7 +31,7 @@ The `Experiment` objects may be saved to a standardized HDF5-backed format for l
 
 Learn more about the containers in the following example notebook.
 
-[container_objects.ipynb](example_notebooks/container_objects.ipynb)
+[container_objects.ipynb](https://electronsandstuff.github.io/ParetoBench/examples/container_objects/)
 
 
 ## Plotting
@@ -48,8 +48,8 @@ Tools for plotting the data from multi-objective optimization algorithms are als
 
 
 See more information in the following notebooks.
-- [plotting_populations.ipynb](example_notebooks/plotting_populations.ipynb)
-- [plotting_histories.ipynb](example_notebooks/plotting_histories.ipynb)
+- [plotting_populations.ipynb](https://electronsandstuff.github.io/ParetoBench/examples/plotting_populations/)
+- [plotting_histories.ipynb](https://electronsandstuff.github.io/ParetoBench/examples/plotting_histories/)
 
 <table><tr>
 <td><img src="assets/plotting-decision-vars-bounds.png" width="250"/></td>

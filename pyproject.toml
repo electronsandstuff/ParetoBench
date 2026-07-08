@@ -34,6 +34,11 @@ test = [
   "scipy",
   "xopt",
 ]
+docs = [
+  "mkdocs",
+  "mkdocs-jupyter",
+  "mkdocs-material",
+]
 
 [tool.ruff]
 line-length = 120
