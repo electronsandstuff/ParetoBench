@@ -14,11 +14,12 @@ plugins:
 
 nav:
   - Home: index.md
-  - Examples:
-      - Problems: examples/problems.ipynb
-      - Container Objects: examples/container_objects.ipynb
-      - Plotting Populations: examples/plotting_populations.ipynb
-      - Plotting Histories: examples/plotting_histories.ipynb
-      - Plotting Metrics: examples/plotting_metrics.ipynb
-      - IGD Analysis: examples/inverted_generational_distance_analysis.ipynb
-      - Duplicate Detection: examples/duplicate_detection.ipynb
+  - Problems: problems.ipynb
+  - Container Objects: container_objects.ipynb
+  - Plotting:
+      - Plotting Populations: plotting/plotting_populations.ipynb
+      - Plotting Histories: plotting/plotting_histories.ipynb
+      - Plotting Metrics: plotting/plotting_metrics.ipynb
+  - Analysis:
+      - Duplicate Detection: analysis/duplicate_detection.ipynb
+      - IGD Analysis: analysis/inverted_generational_distance_analysis.ipynb
