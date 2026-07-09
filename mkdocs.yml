@@ -12,9 +12,20 @@ plugins:
       execute: true
       allow_errors: false
 
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
 nav:
   - Home: index.md
-  - Problems: problems.ipynb
+  - Problems: 
+      - Problems: problems/problems.ipynb
+      - Single Line Format: problems/single_line_format.md
   - Container Objects: container_objects.ipynb
   - Plotting:
       - Plotting Populations: plotting/plotting_populations.ipynb

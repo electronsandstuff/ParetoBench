@@ -13,3 +13,26 @@ Problems along with their parameters are serialized in the format `NAME (<SERIAL
 Not all parameters need to be defined. Default values in the classes will be used for any parameters not specified. Problems can also be specified by name only (ie `NAME`) and this corresponds to the problem with all default parameters. The standard also allows for the format `NAME ()` for objects without parameters or all default parameters.
 
 It should be noted that many single line format strings can describe same problem object. For instance, by rearranging the parameters. This means that the line format should never be used to compare problems or be used as the key to a dictionary for instance as you will end up with duplicates. Additionally, the default values of parameters are not guaranteed to remain constant and cannot be relied on to define a problem. For the purposes of saving problems, all parameters should be defined.
+
+## Examples
+
+Specifying all parameters.
+```
+WFG1 (n=24, m=2, k=2)
+```
+
+The ones we don't specify will use default values for the class (in this case, the default value of `m` for `DTLZ` is 3).
+```
+DTLZ (n=16)
+```
+
+We don't even have to specify any parameters and all defaults will be used (`n=30` in this case for `ZDT3`).
+```
+ZDT3
+```
+
+From python, this looks like the following.
+```python
+import paretobench as pb
+prob = pb.Problem.from_line_fmt("WFG1 (n=24, m=2, k=2)")
+```
