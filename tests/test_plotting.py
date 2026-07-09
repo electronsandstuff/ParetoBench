@@ -1,9 +1,12 @@
 import numpy as np
+import subprocess
+import sys
+from matplotlib import animation
 from matplotlib.collections import PathCollection
 import matplotlib.pyplot as plt
 import pytest
 
-from paretobench import Population, History, EmptyPopulationError
+from paretobench import Population, History, Hypervolume, EmptyPopulationError
 from paretobench.plotting import (
     population_obj_scatter,
     population_dvar_pairs,
@@ -377,3 +380,48 @@ def test_invalid_selections(selection, exception, match):
     arr_len = 5
     with pytest.raises(exception, match=match):
         selection_to_indices(selection, arr_len)
+
+
+def test_population_plot_methods():
+    """Test the plotting convenience methods on the Population class"""
+    pop = Population.from_random(n_objectives=2, n_decision_vars=3, n_constraints=0, pop_size=10)
+
+    fig, ax = pop.plot_obj_scatter()
+    scatter_plots = [c for c in ax.collections if isinstance(c, PathCollection)]
+    assert len(scatter_plots) == 1
+    plt.close(fig)
+
+    fig, axes = pop.plot_dvar_pairs()
+    assert axes.shape == (3, 3)
+    plt.close(fig)
+
+
+def test_history_plot_methods():
+    """Test the plotting convenience methods on the History class"""
+    hist = History.from_random(5, 2, 3, 0, 20)
+
+    fig, ax = hist.plot_obj_scatter()
+    assert len(fig.get_axes()) == 2  # Main axis + colorbar
+    plt.close(fig)
+
+    fig, axes = hist.plot_dvar_pairs()
+    assert axes.shape == (3, 3)
+    plt.close(fig)
+
+    anim = hist.plot_obj_animation()
+    assert isinstance(anim, animation.Animation)
+    plt.close("all")
+
+    anim = hist.plot_dvar_animation()
+    assert isinstance(anim, animation.Animation)
+    plt.close("all")
+
+    fig, ax = hist.plot_metric(Hypervolume(ref_point=np.array([2.0, 2.0])))
+    assert len(ax.lines) == 1
+    plt.close(fig)
+
+
+def test_package_import_is_matplotlib_free():
+    """Importing paretobench must not pull in matplotlib; plotting is loaded lazily"""
+    script = "import paretobench; import sys; assert 'matplotlib' not in sys.modules"
+    subprocess.run([sys.executable, "-c", script], check=True)
