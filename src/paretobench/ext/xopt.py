@@ -479,10 +479,21 @@ def import_nsga2_history_multi(
     _vocs = _resolve_vocs(vocs, config)
 
     dfs = []
-    for path in populations_paths:
+    for file_idx, path in enumerate(populations_paths):
         df = pd.read_csv(path)
+        df["_pb_file_idx"] = file_idx
         dfs.append(df)
     combined = pd.concat(dfs, ignore_index=True)
+
+    # Check for file with overlapping generation number
+    last_file_idx = combined.groupby("xopt_generation")["_pb_file_idx"].transform("max")
+    superseded = combined["_pb_file_idx"] != last_file_idx
+    if superseded.any():
+        overlapping_gens = combined.loc[superseded, "xopt_generation"]
+        warnings.warn(
+            f"Generations {overlapping_gens.min()}-{overlapping_gens.max()} appear in multiple populations "
+            "files. This may result in populations with combined data from more than one file."
+        )
 
     hist = _history_from_populations_df(combined, _vocs, problem=problem, errors_as_constraints=errors_as_constraints)
     logger.info(f"Successfully loaded History object in {time.perf_counter()-start_t:.2f}s: {hist}")
