@@ -408,12 +408,15 @@ def test_history_plot_methods():
     assert axes.shape == (3, 3)
     plt.close(fig)
 
+    # Draw a frame of each animation so matplotlib does not warn about deletion without rendering
     anim = hist.plot_obj_animation()
     assert isinstance(anim, animation.Animation)
+    plt.gcf().canvas.draw()
     plt.close("all")
 
     anim = hist.plot_dvar_animation()
     assert isinstance(anim, animation.Animation)
+    plt.gcf().canvas.draw()
     plt.close("all")
 
     fig, ax = hist.plot_metric(Hypervolume(ref_point=np.array([2.0, 2.0])))
