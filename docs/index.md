@@ -14,6 +14,8 @@ ParetoBench is a Python library that provides a collection of tools for the benc
 - Tools for calculating convergence metrics on results and running statistical analyses on them to compare algorithms
 - Plotting utilities for objectives/decision variables and for both populations and series of populations (history objects)
 
+Learn more about the project at the [ParetoBench documentation website](https://electronsandstuff.github.io/ParetoBench/).
+
 ## Installation
 
 ParetoBench is available from pip and conda.
