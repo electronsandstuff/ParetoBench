@@ -87,6 +87,9 @@ class XoptProblemWrapper:
         """
         self.prob = problem
 
+        # Hack to enable Xopt serialization to work
+        self.__qualname__ = type(self).__qualname__
+
     @classmethod
     def from_line_fmt(cls, prob_name: str):
         return cls(Problem.from_line_fmt(prob_name))
@@ -138,7 +141,7 @@ class XoptProblemWrapper:
         return f"XoptProblemWrapper({self.prob.to_line_fmt()})"
 
 
-def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraints: bool = False):
+def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraints: bool = False) -> Population:
     """
     Import a population file from an Xopt-style dataframe and VOCs object into a ParetoBench Population object.
 
@@ -194,7 +197,7 @@ def import_cnsga_population(
     path: str | os.PathLike[str],
     vocs: VOCS | str | os.PathLike[str] | None = None,
     errors_as_constraints: bool = False,
-):
+) -> Population:
     """
     Import a population file from Xopt's CNSGA generator into a ParetoBench Population object.
 
@@ -226,7 +229,7 @@ def import_cnsga_history(
     config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import all population files in output_path from Xopt's CNSGA generator
     into a ParetoBench History object.
@@ -415,7 +418,7 @@ def import_nsga2_history(
     config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import all populations from the output of NSGA2Generator.
 
@@ -449,7 +452,7 @@ def import_nsga2_history_multi(
     config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import populations from several NSGA2Generator runs sharing one VOCS into a single History.
 
@@ -476,10 +479,21 @@ def import_nsga2_history_multi(
     _vocs = _resolve_vocs(vocs, config)
 
     dfs = []
-    for path in populations_paths:
+    for file_idx, path in enumerate(populations_paths):
         df = pd.read_csv(path)
+        df["_pb_file_idx"] = file_idx
         dfs.append(df)
     combined = pd.concat(dfs, ignore_index=True)
+
+    # Check for file with overlapping generation number
+    last_file_idx = combined.groupby("xopt_generation")["_pb_file_idx"].transform("max")
+    superseded = combined["_pb_file_idx"] != last_file_idx
+    if superseded.any():
+        overlapping_gens = combined.loc[superseded, "xopt_generation"]
+        warnings.warn(
+            f"Generations {overlapping_gens.min()}-{overlapping_gens.max()} appear in multiple populations "
+            "files. This may result in populations with combined data from more than one file."
+        )
 
     hist = _history_from_populations_df(combined, _vocs, problem=problem, errors_as_constraints=errors_as_constraints)
     logger.info(f"Successfully loaded History object in {time.perf_counter()-start_t:.2f}s: {hist}")
@@ -490,7 +504,7 @@ def import_nsga2_history_dir(
     output_dir: str | os.PathLike[str] | list[str | os.PathLike[str]],
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import all populations from the output of NSGA2Generator (or multiple runs of NSGA2Generator) by specifying output
     directory. When multiple runs are loaded, they must have matching VOCS and `xopt_generation` must be correct as it is

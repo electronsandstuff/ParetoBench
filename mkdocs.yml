@@ -34,3 +34,5 @@ nav:
   - Analysis:
       - Duplicate Detection: analysis/duplicate_detection.ipynb
       - IGD Analysis: analysis/inverted_generational_distance_analysis.ipynb
+  - External Connectors:
+      - Xopt: ext/xopt.ipynb
