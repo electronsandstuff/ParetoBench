@@ -7,7 +7,6 @@ from xopt.base import Xopt
 from xopt.evaluator import Evaluator
 from xopt.generators.ga.cnsga import CNSGAGenerator
 from xopt.generators.ga.nsga2 import NSGA2Generator
-from xopt.resources.test_functions.tnk import evaluate_TNK, tnk_vocs
 import numpy as np
 
 # Handle Xopt 2.x and 3.x style VOCS
@@ -67,13 +66,18 @@ from paretobench.ext.xopt import (
     import_nsga2_history_dir,
 )
 
+# ParetoBench's TNK problem wrapped for use as a vectorized Xopt evaluator function
+tnk_wrapper = XoptProblemWrapper.from_line_fmt("TNK")
+tnk_vocs = tnk_wrapper.vocs
+
 
 def _run_nsga2_to_dir(output_dir, population_size=16, n_generations=3, vocs=tnk_vocs):
     """Run NSGA2Generator into output_dir producing populations.csv and vocs.txt."""
     generator = NSGA2Generator(vocs=vocs, output_dir=output_dir, population_size=population_size)
-    xx = Xopt(generator=generator, evaluator=Evaluator(function=evaluate_TNK, max_workers=1), vocs=vocs)
+    evaluator = Evaluator(function=tnk_wrapper, max_workers=population_size, vectorized=True)
+    xx = Xopt(generator=generator, evaluator=evaluator, vocs=vocs)
     try:
-        for _ in range(n_generations * population_size):
+        for _ in range(n_generations):
             xx.step()
     finally:
         xx.generator.close_log_file()
@@ -115,7 +119,7 @@ def test_import_nsga2_history():
             # Run a few optimization steps
             xx = Xopt(
                 generator=generator,
-                evaluator=Evaluator(function=evaluate_TNK, max_workers=1),
+                evaluator=Evaluator(function=tnk_wrapper, max_workers=population_size, vectorized=True),
                 vocs=tnk_vocs,
             )
 
@@ -125,9 +129,8 @@ def test_import_nsga2_history():
             xopt_fs = []
             xopt_gs = []
             for _ in range(n_generations):
-                # Step the generator
-                for _ in range(population_size):
-                    xx.step()
+                # Step the generator (one step evaluates a full generation)
+                xx.step()
                 fevals += population_size
 
                 # Get data from the population to test against
@@ -175,8 +178,8 @@ def test_import_nsga2_history():
 
                     # Confirm other metadata
                     assert tp.obj_directions == "--"
-                    assert tp.constraint_directions == "><"
-                    assert all(tp.constraint_targets == [0.0, 0.5])
+                    assert tp.constraint_directions == "<<"
+                    assert all(tp.constraint_targets == [0.0, 0.0])
                     assert tp.fevals == (idx + 1) * population_size
 
                     # Confirm data is correct
@@ -205,7 +208,7 @@ def test_import_nsga2_history_dir():
             # Run a few optimization steps
             xx = Xopt(
                 generator=generator,
-                evaluator=Evaluator(function=evaluate_TNK, max_workers=1),
+                evaluator=Evaluator(function=tnk_wrapper, max_workers=population_size, vectorized=True),
                 vocs=tnk_vocs,
             )
 
@@ -215,9 +218,8 @@ def test_import_nsga2_history_dir():
             xopt_fs = []
             xopt_gs = []
             for _ in range(n_generations):
-                # Step the generator
-                for _ in range(population_size):
-                    xx.step()
+                # Step the generator (one step evaluates a full generation)
+                xx.step()
                 fevals += population_size
 
                 # Get data from the population to test against
@@ -256,8 +258,8 @@ def test_import_nsga2_history_dir():
 
                 # Confirm other metadata
                 assert tp.obj_directions == "--"
-                assert tp.constraint_directions == "><"
-                assert all(tp.constraint_targets == [0.0, 0.5])
+                assert tp.constraint_directions == "<<"
+                assert all(tp.constraint_targets == [0.0, 0.0])
                 assert tp.fevals == (idx + 1) * population_size
 
                 # Confirm data is correct
@@ -284,7 +286,7 @@ def test_import_cnsga_history():
 
         xx = Xopt(
             generator=generator,
-            evaluator=Evaluator(function=evaluate_TNK, max_workers=1),
+            evaluator=Evaluator(function=tnk_wrapper, max_workers=population_size, vectorized=True),
             vocs=tnk_vocs,
         )
 
@@ -296,8 +298,7 @@ def test_import_cnsga_history():
         xopt_fs = []
         xopt_gs = []
         for _ in range(n_generations):
-            for _ in range(population_size):
-                xx.step()
+            xx.step()
             xopt_xs.append(_variable_data(xx.generator.vocs, xx.generator.population))
             xopt_fs.append(_objective_data(xx.generator.vocs, xx.generator.population))
             xopt_gs.append(_constraint_data(xx.generator.vocs, xx.generator.population))
@@ -337,8 +338,8 @@ def test_import_cnsga_history():
 
                 # Confirm other metadata
                 assert tp.obj_directions == "--"
-                assert tp.constraint_directions == "><"
-                assert all(tp.constraint_targets == [0.0, 0.5])
+                assert tp.constraint_directions == "<<"
+                assert all(tp.constraint_targets == [0.0, 0.0])
                 assert tp.fevals == (idx + 1) * population_size
 
                 # Confirm data is correct

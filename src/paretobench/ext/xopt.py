@@ -87,6 +87,9 @@ class XoptProblemWrapper:
         """
         self.prob = problem
 
+        # Hack to enable Xopt serialization to work
+        self.__qualname__ = type(self).__qualname__
+
     @classmethod
     def from_line_fmt(cls, prob_name: str):
         return cls(Problem.from_line_fmt(prob_name))
