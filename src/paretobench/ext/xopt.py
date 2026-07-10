@@ -138,7 +138,7 @@ class XoptProblemWrapper:
         return f"XoptProblemWrapper({self.prob.to_line_fmt()})"
 
 
-def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraints: bool = False):
+def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraints: bool = False) -> Population:
     """
     Import a population file from an Xopt-style dataframe and VOCs object into a ParetoBench Population object.
 
@@ -194,7 +194,7 @@ def import_cnsga_population(
     path: str | os.PathLike[str],
     vocs: VOCS | str | os.PathLike[str] | None = None,
     errors_as_constraints: bool = False,
-):
+) -> Population:
     """
     Import a population file from Xopt's CNSGA generator into a ParetoBench Population object.
 
@@ -226,7 +226,7 @@ def import_cnsga_history(
     config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import all population files in output_path from Xopt's CNSGA generator
     into a ParetoBench History object.
@@ -415,7 +415,7 @@ def import_nsga2_history(
     config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import all populations from the output of NSGA2Generator.
 
@@ -449,7 +449,7 @@ def import_nsga2_history_multi(
     config: str | os.PathLike[str] | None = None,
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import populations from several NSGA2Generator runs sharing one VOCS into a single History.
 
@@ -490,7 +490,7 @@ def import_nsga2_history_dir(
     output_dir: str | os.PathLike[str] | list[str | os.PathLike[str]],
     problem: str = "",
     errors_as_constraints: bool = False,
-):
+) -> History:
     """
     Import all populations from the output of NSGA2Generator (or multiple runs of NSGA2Generator) by specifying output
     directory. When multiple runs are loaded, they must have matching VOCS and `xopt_generation` must be correct as it is
