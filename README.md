@@ -2,6 +2,7 @@
 [![](https://anaconda.org/conda-forge/paretobench/badges/version.svg)](https://anaconda.org/channels/conda-forge/packages/paretobench/overview)
 [![](https://img.shields.io/pypi/pyversions/paretobench.svg)](https://pypi.org/pypi/paretobench/)
 [![](https://img.shields.io/pypi/l/paretobench.svg)](https://pypi.org/pypi/paretobench/)
+[![MkDocs](https://img.shields.io/badge/MkDocs-526CFE?logo=materialformkdocs&logoColor=fff)](https://electronsandstuff.github.io/ParetoBench/)
 
 # ParetoBench
 ParetoBench is a Python library that provides a collection of tools for the benchmarking of multi-objective optimization algorithms. It includes the following.
