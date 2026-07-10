@@ -38,6 +38,7 @@ docs = [
   "mkdocs",
   "mkdocs-jupyter",
   "mkdocs-material",
+  "pymoo",
   "xopt"
 ]
 

@@ -36,3 +36,4 @@ nav:
       - IGD Analysis: analysis/inverted_generational_distance_analysis.ipynb
   - External Connectors:
       - Xopt: ext/xopt.ipynb
+      - Pymoo: ext/pymoo.ipynb
