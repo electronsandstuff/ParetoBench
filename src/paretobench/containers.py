@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from functools import reduce
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Literal, Tuple, TYPE_CHECKING
 import h5py
 import numpy as np
 import random
@@ -9,6 +9,10 @@ import re
 import string
 
 from .utils import get_domination, binary_str_to_numpy
+
+if TYPE_CHECKING:
+    from .metrics import Metric
+    from .problem import Problem
 
 
 class Population(BaseModel):
@@ -437,6 +441,178 @@ class Population(BaseModel):
         """
         return self.g.shape[1]
 
+    def plot_obj_scatter(
+        self,
+        fig=None,
+        ax=None,
+        domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+        feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+        show_points: bool = True,
+        problem: Optional[Union[str, "Problem"]] = None,
+        n_pf: int = 1000,
+        pf_objectives: Optional[np.ndarray] = None,
+        show_attainment: bool = False,
+        show_dominated_area: bool = False,
+        dominated_area_zorder: Optional[int] = -2,
+        ref_point: Optional[Tuple[float, float]] = None,
+        ref_point_padding: float = 0.05,
+        label: Optional[str] = None,
+        legend_loc: Optional[str] = None,
+        show_names: bool = True,
+        color: Optional[str] = None,
+        scale: Optional[np.ndarray] = None,
+        flip_objs: bool = False,
+    ):
+        """
+        Plot the objectives in 2D and 3D.
+
+        Parameters
+        ----------
+        fig : matplotlib figure, optional
+            Figure to plot on, by default None
+        ax : matplotlib axis, optional
+            Axis to plot on, by default None
+        domination_filt : Literal["all", "dominated", "non-dominated"], optional
+            Plot only the dominated/non-dominated solutions, or all. Defaults to all
+        feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+            Plot only the feasible/infeasible solutions, or all. Defaults to all
+        show_points : bool
+            Whether to actually show the points (useful for only showing attainment surface or dominated region)
+        problem : str/Problem, optional
+            Name of the problem for Pareto front plotting, by default None
+        n_pf : int, optional
+            The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+        pf_objectives : array-like, optional
+            User-specified Pareto front objectives. Should be a 2D array where each row represents a point
+            on the Pareto front and each column represents an objective value.
+        show_attainment : bool, optional
+            Whether to plot the attainment surface, by default False
+        show_dominated_area : bool, optional
+            Plots the dominated region towards the larger values of each decision var
+        dominated_area_zorder : int, optional
+            What "zorder" to draw dominated region at. Mostly used internally to correctly show dominated area in history plots.
+        ref_point : Union[str, Tuple[float, float]], optional
+            Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
+            value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
+            padding.
+        ref_point_padding : float
+            Amount of padding to apply to the automatic reference point calculation.
+        label : str, optional
+            The label for these points, if shown in a legend
+        legend_loc : str, optional
+            Passed to `loc` argument of plt.legend
+        show_names : bool, optional
+            Whether to show the names of the objectives if provided by population
+        color : str, optional
+            What color should we use for the points. Defaults to selecting from matplotlib color cycler
+        scale : array-like, optional
+            Scale factors for each objective. Must have the same length as the number of objectives.
+            If None, no scaling is applied.
+        flip_objs : bool, optional
+            Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
+
+        Returns
+        -------
+        matplotlib figure and matplotlib axis
+            The figure and axis containing the objectives plot
+        """
+        from .plotting import population_obj_scatter
+
+        return population_obj_scatter(
+            self,
+            fig=fig,
+            ax=ax,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            show_points=show_points,
+            problem=problem,
+            n_pf=n_pf,
+            pf_objectives=pf_objectives,
+            show_attainment=show_attainment,
+            show_dominated_area=show_dominated_area,
+            dominated_area_zorder=dominated_area_zorder,
+            ref_point=ref_point,
+            ref_point_padding=ref_point_padding,
+            label=label,
+            legend_loc=legend_loc,
+            show_names=show_names,
+            color=color,
+            scale=scale,
+            flip_objs=flip_objs,
+        )
+
+    def plot_dvar_pairs(
+        self,
+        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        fig=None,
+        axes=None,
+        domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+        feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+        hist_bins: Optional[int] = None,
+        show_names: bool = True,
+        problem: Optional[Union[str, "Problem"]] = None,
+        lower_bounds: Optional[np.ndarray] = None,
+        upper_bounds: Optional[np.ndarray] = None,
+        color: Optional[str] = None,
+        scale: Optional[np.ndarray] = None,
+    ):
+        """
+        Creates a pairs plot (scatter matrix) showing correlations between decision variables
+        and their distributions.
+
+        Parameters
+        ----------
+        dvars : int, slice, List[int], or Tuple[int, int], optional
+            Specifies which decision variables to plot. See `selection_to_indices` for more details.
+        fig : matplotlib.figure.Figure, optional
+            Figure to plot on. If None and axes is None, creates a new figure.
+        axes : numpy.ndarray of matplotlib.axes.Axes, optional
+            2D array of axes to plot on. If None and fig is None, creates new axes.
+            Must be provided if fig is provided and vice versa.
+        domination_filt : Literal["all", "dominated", "non-dominated"], optional
+            Plot only the dominated/non-dominated solutions, or all. Defaults to all
+        feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+            Plot only the feasible/infeasible solutions, or all. Defaults to all
+        hist_bins : int, optional
+            Number of bins for histograms on the diagonal, default is to let matplotlib choose
+        show_names : bool, optional
+            Whether to include variable names on the axes if they exist, default is True
+        problem : str/Problem, optional
+            The problem for plotting decision variable bounds
+        lower_bounds : array-like, optional
+            Lower bounds for each decision variable
+        upper_bounds : array-like, optional
+            Upper bounds for each decision variable
+        color : str, optional
+            What color should we use for the points. Defaults to selecting from matplotlib color cycler
+        scale : array-like, optional
+            Scale factors for each variable. Must have the same length as the number of decision vars.
+            If None, no scaling is applied.
+
+        Returns
+        -------
+        tuple
+            (matplotlib.figure.Figure, numpy.ndarray of matplotlib.axes.Axes)
+            The figure and axes containing the pairs plot
+        """
+        from .plotting import population_dvar_pairs
+
+        return population_dvar_pairs(
+            self,
+            dvars=dvars,
+            fig=fig,
+            axes=axes,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            hist_bins=hist_bins,
+            show_names=show_names,
+            problem=problem,
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
+            color=color,
+            scale=scale,
+        )
+
 
 class History(BaseModel):
     """
@@ -704,6 +880,432 @@ class History(BaseModel):
             n.fevals = o.fevals
 
         return History(reports=new_reports, problem=self.problem, metadata=self.metadata.copy())
+
+    def plot_obj_scatter(
+        self,
+        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        fig=None,
+        ax=None,
+        domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+        feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+        show_points: bool = True,
+        n_pf: int = 1000,
+        pf_objectives: Optional[np.ndarray] = None,
+        show_attainment: bool = False,
+        show_dominated_area: bool = False,
+        ref_point: Optional[Tuple[float, float]] = None,
+        ref_point_padding: float = 0.05,
+        legend_loc: Optional[str] = None,
+        scale: Optional[np.ndarray] = None,
+        flip_objs: bool = False,
+        show_names: bool = True,
+        show_pf: bool = False,
+        colormap: str = "viridis",
+        cmap_label: Optional[str] = None,
+        generation_mode: Literal["cmap", "cumulative"] = "cmap",
+        single_color: Optional[str] = None,
+        label_mode: Literal["index", "fevals"] = "index",
+    ):
+        """
+        Plot the objectives from this history of populations, using either a colormap for generations
+        or merging all generations into a single population.
+
+        Parameters
+        ----------
+        reports : int, slice, List[int], or Tuple[int, int], optional
+            Specifies which generations to plot. See `selection_to_indices` for more details.
+        fig : matplotlib figure, optional
+            Figure to plot on, by default None
+        ax : matplotlib axis, optional
+            Axis to plot on, by default None
+        domination_filt : Literal["all", "dominated", "non-dominated"], optional
+            Plot only the dominated/non-dominated solutions, or all. Defaults to all
+        feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+            Plot only the feasible/infeasible solutions, or all. Defaults to all
+        show_points : bool
+            Whether to actually show the points (useful for only showing attainment surface or dominated region)
+        n_pf : int, optional
+            The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+        pf_objectives : array-like, optional
+            User-specified Pareto front objectives. Should be a 2D array where each row represents a point
+            on the Pareto front and each column represents an objective value.
+        show_attainment : bool, optional
+            Whether to plot the attainment surface, by default False
+        show_dominated_area : bool, optional
+            Plots the dominated region towards the larger values of each decision var
+        ref_point : Union[str, Tuple[float, float]], optional
+            Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
+            value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
+            padding.
+        ref_point_padding : float
+            Amount of padding to apply to the automatic reference point calculation.
+        legend_loc : str, optional
+            Passed to `loc` argument of plt.legend
+        scale : array-like, optional
+            Scale factors for each objective. Must have the same length as the number of objectives.
+            If None, no scaling is applied.
+        flip_objs : bool, optional
+            Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
+        show_names : bool, optional
+            Whether to show the names of the objectives if provided by population
+        show_pf : bool, optional
+            Whether to plot the Pareto front, by default True
+        colormap : str, optional
+            Name of the colormap to use for generation colors, by default 'viridis'
+        cmap_label: Optional[str] = "Generation"
+            Label for colorbar (only used when generation_mode is 'cmap')
+        generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
+            How to handle multiple generations:
+            'cmap': Plot each generation separately with colors from colormap
+            'cumulative': Merge all selected generations into single population
+        single_color: Optional[str] = None
+            Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+        label_mode: Literal['index', 'fevals'] = 'index'
+            Whether to use report index or function evaluations (fevals) for labels
+
+        Returns
+        -------
+        matplotlib figure and matplotlib axis
+            The figure and axis containing the history plot
+        """
+        from .plotting import history_obj_scatter
+
+        return history_obj_scatter(
+            self,
+            reports=reports,
+            fig=fig,
+            ax=ax,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            show_points=show_points,
+            n_pf=n_pf,
+            pf_objectives=pf_objectives,
+            show_attainment=show_attainment,
+            show_dominated_area=show_dominated_area,
+            ref_point=ref_point,
+            ref_point_padding=ref_point_padding,
+            legend_loc=legend_loc,
+            scale=scale,
+            flip_objs=flip_objs,
+            show_names=show_names,
+            show_pf=show_pf,
+            colormap=colormap,
+            cmap_label=cmap_label,
+            generation_mode=generation_mode,
+            single_color=single_color,
+            label_mode=label_mode,
+        )
+
+    def plot_dvar_pairs(
+        self,
+        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        fig=None,
+        axes=None,
+        domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+        feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+        hist_bins: Optional[int] = None,
+        show_names: bool = True,
+        lower_bounds: Optional[np.ndarray] = None,
+        upper_bounds: Optional[np.ndarray] = None,
+        scale: Optional[np.ndarray] = None,
+        colormap: str = "viridis",
+        cmap_label: Optional[str] = None,
+        generation_mode: Literal["cmap", "cumulative"] = "cmap",
+        single_color: Optional[str] = None,
+        plot_bounds: bool = False,
+        label_mode: Literal["index", "fevals"] = "index",
+    ):
+        """
+        Plot the decision variables from this history of populations, using either a colormap
+        for generations or merging all generations into a single population.
+
+        Parameters
+        ----------
+        reports : int, slice, List[int], or Tuple[int, int], optional
+            Specifies which generations to plot. See `selection_to_indices` for more details.
+        dvars : int, slice, List[int], or Tuple[int, int], optional
+            Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
+        fig : matplotlib figure, optional
+            Figure to plot on, by default None
+        axes : array of matplotlib axes, optional
+            Axes to plot on, by default None
+        domination_filt : Literal["all", "dominated", "non-dominated"], optional
+            Plot only the dominated/non-dominated solutions, or all. Defaults to all
+        feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+            Plot only the feasible/infeasible solutions, or all. Defaults to all
+        hist_bins : int, optional
+            Number of bins for histograms on the diagonal, default is to let matplotlib choose
+        show_names : bool, optional
+            Whether to include variable names on the axes if they exist, default is True
+        lower_bounds : array-like, optional
+            Lower bounds for each decision variable
+        upper_bounds : array-like, optional
+            Upper bounds for each decision variable
+        scale : array-like, optional
+            Scale factors for each variable. Must have the same length as the number of decision vars.
+            If None, no scaling is applied.
+        colormap : str, optional
+            Name of the colormap to use for generation colors, by default 'viridis'
+        cmap_label: Optional[str] = "Generation"
+            Label for colorbar (only used when generation_mode is 'cmap')
+        generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
+            How to handle multiple generations:
+            'cmap': Plot each generation separately with colors from colormap
+            'cumulative': Merge all selected generations into single population
+        single_color: Optional[str] = None
+            Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+        plot_bounds: bool = False
+            Whether to plot bounds for the problem
+        label_mode: Literal['index', 'fevals'] = 'index'
+            Whether to use report index or function evaluations (fevals) for labels
+
+        Returns
+        -------
+        matplotlib figure and array of matplotlib axes
+            The figure and axes containing the history plot
+        """
+        from .plotting import history_dvar_pairs
+
+        return history_dvar_pairs(
+            self,
+            reports=reports,
+            dvars=dvars,
+            fig=fig,
+            axes=axes,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            hist_bins=hist_bins,
+            show_names=show_names,
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
+            scale=scale,
+            colormap=colormap,
+            cmap_label=cmap_label,
+            generation_mode=generation_mode,
+            single_color=single_color,
+            plot_bounds=plot_bounds,
+            label_mode=label_mode,
+        )
+
+    def plot_obj_animation(
+        self,
+        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        interval: int = 200,
+        domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+        feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+        show_points: bool = True,
+        n_pf: int = 1000,
+        pf_objectives: Optional[np.ndarray] = None,
+        show_attainment: bool = False,
+        show_dominated_area: bool = False,
+        ref_point: Optional[Tuple[float, float]] = None,
+        ref_point_padding: float = 0.05,
+        legend_loc: Optional[str] = "upper right",
+        scale: Optional[np.ndarray] = None,
+        flip_objs: bool = False,
+        show_names: bool = True,
+        show_pf: bool = False,
+        single_color: Optional[str] = None,
+        dynamic_scaling: bool = False,
+        cumulative: bool = False,
+        scale_padding: float = 0.05,
+    ):
+        """
+        Creates an animated visualization of how the Pareto front evolves across generations.
+
+        Parameters
+        ----------
+        reports : int, slice, List[int], or Tuple[int, int], optional
+            Specifies which generations to animate. See `selection_to_indices` for more details.
+        interval : int, optional
+            Delay between frames in milliseconds, by default 200
+        domination_filt : Literal["all", "dominated", "non-dominated"], optional
+            Plot only the dominated/non-dominated solutions, or all. Defaults to all
+        feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+            Plot only the feasible/infeasible solutions, or all. Defaults to all
+        show_points : bool
+            Whether to actually show the points (useful for only showing attainment surface or dominated region)
+        n_pf : int, optional
+            The number of points used for plotting the Pareto front (when problem allows user selectable number of points)
+        pf_objectives : array-like, optional
+            User-specified Pareto front objectives. Should be a 2D array where each row represents a point
+            on the Pareto front and each column represents an objective value.
+        show_attainment : bool, optional
+            Whether to plot the attainment surface, by default False
+        show_dominated_area : bool, optional
+            Plots the dominated region towards the larger values of each decision var
+        ref_point : Union[str, Tuple[float, float]], optional
+            Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
+            value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
+            padding.
+        ref_point_padding : float
+            Amount of padding to apply to the automatic reference point calculation.
+        legend_loc : str, optional
+            Passed to `loc` argument of plt.legend
+        scale : array-like, optional
+            Scale factors for each objective. Must have the same length as the number of objectives.
+            If None, no scaling is applied.
+        flip_objs : bool, optional
+            Flips the order the objectives are plotted in. IE swaps axes in 2D, reverse them in 3D.
+        show_names : bool, optional
+            Whether to show the names of the objectives if provided by population
+        show_pf : bool, optional
+            Whether to plot the Pareto front, by default True
+        single_color: Optional[str] = None
+            Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+        dynamic_scaling : bool, optional
+            If True, axes limits will update based on each frame's data.
+            If False, axes limits will be fixed based on all data, by default False
+        cumulative : bool, optional
+            If True, shows all points seen up to current frame.
+            If False, shows only current frame's points, by default False
+        scale_padding : float, optional
+            Padding used when calculating axis limits w/ dynamic limits
+
+        Returns
+        -------
+        animation.Animation
+            The animation object that can be displayed in notebooks or saved to file
+        """
+        from .plotting import history_obj_animation
+
+        return history_obj_animation(
+            self,
+            reports=reports,
+            interval=interval,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            show_points=show_points,
+            n_pf=n_pf,
+            pf_objectives=pf_objectives,
+            show_attainment=show_attainment,
+            show_dominated_area=show_dominated_area,
+            ref_point=ref_point,
+            ref_point_padding=ref_point_padding,
+            legend_loc=legend_loc,
+            scale=scale,
+            flip_objs=flip_objs,
+            show_names=show_names,
+            show_pf=show_pf,
+            single_color=single_color,
+            dynamic_scaling=dynamic_scaling,
+            cumulative=cumulative,
+            scale_padding=scale_padding,
+        )
+
+    def plot_dvar_animation(
+        self,
+        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        interval: int = 200,
+        domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
+        feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
+        hist_bins: Optional[int] = None,
+        show_names: bool = True,
+        lower_bounds: Optional[np.ndarray] = None,
+        upper_bounds: Optional[np.ndarray] = None,
+        scale: Optional[np.ndarray] = None,
+        single_color: Optional[str] = None,
+        plot_bounds: bool = False,
+        dynamic_scaling: bool = False,
+        cumulative: bool = False,
+        scale_padding=0.05,
+    ):
+        """
+        Creates an animated visualization of how the decision variables evolve across generations.
+
+        Parameters
+        ----------
+        reports : int, slice, List[int], or Tuple[int, int], optional
+            Specifies which generations to animate. See `selection_to_indices` for more details.
+        dvars : int, slice, List[int], or Tuple[int, int], optional
+            Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
+        interval : int, optional
+            Delay between frames in milliseconds, by default 200
+        domination_filt : Literal["all", "dominated", "non-dominated"], optional
+            Plot only the dominated/non-dominated solutions, or all. Defaults to all
+        feasibility_filt : Literal['all', 'feasible', 'infeasible'], optional
+            Plot only the feasible/infeasible solutions, or all. Defaults to all
+        hist_bins : int, optional
+            Number of bins for histograms on the diagonal, default is to let matplotlib choose
+        show_names : bool, optional
+            Whether to include variable names on the axes if they exist, default is True
+        lower_bounds : array-like, optional
+            Lower bounds for each decision variable
+        upper_bounds : array-like, optional
+            Upper bounds for each decision variable
+        scale : array-like, optional
+            Scale factors for each variable. Must have the same length as the number of decision vars.
+            If None, no scaling is applied.
+        single_color: Optional[str] = None
+            Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
+        plot_bounds: bool = False
+            Whether to plot bounds for the problem
+        dynamic_scaling : bool, optional
+            If True, axes limits will update based on each frame's data.
+            If False, axes limits will be fixed based on all data, by default False
+        cumulative : bool, optional
+            If True, shows all points seen up to current frame.
+            If False, shows only current frame's points, by default False
+        scale_padding : float, optional
+            Padding used when calculating axis limits w/ dynamic limits
+
+        Returns
+        -------
+        animation.Animation
+            The animation object that can be displayed in notebooks or saved to file
+        """
+        from .plotting import history_dvar_animation
+
+        return history_dvar_animation(
+            self,
+            reports=reports,
+            dvars=dvars,
+            interval=interval,
+            domination_filt=domination_filt,
+            feasibility_filt=feasibility_filt,
+            hist_bins=hist_bins,
+            show_names=show_names,
+            lower_bounds=lower_bounds,
+            upper_bounds=upper_bounds,
+            scale=scale,
+            single_color=single_color,
+            plot_bounds=plot_bounds,
+            dynamic_scaling=dynamic_scaling,
+            cumulative=cumulative,
+            scale_padding=scale_padding,
+        )
+
+    def plot_metric(
+        self,
+        metric: "Metric",
+        x_axis: Literal["fevals", "generation"] = "fevals",
+        fig=None,
+        ax=None,
+    ):
+        """
+        Evaluate and plot evolution of a metric across the populations within this history.
+
+        Parameters
+        ----------
+        metric : Metric
+            The metric to evaluate and plot
+        x_axis : Literal["fevals", "generation"]
+            What value to use for x-axis in plot
+        fig : matplotlib figure, optional
+            Matplotlib figure if plotting to user-provided figure (must also specify axis)
+        ax : matplotlib axis, optional
+            Matplotlib axis to place plot into (must also specify figure)
+
+        Returns
+        -------
+        matplotlib figure and matplotlib axis
+            The matplotlib figure and axis the data was plotted to
+        """
+        from .plotting import plot_metric_history
+
+        return plot_metric_history(self, metric, x_axis=x_axis, fig=fig, ax=ax)
 
     def __repr__(self) -> str:
         dims = (
