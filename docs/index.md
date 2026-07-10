@@ -53,7 +53,7 @@ Tools for plotting the data from multi-objective optimization algorithms are als
     - Color coding or animation for showing multiple populations
     - Markers and alpha to distinguish non-dominated / infeasible solutions
 
-See more information in the following notebooks.
+See more information on the following pages.
 
 - [Plotting populations](plotting/plotting_populations.ipynb)
 - [Plotting histories](plotting/plotting_histories.ipynb)
