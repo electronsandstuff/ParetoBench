@@ -8,8 +8,7 @@ import numpy as np
 
 from ..containers import Population
 from ..exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
-from ..problem import Problem, ProblemWithFixedPF, ProblemWithPF
-from ..utils import get_problem_from_obj_or_str
+from ..problem import Problem, ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
 from .utils import get_per_point_settings_population, alpha_scatter, selection_to_indices
 

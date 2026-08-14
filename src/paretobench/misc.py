@@ -204,7 +204,7 @@ class CONSTR(Problem):
 
     @property
     def var_upper_bounds(self):
-        return np.array([[1.0, 5.0]])
+        return np.array([1.0, 5.0])
 
     @property
     def reference(self):

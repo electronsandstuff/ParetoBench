@@ -294,6 +294,62 @@ def test_field_assignment_validation():
         pop.x = np.random.random((2))
 
 
+def test_default_var_bounds():
+    """
+    Populations created without bounds treat the decision variables as unbounded.
+    """
+    pop = Population(x=np.random.random((16, 4)), f=np.random.random((16, 2)))
+    np.testing.assert_array_equal(pop.var_lower_bounds, np.full(4, -np.inf))
+    np.testing.assert_array_equal(pop.var_upper_bounds, np.full(4, np.inf))
+
+    # The default bounds must survive the operations which pass them along
+    assert (pop + pop).var_lower_bounds.shape == (4,)
+    np.testing.assert_array_equal(pop[:4].var_upper_bounds, np.full(4, np.inf))
+    assert pop == pop[:]
+
+
+def test_var_bounds_validation():
+    """
+    Bounds must be sized to the decision variables and ordered lower <= upper.
+    """
+    x = np.random.random((16, 3))
+
+    with pytest.raises(ValidationError, match="Length of var_lower_bounds must match number of decision variables"):
+        Population(x=x, var_lower_bounds=np.zeros(2))
+
+    with pytest.raises(ValidationError, match="var_upper_bounds must be 1D"):
+        Population(x=x, var_upper_bounds=np.ones((1, 3)))
+
+    with pytest.raises(ValidationError, match=r"lower > upper at indices \[1\]"):
+        Population(x=x, var_lower_bounds=np.array([0.0, 1.0, 0.0]), var_upper_bounds=np.array([1.0, 0.0, 1.0]))
+
+    # Equal lower and upper bounds are allowed (degenerate variable)
+    Population(x=x, var_lower_bounds=np.zeros(3), var_upper_bounds=np.zeros(3))
+
+
+def test_var_bounds_consistency():
+    """
+    Adding populations requires matching bounds and carries them into the result.
+    """
+    kwargs = dict(f=np.random.random((16, 2)), var_lower_bounds=np.zeros(3), var_upper_bounds=np.ones(3))
+    pop1 = Population(x=np.random.random((16, 3)), **kwargs)
+    pop2 = Population(x=np.random.random((16, 3)), **kwargs)
+    np.testing.assert_array_equal((pop1 + pop2).var_upper_bounds, np.ones(3))
+
+    pop3 = Population(
+        x=np.random.random((16, 3)),
+        f=np.random.random((16, 2)),
+        var_lower_bounds=np.zeros(3),
+        var_upper_bounds=2 * np.ones(3),
+    )
+    with pytest.raises(ValueError, match="var_upper_bounds are inconsistent between populations"):
+        pop1 + pop3
+
+    # Histories must also have consistent bounds across their reports
+    with pytest.raises(ValidationError, match="Inconsistent var_upper_bounds in reports"):
+        History(reports=[pop1, pop3], problem="")
+
+
 def test_overwrite():
     # Create a randomized Experiment object
     experiment1 = Experiment.from_random(

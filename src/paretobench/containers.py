@@ -15,6 +15,34 @@ if TYPE_CHECKING:
     from .problem import Problem
 
 
+def _validate_1d_float_array(value, name: str, expected_len: int, expected_len_desc: str):
+    """
+    Checks that a field is a 1D float64 numpy array of the expected length.
+
+    Parameters
+    ----------
+    value : Any
+        The value of the field being validated.
+    name : str
+        Name of the field, used in the error messages.
+    expected_len : int
+        The length the array must have.
+    expected_len_desc : str
+        Human readable description of where the expected length comes from, used in the error message.
+    """
+    if not isinstance(value, np.ndarray):
+        raise ValueError(f"{name} must be a numpy array, got: {type(value)}")
+    if len(value.shape) != 1:
+        raise ValueError(f"{name} must be 1D, shape was: {value.shape}")
+    if len(value) != expected_len:
+        raise ValueError(
+            f"Length of {name} must match {expected_len_desc}. Got {len(value)} elements but "
+            f"{expected_len_desc} is {expected_len}"
+        )
+    if value.dtype != np.float64:
+        raise ValueError(f"{name} dtype must be {np.float64}. Got {value.dtype}")
+
+
 class Population(BaseModel):
     """
     Stores the individuals in a population for one reporting interval in a genetic algorithm. Conventional names are used for
@@ -28,6 +56,9 @@ class Population(BaseModel):
     to an objectve and '+' means maximize with '-' meaning minimize. The constraints are configured by the string of directions
     `constraint_directions` and the numpy array of targets `constraint_targets`. The string should contain either the '<' or '>'
     character for the constraint at that index to be satisfied when it is less than or greater than the target respectively.
+
+    The rectangular bounds the decision variables were drawn from are recorded in `var_lower_bounds` and `var_upper_bounds`.
+    When they are not specified, the variables are treated as unbounded and the arrays are filled with -inf and +inf.
     """
 
     # The decision vars, objectives, and constraints
@@ -50,6 +81,10 @@ class Population(BaseModel):
     )
     constraint_targets: np.ndarray
 
+    # Rectangular bounds of the decision variables (-inf / +inf when unbounded)
+    var_lower_bounds: np.ndarray
+    var_upper_bounds: np.ndarray
+
     # Pydantic config
     model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
 
@@ -59,7 +94,8 @@ class Population(BaseModel):
         """
         Handles automatic setting of `x`, `f`,  `g`, `fevals` when some are not specified. The arrays are set to an empty array
         with a zero length non-batch dimension. The number of function evaluations (`fevals`) is set to the number of individuals
-        in the population (assuming here that each was evaluated to get to this point).
+        in the population (assuming here that each was evaluated to get to this point). Unspecified decision variable bounds
+        are set to -inf / +inf.
         """
         # Determine the batch size from the first non-None array
         batch_size = next(
@@ -84,6 +120,12 @@ class Population(BaseModel):
             values["constraint_directions"] = "<" * values["g"].shape[1]
         if values.get("constraint_targets") is None:
             values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
+
+        # Treat the decision variables as unbounded if no bounds were given
+        if values.get("var_lower_bounds") is None:
+            values["var_lower_bounds"] = np.full(values["x"].shape[1], -np.inf)
+        if values.get("var_upper_bounds") is None:
+            values["var_upper_bounds"] = np.full(values["x"].shape[1], np.inf)
 
         # Set fevals to number of individuals if not included
         if values.get("fevals") is None:
@@ -141,19 +183,29 @@ class Population(BaseModel):
 
     @model_validator(mode="after")
     def validate_constraint_targets(self):
-        # Check the targets
-        attr = "constraint_targets"
-        if not isinstance(getattr(self, attr), np.ndarray):
-            raise ValueError(f"{attr} must be a numpy array, got: {type(getattr(self, attr))}")
-        if len(getattr(self, attr).shape) != 1:
-            raise ValueError(f"{attr} must be 1D, shape was: {getattr(self, attr).shape}")
-        if len(getattr(self, attr)) != self.g.shape[1]:
+        _validate_1d_float_array(
+            self.constraint_targets, "constraint_targets", self.g.shape[1], "number of constraints in g"
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_var_bounds(self):
+        """
+        Checks that the decision variable bounds are correctly sized and that each lower bound is at or below its
+        corresponding upper bound.
+        """
+        _validate_1d_float_array(
+            self.var_lower_bounds, "var_lower_bounds", self.x.shape[1], "number of decision variables in x"
+        )
+        _validate_1d_float_array(
+            self.var_upper_bounds, "var_upper_bounds", self.x.shape[1], "number of decision variables in x"
+        )
+        bad_idx = np.nonzero(self.var_lower_bounds > self.var_upper_bounds)[0]
+        if bad_idx.size:
             raise ValueError(
-                f"Length of {attr} must match number of constraints in g. Got {len(getattr(self, attr))} "
-                f"elements and {self.g.shape[1]} constraints from g"
+                f"var_lower_bounds must be less than or equal to var_upper_bounds. Got lower > upper at indices "
+                f"{bad_idx.tolist()}"
             )
-        if getattr(self, attr).dtype != np.float64:
-            raise ValueError(f"{attr} dtype must be {np.float64}. Got {getattr(self, attr).dtype}")
         return self
 
     @field_validator("x", "f", "g")
@@ -190,6 +242,8 @@ class Population(BaseModel):
             and self.obj_directions == other.obj_directions
             and self.constraint_directions == other.constraint_directions
             and np.array_equal(self.constraint_targets, other.constraint_targets)
+            and np.array_equal(self.var_lower_bounds, other.var_lower_bounds)
+            and np.array_equal(self.var_upper_bounds, other.var_upper_bounds)
         )
 
     @property
@@ -229,6 +283,10 @@ class Population(BaseModel):
             raise ValueError("constraint_directions are inconsistent between populations")
         if not np.array_equal(self.constraint_targets, other.constraint_targets):
             raise ValueError("constraint_targets are inconsistent between populations")
+        if not np.array_equal(self.var_lower_bounds, other.var_lower_bounds):
+            raise ValueError("var_lower_bounds are inconsistent between populations")
+        if not np.array_equal(self.var_upper_bounds, other.var_upper_bounds):
+            raise ValueError("var_upper_bounds are inconsistent between populations")
 
         # Concatenate the arrays along the batch dimension (axis=0)
         new_x = np.concatenate((self.x, other.x), axis=0)
@@ -256,6 +314,8 @@ class Population(BaseModel):
             obj_directions=self.obj_directions,
             constraint_directions=self.constraint_directions,
             constraint_targets=self.constraint_targets,
+            var_lower_bounds=self.var_lower_bounds,
+            var_upper_bounds=self.var_upper_bounds,
         )
 
     def __getitem__(self, idx: slice | np.ndarray | list[int]) -> "Population":
@@ -283,6 +343,8 @@ class Population(BaseModel):
             obj_directions=self.obj_directions,
             constraint_directions=self.constraint_directions,
             constraint_targets=self.constraint_targets,
+            var_lower_bounds=self.var_lower_bounds,
+            var_upper_bounds=self.var_upper_bounds,
         )
 
     def get_nondominated_indices(self):
@@ -309,6 +371,7 @@ class Population(BaseModel):
         fevals: int = 0,
         generate_names: bool = False,
         generate_obj_constraint_settings: bool = False,
+        generate_bounds: bool = False,
     ) -> "Population":
         """
         Generate a randomized instance of the Population class.
@@ -329,6 +392,8 @@ class Population(BaseModel):
             Whether to include names for the decision variables, objectives, and constraints, by default False.
         generate_obj_constraint_settings : bool, optional
             Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
+        generate_bounds : bool, optional
+            Randomize the decision variable bounds, by default the variables are left unbounded
 
         Returns
         -------
@@ -372,6 +437,14 @@ class Population(BaseModel):
             constraint_directions = None
             constraint_targets = None
 
+        # Create randomized bounds which contain the decision variables
+        if generate_bounds:
+            var_lower_bounds = -np.random.rand(n_decision_vars)
+            var_upper_bounds = 1.0 + np.random.rand(n_decision_vars)
+        else:
+            var_lower_bounds = None
+            var_upper_bounds = None
+
         return cls(
             x=x,
             f=f,
@@ -383,6 +456,8 @@ class Population(BaseModel):
             obj_directions=obj_directions,
             constraint_directions=constraint_directions,
             constraint_targets=constraint_targets,
+            var_lower_bounds=var_lower_bounds,
+            var_upper_bounds=var_upper_bounds,
         )
 
     def __len__(self):
@@ -669,6 +744,14 @@ class History(BaseModel):
         if constraint_targets and len(set(constraint_targets)) != 1:
             raise ValueError(f"Inconsistent constraint_targets in reports: {constraint_targets}")
 
+        # Check the decision variable bounds
+        var_lower_bounds = [tuple(x.var_lower_bounds) for x in self.reports]
+        var_upper_bounds = [tuple(x.var_upper_bounds) for x in self.reports]
+        if var_lower_bounds and len(set(var_lower_bounds)) != 1:
+            raise ValueError(f"Inconsistent var_lower_bounds in reports: {var_lower_bounds}")
+        if var_upper_bounds and len(set(var_upper_bounds)) != 1:
+            raise ValueError(f"Inconsistent var_upper_bounds in reports: {var_upper_bounds}")
+
         return self
 
     def __eq__(self, other):
@@ -686,6 +769,7 @@ class History(BaseModel):
         pop_size: int,
         generate_names: bool = False,
         generate_obj_constraint_settings: bool = False,
+        generate_bounds: bool = False,
     ) -> "History":
         """
         Generate a randomized instance of the History class, including random problem name and metadata.
@@ -706,6 +790,8 @@ class History(BaseModel):
             Whether to include names for the decision variables, objectives, and constraints, by default False.
         generate_obj_constraint_settings : bool, optional
             Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
+        generate_bounds : bool, optional
+            Randomize the decision variable bounds, by default the variables are left unbounded
 
         Returns
         -------
@@ -748,6 +834,14 @@ class History(BaseModel):
                 report.obj_directions = obj_directions
                 report.constraint_directions = constraint_directions
                 report.constraint_targets = constraint_targets
+
+        # Create randomized decision variable bounds (must be consistent between objects)
+        if generate_bounds:
+            var_lower_bounds = -np.random.rand(n_decision_vars)
+            var_upper_bounds = 1.0 + np.random.rand(n_decision_vars)
+            for report in reports:
+                report.var_lower_bounds = var_lower_bounds
+                report.var_upper_bounds = var_upper_bounds
 
         return cls(reports=reports, problem=problem, metadata=metadata)
 
@@ -1385,6 +1479,7 @@ class Experiment(BaseModel):
         pop_size: int,
         generate_names: bool = False,
         generate_obj_constraint_settings: bool = False,
+        generate_bounds: bool = False,
     ) -> "Experiment":
         """
         Generate a randomized instance of the Experiment class.
@@ -1407,6 +1502,8 @@ class Experiment(BaseModel):
             Whether to include names for the decision variables, objectives, and constraints, by default False.
         generate_obj_constraint_settings : bool, optional
             Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
+        generate_bounds : bool, optional
+            Randomize the decision variable bounds, by default the variables are left unbounded
 
         Returns
         -------
@@ -1423,6 +1520,7 @@ class Experiment(BaseModel):
                 pop_size,
                 generate_names=generate_names,
                 generate_obj_constraint_settings=generate_obj_constraint_settings,
+                generate_bounds=generate_bounds,
             )
             for _ in range(n_histories)
         ]
