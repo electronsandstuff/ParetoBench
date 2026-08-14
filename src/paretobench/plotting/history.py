@@ -298,6 +298,7 @@ def history_dvar_pairs(
         hist_bins=hist_bins,
         show_names=show_names,
         scale=scale,
+        plot_bounds=plot_bounds,
     )
 
     if generation_mode == "cumulative":
@@ -336,12 +337,14 @@ def history_dvar_pairs(
 
             # Only plot bounds on the last iteration if requested
             if plot_idx == len(indices) - 1:
+                plot_settings["plot_bounds"] = plot_bounds
                 if plot_bounds and user_specified_bounds:
                     plot_settings["lower_bounds"] = lower_bounds
                     plot_settings["upper_bounds"] = upper_bounds
                 elif plot_bounds and history.problem is not None:
                     plot_settings["problem"] = history.problem
             else:
+                plot_settings["plot_bounds"] = False
                 plot_settings["problem"] = None
                 plot_settings["lower_bounds"] = None
                 plot_settings["upper_bounds"] = None

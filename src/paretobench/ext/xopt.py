@@ -15,10 +15,23 @@ from paretobench import Problem, Population, History
 # Handle xopt 2.x and 3.x constraint/objective accessor styles
 try:
     from xopt.vocs import GreaterThanConstraint
-    from gest_api.vocs import LessThanConstraint, MaximizeObjective, MinimizeObjective
+    from gest_api.vocs import (
+        ContinuousVariable,
+        DiscreteVariable,
+        LessThanConstraint,
+        MaximizeObjective,
+        MinimizeObjective,
+    )
 
     def _constraint_value(c):
         return c.value
+
+    def _variable_bounds(var):
+        if isinstance(var, ContinuousVariable):
+            return var.domain[0], var.domain[1]
+        elif isinstance(var, DiscreteVariable):
+            raise ValueError("DiscreteVariable is currently not supported by ParetoBench")
+        raise ValueError(f"Unrecognized variable type: {type(var)}")
 
     def _constraint_direction(c):
         if isinstance(c, GreaterThanConstraint):
@@ -38,6 +51,9 @@ except ImportError:
 
     def _constraint_value(c):
         return c[1]
+
+    def _variable_bounds(var):
+        return var[0], var[1]
 
     def _constraint_direction(c):
         if c[0] == "GREATER_THAN":
@@ -160,6 +176,9 @@ def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraint
     Population
         Population object with the loaded data
     """
+    # Get the decision variable bounds. Note that vocs.bounds is not used here as its shape changed between xopt 2.x and 3.x
+    var_bounds = [_variable_bounds(vocs.variables[name]) for name in vocs.variable_names]
+
     # Get base constraints if they exist
     g = df[vocs.constraint_names].to_numpy() if vocs.constraints else None
     names_g = vocs.constraint_names
@@ -190,6 +209,8 @@ def population_from_dataframe(df: pd.DataFrame, vocs: VOCS, errors_as_constraint
         obj_directions="".join([_objective_direction(vocs.objectives[name]) for name in vocs.objective_names]),
         constraint_directions="".join(constraint_directions),
         constraint_targets=np.array(constraint_targets),
+        var_lower_bounds=np.array([b[0] for b in var_bounds], dtype=np.float64),
+        var_upper_bounds=np.array([b[1] for b in var_bounds], dtype=np.float64),
     )
 
 

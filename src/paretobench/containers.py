@@ -631,6 +631,7 @@ class Population(BaseModel):
         upper_bounds: np.ndarray | None = None,
         color: str | None = None,
         scale: np.ndarray | None = None,
+        plot_bounds: bool = True,
     ):
         """
         Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -656,14 +657,16 @@ class Population(BaseModel):
         problem : str/Problem, optional
             The problem for plotting decision variable bounds
         lower_bounds : array-like, optional
-            Lower bounds for each decision variable
+            Lower bounds for each decision variable. Defaults to the bounds carried by the population.
         upper_bounds : array-like, optional
-            Upper bounds for each decision variable
+            Upper bounds for each decision variable. Defaults to the bounds carried by the population.
         color : str, optional
             What color should we use for the points. Defaults to selecting from matplotlib color cycler
         scale : array-like, optional
             Scale factors for each variable. Must have the same length as the number of decision vars.
             If None, no scaling is applied.
+        plot_bounds : bool, optional
+            Whether to plot the decision variable bounds, by default True. Infinite bounds are not plotted.
 
         Returns
         -------
@@ -687,6 +690,7 @@ class Population(BaseModel):
             upper_bounds=upper_bounds,
             color=color,
             scale=scale,
+            plot_bounds=plot_bounds,
         )
 
 
