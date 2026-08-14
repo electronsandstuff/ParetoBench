@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from functools import reduce
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
-from typing import List, Dict, Union, Optional, Literal, Tuple, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
 import h5py
 import numpy as np
 import random
@@ -37,10 +37,11 @@ class Population(BaseModel):
 
     # Total number of function evaluations performed during optimization after this population was completed
     fevals: int
+
     # Optional lists of names for decision variables, objectives, and constraints
-    names_x: Optional[List[str]] = None
-    names_f: Optional[List[str]] = None
-    names_g: Optional[List[str]] = None
+    names_x: list[str] | None = None
+    names_f: list[str] | None = None
+    names_g: list[str] | None = None
 
     # Configuration of objectives/constraints (minimization or maximization problem, direction of and target of constraint)
     obj_directions: str  # '+' means maximize, '-' means minimize
@@ -257,7 +258,7 @@ class Population(BaseModel):
             constraint_targets=self.constraint_targets,
         )
 
-    def __getitem__(self, idx: Union[slice, np.ndarray, List[int]]) -> "Population":
+    def __getitem__(self, idx: slice | np.ndarray | list[int]) -> "Population":
         """
         Indexing operator to select along the batch dimension in the arrays.
 
@@ -448,19 +449,19 @@ class Population(BaseModel):
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
         show_points: bool = True,
-        problem: Optional[Union[str, "Problem"]] = None,
+        problem: "str | Problem | None" = None,
         n_pf: int = 1000,
-        pf_objectives: Optional[np.ndarray] = None,
+        pf_objectives: np.ndarray | None = None,
         show_attainment: bool = False,
         show_dominated_area: bool = False,
-        dominated_area_zorder: Optional[int] = -2,
-        ref_point: Optional[Tuple[float, float]] = None,
+        dominated_area_zorder: int | None = -2,
+        ref_point: tuple[float, float] | None = None,
         ref_point_padding: float = 0.05,
-        label: Optional[str] = None,
-        legend_loc: Optional[str] = None,
+        label: str | None = None,
+        legend_loc: str | None = None,
         show_names: bool = True,
-        color: Optional[str] = None,
-        scale: Optional[np.ndarray] = None,
+        color: str | None = None,
+        scale: np.ndarray | None = None,
         flip_objs: bool = False,
     ):
         """
@@ -491,7 +492,7 @@ class Population(BaseModel):
             Plots the dominated region towards the larger values of each decision var
         dominated_area_zorder : int, optional
             What "zorder" to draw dominated region at. Mostly used internally to correctly show dominated area in history plots.
-        ref_point : Union[str, Tuple[float, float]], optional
+        ref_point : str | tuple[float, float], optional
             Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
             value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
             padding.
@@ -543,18 +544,18 @@ class Population(BaseModel):
 
     def plot_dvar_pairs(
         self,
-        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        dvars: int | slice | list[int] | tuple[int, int] | None = None,
         fig=None,
         axes=None,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
-        hist_bins: Optional[int] = None,
+        hist_bins: int | None = None,
         show_names: bool = True,
-        problem: Optional[Union[str, "Problem"]] = None,
-        lower_bounds: Optional[np.ndarray] = None,
-        upper_bounds: Optional[np.ndarray] = None,
-        color: Optional[str] = None,
-        scale: Optional[np.ndarray] = None,
+        problem: "str | Problem | None" = None,
+        lower_bounds: np.ndarray | None = None,
+        upper_bounds: np.ndarray | None = None,
+        color: str | None = None,
+        scale: np.ndarray | None = None,
     ):
         """
         Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -562,7 +563,7 @@ class Population(BaseModel):
 
         Parameters
         ----------
-        dvars : int, slice, List[int], or Tuple[int, int], optional
+        dvars : int, slice, list[int], or tuple[int, int], optional
             Specifies which decision variables to plot. See `selection_to_indices` for more details.
         fig : matplotlib.figure.Figure, optional
             Figure to plot on. If None and axes is None, creates a new figure.
@@ -624,9 +625,9 @@ class History(BaseModel):
      - Objective/constraint settings and names, if used, must be consistent across populations
     """
 
-    reports: List[Population]
+    reports: list[Population]
     problem: str
-    metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_consistent_populations(self):
@@ -883,27 +884,27 @@ class History(BaseModel):
 
     def plot_obj_scatter(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
         fig=None,
         ax=None,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
         show_points: bool = True,
         n_pf: int = 1000,
-        pf_objectives: Optional[np.ndarray] = None,
+        pf_objectives: np.ndarray | None = None,
         show_attainment: bool = False,
         show_dominated_area: bool = False,
-        ref_point: Optional[Tuple[float, float]] = None,
+        ref_point: tuple[float, float] | None = None,
         ref_point_padding: float = 0.05,
-        legend_loc: Optional[str] = None,
-        scale: Optional[np.ndarray] = None,
+        legend_loc: str | None = None,
+        scale: np.ndarray | None = None,
         flip_objs: bool = False,
         show_names: bool = True,
         show_pf: bool = False,
         colormap: str = "viridis",
-        cmap_label: Optional[str] = None,
+        cmap_label: str | None = None,
         generation_mode: Literal["cmap", "cumulative"] = "cmap",
-        single_color: Optional[str] = None,
+        single_color: str | None = None,
         label_mode: Literal["index", "fevals"] = "index",
     ):
         """
@@ -912,7 +913,7 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to plot. See `selection_to_indices` for more details.
         fig : matplotlib figure, optional
             Figure to plot on, by default None
@@ -933,7 +934,7 @@ class History(BaseModel):
             Whether to plot the attainment surface, by default False
         show_dominated_area : bool, optional
             Plots the dominated region towards the larger values of each decision var
-        ref_point : Union[str, Tuple[float, float]], optional
+        ref_point : str | tuple[float, float], optional
             Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
             value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
             padding.
@@ -952,13 +953,13 @@ class History(BaseModel):
             Whether to plot the Pareto front, by default True
         colormap : str, optional
             Name of the colormap to use for generation colors, by default 'viridis'
-        cmap_label: Optional[str] = "Generation"
+        cmap_label: str | None = "Generation"
             Label for colorbar (only used when generation_mode is 'cmap')
         generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
             How to handle multiple generations:
             'cmap': Plot each generation separately with colors from colormap
             'cumulative': Merge all selected generations into single population
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         label_mode: Literal['index', 'fevals'] = 'index'
             Whether to use report index or function evaluations (fevals) for labels
@@ -998,21 +999,21 @@ class History(BaseModel):
 
     def plot_dvar_pairs(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
-        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
+        dvars: int | slice | list[int] | tuple[int, int] | None = None,
         fig=None,
         axes=None,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
-        hist_bins: Optional[int] = None,
+        hist_bins: int | None = None,
         show_names: bool = True,
-        lower_bounds: Optional[np.ndarray] = None,
-        upper_bounds: Optional[np.ndarray] = None,
-        scale: Optional[np.ndarray] = None,
+        lower_bounds: np.ndarray | None = None,
+        upper_bounds: np.ndarray | None = None,
+        scale: np.ndarray | None = None,
         colormap: str = "viridis",
-        cmap_label: Optional[str] = None,
+        cmap_label: str | None = None,
         generation_mode: Literal["cmap", "cumulative"] = "cmap",
-        single_color: Optional[str] = None,
+        single_color: str | None = None,
         plot_bounds: bool = False,
         label_mode: Literal["index", "fevals"] = "index",
     ):
@@ -1022,9 +1023,9 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to plot. See `selection_to_indices` for more details.
-        dvars : int, slice, List[int], or Tuple[int, int], optional
+        dvars : int, slice, list[int], or tuple[int, int], optional
             Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
         fig : matplotlib figure, optional
             Figure to plot on, by default None
@@ -1047,13 +1048,13 @@ class History(BaseModel):
             If None, no scaling is applied.
         colormap : str, optional
             Name of the colormap to use for generation colors, by default 'viridis'
-        cmap_label: Optional[str] = "Generation"
+        cmap_label: str | None = "Generation"
             Label for colorbar (only used when generation_mode is 'cmap')
         generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
             How to handle multiple generations:
             'cmap': Plot each generation separately with colors from colormap
             'cumulative': Merge all selected generations into single population
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         plot_bounds: bool = False
             Whether to plot bounds for the problem
@@ -1090,23 +1091,23 @@ class History(BaseModel):
 
     def plot_obj_animation(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
         interval: int = 200,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
         show_points: bool = True,
         n_pf: int = 1000,
-        pf_objectives: Optional[np.ndarray] = None,
+        pf_objectives: np.ndarray | None = None,
         show_attainment: bool = False,
         show_dominated_area: bool = False,
-        ref_point: Optional[Tuple[float, float]] = None,
+        ref_point: tuple[float, float] | None = None,
         ref_point_padding: float = 0.05,
-        legend_loc: Optional[str] = "upper right",
-        scale: Optional[np.ndarray] = None,
+        legend_loc: str | None = "upper right",
+        scale: np.ndarray | None = None,
         flip_objs: bool = False,
         show_names: bool = True,
         show_pf: bool = False,
-        single_color: Optional[str] = None,
+        single_color: str | None = None,
         dynamic_scaling: bool = False,
         cumulative: bool = False,
         scale_padding: float = 0.05,
@@ -1116,7 +1117,7 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to animate. See `selection_to_indices` for more details.
         interval : int, optional
             Delay between frames in milliseconds, by default 200
@@ -1135,7 +1136,7 @@ class History(BaseModel):
             Whether to plot the attainment surface, by default False
         show_dominated_area : bool, optional
             Plots the dominated region towards the larger values of each decision var
-        ref_point : Union[str, Tuple[float, float]], optional
+        ref_point : str | tuple[float, float], optional
             Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
             value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
             padding.
@@ -1152,7 +1153,7 @@ class History(BaseModel):
             Whether to show the names of the objectives if provided by population
         show_pf : bool, optional
             Whether to plot the Pareto front, by default True
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         dynamic_scaling : bool, optional
             If True, axes limits will update based on each frame's data.
@@ -1196,17 +1197,17 @@ class History(BaseModel):
 
     def plot_dvar_animation(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
-        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
+        dvars: int | slice | list[int] | tuple[int, int] | None = None,
         interval: int = 200,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
-        hist_bins: Optional[int] = None,
+        hist_bins: int | None = None,
         show_names: bool = True,
-        lower_bounds: Optional[np.ndarray] = None,
-        upper_bounds: Optional[np.ndarray] = None,
-        scale: Optional[np.ndarray] = None,
-        single_color: Optional[str] = None,
+        lower_bounds: np.ndarray | None = None,
+        upper_bounds: np.ndarray | None = None,
+        scale: np.ndarray | None = None,
+        single_color: str | None = None,
         plot_bounds: bool = False,
         dynamic_scaling: bool = False,
         cumulative: bool = False,
@@ -1217,9 +1218,9 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to animate. See `selection_to_indices` for more details.
-        dvars : int, slice, List[int], or Tuple[int, int], optional
+        dvars : int, slice, list[int], or tuple[int, int], optional
             Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
         interval : int, optional
             Delay between frames in milliseconds, by default 200
@@ -1238,7 +1239,7 @@ class History(BaseModel):
         scale : array-like, optional
             Scale factors for each variable. Must have the same length as the number of decision vars.
             If None, no scaling is applied.
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         plot_bounds: bool = False
             Whether to plot bounds for the problem
@@ -1335,7 +1336,7 @@ class Experiment(BaseModel):
     used to save the data.
     """
 
-    runs: List[History]
+    runs: list[History]
     name: str
     author: str = ""
     software: str = ""
