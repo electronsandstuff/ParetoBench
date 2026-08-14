@@ -1,4 +1,5 @@
 from pydantic import ValidationError
+import h5py
 import numpy as np
 import os
 import pytest
@@ -36,7 +37,8 @@ def test_load_legacy_files(test_file):
 
 
 @pytest.mark.parametrize("generate_names", [False, True])
-def test_experiment_save_load(generate_names):
+@pytest.mark.parametrize("generate_bounds", [False, True])
+def test_experiment_save_load(generate_names, generate_bounds):
     """
     Make a randomized experiment, save it to disk, load it, and then confirm everything matches.
     """
@@ -50,6 +52,7 @@ def test_experiment_save_load(generate_names):
         pop_size=50,
         generate_names=generate_names,
         generate_obj_constraint_settings=True,
+        generate_bounds=generate_bounds,
     )
 
     # Use a temporary directory to save the file
@@ -292,6 +295,61 @@ def test_field_assignment_validation():
     with pytest.raises(ValueError, match="Expected array with 2 dimensions for field 'x'"):
         pop = Population(f=np.random.random((256, 2)))
         pop.x = np.random.random((2))
+
+
+def test_save_load_var_bounds_backwards_compatible():
+    """
+    Files written before the bounds were added (file version 1.2.0) load as unbounded populations.
+    """
+    experiment = Experiment.from_random(
+        n_histories=2,
+        n_populations=3,
+        n_objectives=2,
+        n_decision_vars=4,
+        n_constraints=1,
+        pop_size=8,
+        generate_bounds=True,
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_path = os.path.join(tmpdir, "test.h5")
+        experiment.save(file_path)
+
+        # Strip the bounds attributes to imitate a file written by an older version of ParetoBench
+        with h5py.File(file_path, mode="r+") as f:
+            f.attrs["file_version"] = "1.1.0"
+            for run_grp in [f[k] for k in f if k.startswith("run_")]:
+                del run_grp["x"].attrs["lower_bounds"]
+                del run_grp["x"].attrs["upper_bounds"]
+
+        loaded_experiment = Experiment.load(file_path)
+        assert loaded_experiment.file_version == "1.1.0"
+        for run in loaded_experiment.runs:
+            for report in run.reports:
+                np.testing.assert_array_equal(report.var_lower_bounds, np.full(report.n, -np.inf))
+                np.testing.assert_array_equal(report.var_upper_bounds, np.full(report.n, np.inf))
+
+
+def test_save_load_no_decision_vars():
+    """
+    Populations without decision variables load with empty bounds arrays.
+    """
+    experiment = Experiment.from_random(
+        n_histories=1,
+        n_populations=2,
+        n_objectives=2,
+        n_decision_vars=0,
+        n_constraints=1,
+        pop_size=8,
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        file_path = os.path.join(tmpdir, "test.h5")
+        experiment.save(file_path)
+        loaded_experiment = Experiment.load(file_path)
+
+    assert experiment == loaded_experiment
+    assert loaded_experiment.runs[0].reports[0].var_lower_bounds.shape == (0,)
 
 
 def test_default_var_bounds():

@@ -885,6 +885,8 @@ class History(BaseModel):
 
         # Save the configuration data
         if self.reports:
+            g["x"].attrs["lower_bounds"] = self.reports[0].var_lower_bounds
+            g["x"].attrs["upper_bounds"] = self.reports[0].var_upper_bounds
             g["f"].attrs["directions"] = self.reports[0].obj_directions
             g["g"].attrs["directions"] = self.reports[0].constraint_directions
             g["g"].attrs["targets"] = self.reports[0].constraint_targets
@@ -914,6 +916,10 @@ class History(BaseModel):
         constraint_directions = grp["g"].attrs.get("directions", None)
         constraint_targets = grp["g"].attrs.get("targets", None)
 
+        # Files written before version 1.2.0 have no decision variable bounds and are treated as unbounded
+        var_lower_bounds = grp["x"].attrs.get("lower_bounds", None)
+        var_upper_bounds = grp["x"].attrs.get("upper_bounds", None)
+
         # Before file version 1.1.0 which introduced explicit constraint directions,
         # the default constraint type was g(x) >= 0.0
         if file_version == "1.0.0":
@@ -940,6 +946,8 @@ class History(BaseModel):
                     obj_directions=obj_directions,
                     constraint_directions=constraint_directions,
                     constraint_targets=constraint_targets,
+                    var_lower_bounds=var_lower_bounds,
+                    var_upper_bounds=var_upper_bounds,
                 )
             )
             start_idx += pop_size
@@ -1437,7 +1445,7 @@ class Experiment(BaseModel):
     software_version: str = ""
     comment: str = ""
     creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    file_version: str = "1.1.0"
+    file_version: str = "1.2.0"
 
     def __eq__(self, other):
         if not isinstance(other, Experiment):
@@ -1560,7 +1568,7 @@ class Experiment(BaseModel):
             f.attrs["software_version"] = self.software_version
             f.attrs["comment"] = self.comment
             f.attrs["creation_time"] = self.creation_time.isoformat()
-            f.attrs["file_version"] = "1.1.0"
+            f.attrs["file_version"] = "1.2.0"
             f.attrs["file_format"] = "ParetoBench Multi-Objective Optimization Data"
 
             # Calculate the necessary zero padding based on the number of runs
