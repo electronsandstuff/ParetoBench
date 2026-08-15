@@ -9,7 +9,7 @@ from paretobench import Experiment
 from .utils import experiment_to_manifest
 
 FILE_VERSION_DIR = Path(__file__).parent / "test_data" / "file_versions"
-GENERATOR = "tests/test_data/file_versions/generate_file_version_data.py"
+GENERATOR = "tests/generate_file_version_data.py"
 
 
 def get_file_version_files():

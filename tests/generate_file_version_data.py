@@ -2,7 +2,6 @@ import argparse
 import json
 import random
 import shutil
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -10,13 +9,9 @@ import h5py
 import numpy as np
 
 from paretobench import Experiment, History
+from utils import experiment_to_manifest
 
-# The tests package is not installed, so put the repository root on the path to share the manifest code with the tests
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-
-from tests.utils import experiment_to_manifest  # noqa: E402
-
-DEFAULT_OUT_DIR = Path(__file__).resolve().parent
+DEFAULT_OUT_DIR = Path(__file__).resolve().parent / "test_data" / "file_versions"
 FILENAME_FMT = "paretobench_file_format_v{version}.h5"
 
 
