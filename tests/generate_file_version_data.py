@@ -39,6 +39,7 @@ def make_experiment():
             pop_size=25,
             generate_names=True,
             generate_obj_constraint_settings=True,
+            generate_bounds=True,
         )
         run.problem = problem
         runs.append(run)
