@@ -84,12 +84,19 @@ def main():
     )
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR, help="directory to save the file into")
     parser.add_argument("--force", action="store_true", help="overwrite an existing file for this version")
-    parser.add_argument("--manifest", type=Path, help="rewrite the manifest of an existing file and exit")
+    parser.add_argument(
+        "--refresh-manifests",
+        type=Path,
+        nargs="*",
+        help="rewrite the manifests of files which already exist, defaulting to every file in the output directory",
+    )
     args = parser.parse_args()
 
-    # Refresh the manifest of a file which already exists (used to bootstrap files saved by older versions)
-    if args.manifest is not None:
-        print(f"Wrote {write_manifest(args.manifest)}")
+    # Rewrite the manifests of files which already exist. Needed whenever the contents of a manifest change, such as
+    # when a new field is added to the containers, and to bootstrap the manifests of files saved by older versions.
+    if args.refresh_manifests is not None:
+        for path in args.refresh_manifests or sorted(args.out_dir.glob("*.h5")):
+            print(f"Wrote {write_manifest(path)}")
         return
 
     # Save the data, then name the file after the version which actually ended up in it
