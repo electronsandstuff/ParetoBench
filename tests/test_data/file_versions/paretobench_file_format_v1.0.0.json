@@ -23,6 +23,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "3b2d74eed2b6600433de939b181f2856fd70cff92d1e32909ac7ac88a1f77c28"
         },
         {
@@ -39,6 +53,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "119795280e0e1fb558ecef619d4b6083f4aecbcc34cee074fce3fc6954aeae39"
         },
         {
@@ -55,6 +83,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "b37443ac45a3bde81bca6686a6944783486812472181ac3619e2ee855dec6d59"
         },
         {
@@ -71,6 +113,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "1630ebf46c0d910fff487a13b95c3072fd90f0ff1fe24b97c36efc63bca838b0"
         },
         {
@@ -87,6 +143,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "dd1e5b71e3d6215173745aae9e64219982ff4062d5a8345c977c20e649b5a5cb"
         },
         {
@@ -103,6 +173,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "be66f8a208a6bf59dc4478761cfac501d598fe3871587234d3cdeb1b275732e5"
         },
         {
@@ -119,6 +203,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "f991d73ee8b4949445a5f91f3dadde91552dd973a3f67bf833031a3b144241d2"
         },
         {
@@ -135,6 +233,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "09ab4b8ea994852ca3fa95538e26ee13239892b70c3c985ba1976950ee710cc9"
         }
       ]
@@ -157,6 +269,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "5129b12bc092720878f65ea8e8e64c9c8e10bc6525b860065f50f205af1aaa30"
         },
         {
@@ -173,6 +299,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "c80488e2e77c8c7fb07e192a8f9cd13b42f72f11d0fa163d719bc88f2bf1d4b7"
         },
         {
@@ -189,6 +329,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "ee1f2f7ef29d5187d13ee669f998237cafc28ea07ed456c5aa3a0d0bdf515e8c"
         },
         {
@@ -205,6 +359,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "3ece64d9ccb0fb86003eaafa4f6a7856af7be2adb4e245d9ea2c853f3d71e3d8"
         },
         {
@@ -221,6 +389,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "c0c5551a141602e30a80a6796623b695849388591c00fc82c8b34af0520fb661"
         },
         {
@@ -237,6 +419,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "42625c5e8f003a3d4a1b93de25a9b8fd26b3e2ab9886fa3a97269bcaf8bd02a2"
         },
         {
@@ -253,6 +449,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "d86d9f3cb6b714bf93d17bd33f7ee0a74498b52698e921a2f0438cf3a07c2df7"
         },
         {
@@ -269,6 +479,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "40aaaf70ad4952885313cd34311f415c24465187959559f82fe86f3aab5b825f"
         }
       ]
@@ -291,6 +515,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "6bbc30fdb0e0c1d7ec230cf6dc41d161fd6865f24c6df5df9aee491f36051a67"
         },
         {
@@ -307,6 +545,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "8651c618c24b08877aa5dcc7ef1ec4cf8d445b25c1dccc640bbe92ad7f4a16c9"
         },
         {
@@ -323,6 +575,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "1ceb5e1607a108f9ab4b93837b9901ddede725dda4d8502d713dd706dbbb6825"
         },
         {
@@ -339,6 +605,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "8ab0082734025e52fbfe729d76979a91b9c83e39c31320dbb264176f90e38514"
         },
         {
@@ -355,6 +635,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "22837213bf2a410f53800c2a28a20a6e650916366556d5f5bd47f2dfd13e7853"
         },
         {
@@ -371,6 +665,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "0acad307f3e412fbffc9c901a205f8931d569841749089bc8956539d7c24a281"
         },
         {
@@ -387,6 +695,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "c2be26ae7b20916e87308eaaab9fffc0462d05f28fe74bdc6c61eac8b1532991"
         },
         {
@@ -403,6 +725,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "df3e9b06e4777cfbadd0412e78484785b22d667a11dc906b1659f49b79894f4e"
         }
       ]
@@ -425,6 +761,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "240594fa871c1c47eaa65f8d603b06fad4a635e8a45ddc31a0029e2a6b2d4d1b"
         },
         {
@@ -441,6 +791,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "5ff66c434ffbd1aa9b95d04dd3bd39ce9403d91d0f1034ed30b9cfef08de24b7"
         },
         {
@@ -457,6 +821,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "20d33df82efff7fbfcb1657e6fa3bfeac1282030eae63e31511481710a1b4926"
         },
         {
@@ -473,6 +851,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "d86606ca44168d2515236f57472e6b1ae3731eb10ef7c201567682043228db3b"
         },
         {
@@ -489,6 +881,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "6fdfff6603e039d843b46a1cfaf5b217b8c8d51c7978cbcfbbc541b1a5b8aa81"
         },
         {
@@ -505,6 +911,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "0a6febc59f3123b6f80343dc5b424dc154f8a53d8bb1948e0c2b56f5eff95c24"
         },
         {
@@ -521,6 +941,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "c22b349b1a39dda308828bd41499db3b9fef874516ce53e0e08a4af716d9ff9c"
         },
         {
@@ -537,6 +971,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "270bcb920898d79b9fd67c9a5c89133bf40a76366641cf3d0227ed42259cef19"
         }
       ]
@@ -559,6 +1007,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "936910b0844695c0bdb24f530781a2d6c2436c76d19958de2f391c13648a9da5"
         },
         {
@@ -575,6 +1037,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "1d5b2eff103a96a2046b11f9e416750346ebb1359bd9e376ea1f24893be184b2"
         },
         {
@@ -591,6 +1067,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "55d78e8bf10287f6857049b720c1f83f8a81db87521dc44a8a3b14a165150e7f"
         },
         {
@@ -607,6 +1097,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "5172e91510bc1f18b8f47edc1e13604ba0be6d7e2e7f2bad3a49efec6d9fbe51"
         },
         {
@@ -623,6 +1127,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "de77677aa32987444792688788dec6c1bc7d3c2509397e1fa9766627625877fb"
         },
         {
@@ -639,6 +1157,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "733ce3a1c45dcd1f511cd507cdf708d53b2809be50e60cf3a1b0260d47fd3f54"
         },
         {
@@ -655,6 +1187,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "a1362da78318ba8f67e36d6cd22d3e50b2345721cc6d308a6dc08e690cc7f8db"
         },
         {
@@ -671,6 +1217,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "ef9d2bb572962c77dd566adf13ae1ef7d32400b064adbce3f8b023f14c612225"
         }
       ]
@@ -693,6 +1253,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "e6b663e84e7955e5ddf753f9b0d55d89b31305e5c5eb17ae0bdb10dec010e709"
         },
         {
@@ -709,6 +1283,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "45edf82f5a101789bfa222ed329243abcc781ce1a21bbd403ead41260543a9a6"
         },
         {
@@ -725,6 +1313,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "fab599d313a85a247de1647da245c6a43b36833cb171776ea21afcbf1bf0d585"
         },
         {
@@ -741,6 +1343,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "8466b5596f0214a13d971f6552ef11bf90295c22e4c40dd631c659660fe95597"
         },
         {
@@ -757,6 +1373,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "9a395681bfa39ffdf8de35f84efff9f7aea3e78922fc83a4d592b426894eb3f1"
         },
         {
@@ -773,6 +1403,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "c19e3f2d09a32777ce4dd264d88d9668d9c3a4d6213f8685b1a75651bf0d8eba"
         },
         {
@@ -789,6 +1433,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "1103dbced7246f9385555edbd1058382a322f2e52bf2a5909543ac5233193c3b"
         },
         {
@@ -805,6 +1463,20 @@
           "names_x": null,
           "obj_directions": "--",
           "pop_size": 50,
+          "var_lower_bounds": [
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity,
+            -Infinity
+          ],
+          "var_upper_bounds": [
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity,
+            Infinity
+          ],
           "x_sha256": "29b0adcb029240572c1254f6184dc30a4a447ee011c62a9fc065af4d420fb715"
         }
       ]

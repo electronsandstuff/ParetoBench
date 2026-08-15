@@ -79,6 +79,8 @@ def experiment_to_manifest(exp):
                         "obj_directions": report.obj_directions,
                         "constraint_directions": report.constraint_directions,
                         "constraint_targets": report.constraint_targets.tolist(),
+                        "var_lower_bounds": report.var_lower_bounds.tolist(),
+                        "var_upper_bounds": report.var_upper_bounds.tolist(),
                         "x_sha256": array_digest(report.x),
                         "f_sha256": array_digest(report.f),
                         "g_sha256": array_digest(report.g),
