@@ -27,10 +27,11 @@ jobs:
         pip install ".[test]"
     - name: Run the tests (Linux/macOS)
       if: runner.os != 'Windows'
+      shell: bash
       run: |
         echo -e '## Pytest Results\n\n' >> "$GITHUB_STEP_SUMMARY"
         echo -e '```' >> "$GITHUB_STEP_SUMMARY"
-        pytest -v --cov=beamfit/ tests 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+        pytest -v --cov=paretobench tests 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
         echo -e '```' >> "$GITHUB_STEP_SUMMARY"
     - name: Run the tests (Windows)
       if: runner.os == 'Windows'
