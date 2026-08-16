@@ -8,8 +8,7 @@ import numpy as np
 
 from ..containers import Population
 from ..exceptions import EmptyPopulationError, NoDecisionVarsError, NoObjectivesError
-from ..problem import Problem, ProblemWithFixedPF, ProblemWithPF
-from ..utils import get_problem_from_obj_or_str
+from ..problem import Problem, ProblemWithFixedPF, ProblemWithPF, get_problem_from_obj_or_str
 from .attainment import compute_attainment_surface_2d, compute_attainment_surface_3d
 from .utils import get_per_point_settings_population, alpha_scatter, selection_to_indices
 
@@ -291,6 +290,28 @@ def population_obj_scatter(
     return fig, ax
 
 
+def _draw_bound(line_fn, bounds, idx, scale, props):
+    """
+    Draws one decision variable bound onto an axis. Unset and infinite bounds are skipped as they have no location
+    on the plot and would ruin the axis limits.
+
+    Parameters
+    ----------
+    line_fn : callable
+        The axis method used to draw the line (`ax.axvline` or `ax.axhline`).
+    bounds : array-like or None
+        The lower or upper bounds of all decision variables.
+    idx : int
+        Index of the decision variable being drawn.
+    scale : float
+        Scale factor applied to this decision variable.
+    props : dict
+        Line properties passed through to `line_fn`.
+    """
+    if bounds is not None and np.isfinite(bounds[idx]):
+        line_fn(scale * bounds[idx], **props)
+
+
 def population_dvar_pairs(
     population: Population,
     dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
@@ -305,6 +326,7 @@ def population_dvar_pairs(
     upper_bounds: Optional[np.ndarray] = None,
     color: Optional[str] = None,
     scale: Optional[np.ndarray] = None,
+    plot_bounds: bool = True,
 ):
     """
     Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -332,14 +354,16 @@ def population_dvar_pairs(
     problem : str/Problem, optional
         The problem for plotting decision variable bounds
     lower_bounds : array-like, optional
-        Lower bounds for each decision variable
+        Lower bounds for each decision variable. Defaults to the bounds carried by the population.
     upper_bounds : array-like, optional
-        Upper bounds for each decision variable
+        Upper bounds for each decision variable. Defaults to the bounds carried by the population.
     color : str, optional
         What color should we use for the points. Defaults to selecting from matplotlib color cycler
     scale : array-like, optional
         Scale factors for each variable. Must have the same length as the number of decision vars.
         If None, no scaling is applied.
+    plot_bounds : bool, optional
+        Whether to plot the decision variable bounds, by default True. Infinite bounds are not plotted.
 
     Returns
     -------
@@ -367,10 +391,6 @@ def population_dvar_pairs(
     var_indices = np.array(selection_to_indices(dvars, population.n))
     n_vars = len(var_indices)
 
-    # Default, don't show bounds
-    lower_bounds = None
-    upper_bounds = None
-
     # Handle user specified problem
     if problem is not None:
         if (lower_bounds is not None) or (upper_bounds is not None):
@@ -382,6 +402,16 @@ def population_dvar_pairs(
             )
         lower_bounds = problem.var_lower_bounds
         upper_bounds = problem.var_upper_bounds
+
+    # Fall back onto the bounds carried by the population itself
+    elif plot_bounds and (lower_bounds is None) and (upper_bounds is None):
+        lower_bounds = population.var_lower_bounds
+        upper_bounds = population.var_upper_bounds
+
+    # The bounds are not plotted when the user asks us not to
+    if not plot_bounds:
+        lower_bounds = None
+        upper_bounds = None
 
     # Validate and convert bounds to numpy arrays if provided
     if lower_bounds is not None:
@@ -484,10 +514,8 @@ def population_dvar_pairs(
                     base_color = patches[0].get_facecolor()
 
                 # Add vertical bound lines to histograms
-                if lower_bounds is not None:
-                    ax.axvline(scale[var_indices[i]] * lower_bounds[var_indices[i]], **bound_props)
-                if upper_bounds is not None:
-                    ax.axvline(scale[var_indices[i]] * upper_bounds[var_indices[i]], **bound_props)
+                _draw_bound(ax.axvline, lower_bounds, var_indices[i], scale[var_indices[i]], bound_props)
+                _draw_bound(ax.axvline, upper_bounds, var_indices[i], scale[var_indices[i]], bound_props)
 
             # Off-diagonal plots (scatter plots)
             else:
@@ -505,12 +533,10 @@ def population_dvar_pairs(
                     base_color = scatter.get_facecolor()[0]  # Get the color that matplotlib assigned
 
                 # Add bound lines to scatter plots
-                if lower_bounds is not None:
-                    ax.axvline(scale[var_indices[j]] * lower_bounds[var_indices[j]], **bound_props)  # x-axis bound
-                    ax.axhline(scale[var_indices[i]] * lower_bounds[var_indices[i]], **bound_props)  # y-axis bound
-                if upper_bounds is not None:
-                    ax.axvline(scale[var_indices[j]] * upper_bounds[var_indices[j]], **bound_props)  # x-axis bound
-                    ax.axhline(scale[var_indices[i]] * upper_bounds[var_indices[i]], **bound_props)  # y-axis bound
+                _draw_bound(ax.axvline, lower_bounds, var_indices[j], scale[var_indices[j]], bound_props)
+                _draw_bound(ax.axhline, lower_bounds, var_indices[i], scale[var_indices[i]], bound_props)
+                _draw_bound(ax.axvline, upper_bounds, var_indices[j], scale[var_indices[j]], bound_props)
+                _draw_bound(ax.axhline, upper_bounds, var_indices[i], scale[var_indices[i]], bound_props)
             if i == n_vars - 1:
                 ax.set_xlabel(var_names[j])
             if j == 0:

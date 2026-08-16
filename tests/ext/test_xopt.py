@@ -182,6 +182,11 @@ def test_import_nsga2_history():
                     assert all(tp.constraint_targets == [0.0, 0.0])
                     assert tp.fevals == (idx + 1) * population_size
 
+                    # Confirm the decision variable bounds came from the VOCS
+                    vocs_bounds = [_variable_bounds(tnk_vocs.variables[name]) for name in tnk_vocs.variable_names]
+                    np.testing.assert_allclose(tp.var_lower_bounds, [b[0] for b in vocs_bounds])
+                    np.testing.assert_allclose(tp.var_upper_bounds, [b[1] for b in vocs_bounds])
+
                     # Confirm data is correct
                     df_comp(rx, pd.DataFrame(tp.x, columns=tp.names_x))
                     rf.columns = [x.removeprefix("objective_") for x in rf.columns]

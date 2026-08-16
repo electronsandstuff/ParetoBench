@@ -1,0 +1,560 @@
+{
+  "author": "ParetoBench test suite",
+  "comment": "Synthetic data used by the file format regression tests",
+  "creation_time": "2025-01-01T00:00:00+00:00",
+  "file_version": "1.2.0",
+  "name": "file_format_regression",
+  "runs": [
+    {
+      "metadata": {
+        "author": "1PJSO",
+        "date": "2022-08-21",
+        "description": "Randomly generated metadata",
+        "version": 2.567597178069545
+      },
+      "problem": "ZDT1 (n=4)",
+      "reports": [
+        {
+          "constraint_directions": ">>",
+          "constraint_targets": [
+            0.26461952968972313,
+            0.575533888310394
+          ],
+          "f_sha256": "45a284d7ff1f7adf3bf783a60a9cbaa018eab491be73ae29faaec2a470ff4b1b",
+          "fevals": 25,
+          "g_sha256": "bceb32f24b52ee5ef02939578c8cca0739053dbbcedf665b5b4510ff3292b010",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+--",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.19490100382675557,
+            -0.7412316659101856,
+            -0.9369278798585663,
+            -0.6592678664279883
+          ],
+          "var_upper_bounds": [
+            1.7249940940432136,
+            1.1644884116937722,
+            1.7482239682739769,
+            1.4973568393326229
+          ],
+          "x_sha256": "299d795b83d31661d68ced7b2da76e9c82025cb50a1542e448fdd669dedfa0a6"
+        },
+        {
+          "constraint_directions": ">>",
+          "constraint_targets": [
+            0.26461952968972313,
+            0.575533888310394
+          ],
+          "f_sha256": "3599839cff2cf01168f040c60c81b1fb4c21b23b850b7a2926a1f9a5fee4e29f",
+          "fevals": 50,
+          "g_sha256": "7ed800375c3714ce6675e458a21a6bc95a465304cbc5dfcb8ad8595e98ccb6e1",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+--",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.19490100382675557,
+            -0.7412316659101856,
+            -0.9369278798585663,
+            -0.6592678664279883
+          ],
+          "var_upper_bounds": [
+            1.7249940940432136,
+            1.1644884116937722,
+            1.7482239682739769,
+            1.4973568393326229
+          ],
+          "x_sha256": "f4079004496a41db3fbb31a7444767cebcc5e4e8f31d35b88f18446a11f891a4"
+        },
+        {
+          "constraint_directions": ">>",
+          "constraint_targets": [
+            0.26461952968972313,
+            0.575533888310394
+          ],
+          "f_sha256": "e9d0ce4478f37e940a9d9c1e0ad10eaf8150e33c5b6be0f6da37f300a934e251",
+          "fevals": 75,
+          "g_sha256": "1f263edc7fcc99491744a795b6c87206f335d050148f9b8e634c5e8c8f862ae1",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+--",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.19490100382675557,
+            -0.7412316659101856,
+            -0.9369278798585663,
+            -0.6592678664279883
+          ],
+          "var_upper_bounds": [
+            1.7249940940432136,
+            1.1644884116937722,
+            1.7482239682739769,
+            1.4973568393326229
+          ],
+          "x_sha256": "0794101e8ae726b2e44c5c7b36bcdde3a56b71176709d581decc47b4573cc521"
+        },
+        {
+          "constraint_directions": ">>",
+          "constraint_targets": [
+            0.26461952968972313,
+            0.575533888310394
+          ],
+          "f_sha256": "51d5c48f6e3811959e703f3b12820de79a906ca308374d6f31f1843e6aac4120",
+          "fevals": 100,
+          "g_sha256": "22042afb2278d9a5e6407d031bfb6f9a37fdea6f6fd106450aae48bd65ee8615",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+--",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.19490100382675557,
+            -0.7412316659101856,
+            -0.9369278798585663,
+            -0.6592678664279883
+          ],
+          "var_upper_bounds": [
+            1.7249940940432136,
+            1.1644884116937722,
+            1.7482239682739769,
+            1.4973568393326229
+          ],
+          "x_sha256": "680dd84014c285805436d17cf40b17f2150326c745189599f103163a01ce7222"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "author": "SK1WJ",
+        "date": "2024-03-19",
+        "description": "Randomly generated metadata",
+        "version": 2.81949251193648
+      },
+      "problem": "CTP1 (n=4)",
+      "reports": [
+        {
+          "constraint_directions": "<>",
+          "constraint_targets": [
+            0.607741847385851,
+            0.4877645594977067
+          ],
+          "f_sha256": "19a5a9571032626303fc6d1c9c1480c348ed10fa9dbf898174586f2137127af2",
+          "fevals": 25,
+          "g_sha256": "52f0669483cf200f107551b33af830e70c9b0c25f85df49aea6560cc86a2a707",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.01331611324646731,
+            -0.6062619062265414,
+            -0.9890880753568537,
+            -0.818101050024029
+          ],
+          "var_upper_bounds": [
+            1.340604643884352,
+            1.1520470250444221,
+            1.784058614467154,
+            1.7439378206317415
+          ],
+          "x_sha256": "c720a83b3a64c9cecc82fd4e11210e1b61550a76af11ec996a0e89e0020e3833"
+        },
+        {
+          "constraint_directions": "<>",
+          "constraint_targets": [
+            0.607741847385851,
+            0.4877645594977067
+          ],
+          "f_sha256": "37219e5328d5b2d206078ea266e8c3306bb1bb95047bc262bdbd1dbb5899a8e4",
+          "fevals": 50,
+          "g_sha256": "6f22bedd12aafd66accb8108bc64c62edb0f322e3bcac50567761a67144812ca",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.01331611324646731,
+            -0.6062619062265414,
+            -0.9890880753568537,
+            -0.818101050024029
+          ],
+          "var_upper_bounds": [
+            1.340604643884352,
+            1.1520470250444221,
+            1.784058614467154,
+            1.7439378206317415
+          ],
+          "x_sha256": "0a13930c21ef2b7ae02ef6e38b896efc62b59a49eebe7fb9b9e419b829cd8df7"
+        },
+        {
+          "constraint_directions": "<>",
+          "constraint_targets": [
+            0.607741847385851,
+            0.4877645594977067
+          ],
+          "f_sha256": "3d03ac0b6ee6325de60f74b06c819a01019317bd8f339c6a1437afe19c707856",
+          "fevals": 75,
+          "g_sha256": "97b2a7d7bdf621396c6d9998087d1d6d1e3e94c3ccd3918cc36840370f523d94",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.01331611324646731,
+            -0.6062619062265414,
+            -0.9890880753568537,
+            -0.818101050024029
+          ],
+          "var_upper_bounds": [
+            1.340604643884352,
+            1.1520470250444221,
+            1.784058614467154,
+            1.7439378206317415
+          ],
+          "x_sha256": "2fe7b02c23b60d22fbd9f6a1f0f13a4d21b28e362a58cff23ab9c75b89120e18"
+        },
+        {
+          "constraint_directions": "<>",
+          "constraint_targets": [
+            0.607741847385851,
+            0.4877645594977067
+          ],
+          "f_sha256": "d2bd488ca7322083b2c96575440115c537388ea5a6ec0543b39d5b0c1f77630f",
+          "fevals": 100,
+          "g_sha256": "d848fa2f9da8c622a3ebcc1153f83510248deeb313eae197bcb7bd2fc22bb197",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.01331611324646731,
+            -0.6062619062265414,
+            -0.9890880753568537,
+            -0.818101050024029
+          ],
+          "var_upper_bounds": [
+            1.340604643884352,
+            1.1520470250444221,
+            1.784058614467154,
+            1.7439378206317415
+          ],
+          "x_sha256": "cb2ae15fa3453a2abd76a0ccad796d590d29aff7b38bd222b01c46d0752ba079"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "author": "06YQD",
+        "date": "2024-04-27",
+        "description": "Randomly generated metadata",
+        "version": 1.8683436709075674
+      },
+      "problem": "TNK",
+      "reports": [
+        {
+          "constraint_directions": "<<",
+          "constraint_targets": [
+            0.6771508915552242,
+            0.12116145688982427
+          ],
+          "f_sha256": "73c33b07b4370567b7eeaea24bb48613637d7b42ed3f49faafba14bbccd82c8c",
+          "fevals": 25,
+          "g_sha256": "231dac39841834d56c527e33db4e7058814c8720667e7c6ee15ae36e1cfa247f",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.17943296290248112,
+            -0.9701078696904671,
+            -0.6268266868350327,
+            -0.25397189765420736
+          ],
+          "var_upper_bounds": [
+            1.8997467379749975,
+            1.3495577757673076,
+            1.1547233189353576,
+            1.9803220340371652
+          ],
+          "x_sha256": "0776fd1a019e7ec4076ebd849e60871fb4de035d43605ddf698dd54f4e7cb50a"
+        },
+        {
+          "constraint_directions": "<<",
+          "constraint_targets": [
+            0.6771508915552242,
+            0.12116145688982427
+          ],
+          "f_sha256": "11761959216f04859bd6025b44d475ee56f5e0162b645553068f9b3c9effa10d",
+          "fevals": 50,
+          "g_sha256": "65d89d3192c392d4080e35ac9f2926ff2c9c30546378d2f1d60550311157b3f6",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.17943296290248112,
+            -0.9701078696904671,
+            -0.6268266868350327,
+            -0.25397189765420736
+          ],
+          "var_upper_bounds": [
+            1.8997467379749975,
+            1.3495577757673076,
+            1.1547233189353576,
+            1.9803220340371652
+          ],
+          "x_sha256": "3626650e225175e2d4091065ec88524683da20ff67eb19fd84998ea8942931d2"
+        },
+        {
+          "constraint_directions": "<<",
+          "constraint_targets": [
+            0.6771508915552242,
+            0.12116145688982427
+          ],
+          "f_sha256": "3e733579029c985a702dbfa5e75131b5b5ffc2400c314788526a86c77945197e",
+          "fevals": 75,
+          "g_sha256": "b59ff3007c59639b5ac7f78e6052ebf653ff26101de32ceebe5f8d4dfbc160aa",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.17943296290248112,
+            -0.9701078696904671,
+            -0.6268266868350327,
+            -0.25397189765420736
+          ],
+          "var_upper_bounds": [
+            1.8997467379749975,
+            1.3495577757673076,
+            1.1547233189353576,
+            1.9803220340371652
+          ],
+          "x_sha256": "7dcdec8bda5bceedaeeef36cad1b640e9561388816c6042ecf4115750f4206b1"
+        },
+        {
+          "constraint_directions": "<<",
+          "constraint_targets": [
+            0.6771508915552242,
+            0.12116145688982427
+          ],
+          "f_sha256": "dc3ca3cdce31564a610fc2e4c046fe3d5700fd5ab04a296570031d71db3b843b",
+          "fevals": 100,
+          "g_sha256": "0a05f1539664d7add8fd6276dca68b26027554563d0fb48a2ac0b7df03bf5451",
+          "m": 3,
+          "n": 4,
+          "n_constraints": 2,
+          "names_f": [
+            "f1",
+            "f2",
+            "f3"
+          ],
+          "names_g": [
+            "g1",
+            "g2"
+          ],
+          "names_x": [
+            "x1",
+            "x2",
+            "x3",
+            "x4"
+          ],
+          "obj_directions": "+++",
+          "pop_size": 25,
+          "var_lower_bounds": [
+            -0.17943296290248112,
+            -0.9701078696904671,
+            -0.6268266868350327,
+            -0.25397189765420736
+          ],
+          "var_upper_bounds": [
+            1.8997467379749975,
+            1.3495577757673076,
+            1.1547233189353576,
+            1.9803220340371652
+          ],
+          "x_sha256": "12ede9a8819bfd99ab2f50e67b13d3a7bcd888ae36768cbad2a580c839efab1f"
+        }
+      ]
+    }
+  ],
+  "software": "ParetoBench",
+  "software_version": "0.0.0"
+}

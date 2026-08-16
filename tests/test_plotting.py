@@ -231,6 +231,79 @@ def test_population_dvar_pairs_selection():
     plt.close(fig)
 
 
+def get_bound_lines(ax):
+    """
+    Returns the x locations of the vertical bound lines drawn onto one of the histogram axes of a dvar pairs plot.
+    """
+    return sorted(line.get_xdata()[0] for line in ax.get_lines() if line.get_linestyle() == "--")
+
+
+def test_population_dvar_pairs_bounds():
+    """
+    The population's own bounds are used for the bound lines unless the caller overrides or disables them.
+    """
+    pop = Population(x=np.random.random((5, 3)), f=np.random.random((5, 2)))
+    bounded = Population(x=pop.x, f=pop.f, var_lower_bounds=-np.ones(3), var_upper_bounds=2 * np.ones(3))
+
+    # The unbounded population draws nothing since its bounds are infinite
+    fig, axes = population_dvar_pairs(pop)
+    assert get_bound_lines(axes[0, 0]) == []
+    plt.close(fig)
+
+    # The bounded population draws its own bounds
+    fig, axes = population_dvar_pairs(bounded)
+    assert get_bound_lines(axes[0, 0]) == [-1.0, 2.0]
+    plt.close(fig)
+
+    # Which can be turned off
+    fig, axes = population_dvar_pairs(bounded, plot_bounds=False)
+    assert get_bound_lines(axes[0, 0]) == []
+    plt.close(fig)
+
+    # User specified bounds take precedence over the population's
+    fig, axes = population_dvar_pairs(bounded, lower_bounds=np.zeros(3), upper_bounds=np.ones(3))
+    assert get_bound_lines(axes[0, 0]) == [0.0, 1.0]
+    plt.close(fig)
+
+    # A problem may also be used as the source of bounds
+    fig, axes = population_dvar_pairs(bounded, problem="ZDT1 (n=3)")
+    assert get_bound_lines(axes[0, 0]) == [0.0, 1.0]
+    plt.close(fig)
+
+    # Only one source of bounds may be specified
+    with pytest.raises(ValueError, match="Only specify one of problem or the upper/lower bounds"):
+        population_dvar_pairs(bounded, problem="ZDT1 (n=3)", lower_bounds=np.zeros(3))
+
+
+def test_population_dvar_pairs_partial_bounds():
+    """
+    Bound lines are skipped for the individual variables which are unbounded.
+    """
+    pop = Population(
+        x=np.random.random((5, 2)),
+        f=np.random.random((5, 2)),
+        var_lower_bounds=np.array([-1.0, -np.inf]),
+        var_upper_bounds=np.array([2.0, np.inf]),
+    )
+
+    fig, axes = population_dvar_pairs(pop)
+    assert get_bound_lines(axes[0, 0]) == [-1.0, 2.0]
+    assert get_bound_lines(axes[1, 1]) == []
+    plt.close(fig)
+
+
+def test_history_dvar_pairs_bounds():
+    hist = History.from_random(3, 2, 3, 1, 10, generate_bounds=True)
+
+    fig, axes = hist.plot_dvar_pairs()
+    assert get_bound_lines(axes[0, 0]) == []
+    plt.close(fig)
+
+    fig, axes = hist.plot_dvar_pairs(plot_bounds=True, lower_bounds=np.zeros(3), upper_bounds=np.ones(3))
+    assert get_bound_lines(axes[0, 0]) == [0.0, 1.0]
+    plt.close(fig)
+
+
 def test_population_dvar_pairs_errors():
     """Test error cases"""
     pop = Population.from_random(n_objectives=2, n_decision_vars=3, n_constraints=1, pop_size=5)

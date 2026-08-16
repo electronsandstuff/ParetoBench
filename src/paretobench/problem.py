@@ -1,6 +1,7 @@
 import numpy as np
 from pydantic import BaseModel
 
+from .containers import Population
 from .exceptions import DeserializationError, InputError
 from .factory import create_problem
 from .simple_serialize import dumps, loads
@@ -45,8 +46,7 @@ class Problem(BaseModel):
                 raise InputError(msg)
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
-            pop = self._call(x[None, :])
-            pop.x = np.reshape(x, (1, -1))
+            x = np.reshape(x, (1, -1))
 
         # If batched input is used
         elif len(x.shape) == 2:
@@ -57,15 +57,23 @@ class Problem(BaseModel):
                 raise InputError(msg)
             if check_bounds and ((x > self.var_upper_bounds).all() or (x < self.var_lower_bounds).all()):
                 raise InputError("Input lies outside of problem bounds.")
-            pop = self._call(x)
-            pop.x = x
 
         # If user provided something not usable
         else:
             raise ValueError(f"Incompatible shape of input array x: {x.shape}")
 
-        # Set the decision variables
-        return pop
+        # Attach the decision variables and the problem's bounds to the evaluated population. These must be set together
+        # because the bounds are validated against the number of decision variables, so assigning them one at a time
+        # leaves the population in a state which does not validate.
+        pop = self._call(x)
+        return Population.model_validate(
+            {
+                **dict(pop),
+                "x": x,
+                "var_lower_bounds": np.asarray(self.var_lower_bounds, dtype=np.float64),
+                "var_upper_bounds": np.asarray(self.var_upper_bounds, dtype=np.float64),
+            }
+        )
 
     def _call(self, x: np.ndarray):
         """
@@ -191,6 +199,33 @@ class Problem(BaseModel):
 
     def __str__(self):
         return self.__repr__()
+
+
+def get_problem_from_obj_or_str(obj_or_str: "str | Problem") -> "Problem":
+    """Convert input to Problem instance.
+
+    Parameters
+    ----------
+    obj_or_str : Problem or str
+        Input to convert. If already a Problem instance, returns as-is.
+        If string, creates Problem from line format.
+
+    Returns
+    -------
+    Problem
+        The resulting Problem instance.
+
+    Raises
+    ------
+    ValueError
+        If input is neither Problem nor str type.
+    """
+    if isinstance(obj_or_str, Problem):
+        return obj_or_str
+    elif isinstance(obj_or_str, str):
+        return Problem.from_line_fmt(obj_or_str)
+    else:
+        raise ValueError(f"Unrecognized input type: {type(obj_or_str)}")
 
 
 class ProblemWithPF:

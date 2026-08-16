@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from functools import reduce
 from pydantic import BaseModel, Field, field_validator, ConfigDict, model_validator
-from typing import List, Dict, Union, Optional, Literal, Tuple, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
 import h5py
 import numpy as np
 import random
@@ -13,6 +13,34 @@ from .utils import get_domination, binary_str_to_numpy
 if TYPE_CHECKING:
     from .metrics import Metric
     from .problem import Problem
+
+
+def _validate_1d_float_array(value, name: str, expected_len: int, expected_len_desc: str):
+    """
+    Checks that a field is a 1D float64 numpy array of the expected length.
+
+    Parameters
+    ----------
+    value : Any
+        The value of the field being validated.
+    name : str
+        Name of the field, used in the error messages.
+    expected_len : int
+        The length the array must have.
+    expected_len_desc : str
+        Human readable description of where the expected length comes from, used in the error message.
+    """
+    if not isinstance(value, np.ndarray):
+        raise ValueError(f"{name} must be a numpy array, got: {type(value)}")
+    if len(value.shape) != 1:
+        raise ValueError(f"{name} must be 1D, shape was: {value.shape}")
+    if len(value) != expected_len:
+        raise ValueError(
+            f"Length of {name} must match {expected_len_desc}. Got {len(value)} elements but "
+            f"{expected_len_desc} is {expected_len}"
+        )
+    if value.dtype != np.float64:
+        raise ValueError(f"{name} dtype must be {np.float64}. Got {value.dtype}")
 
 
 class Population(BaseModel):
@@ -28,6 +56,9 @@ class Population(BaseModel):
     to an objectve and '+' means maximize with '-' meaning minimize. The constraints are configured by the string of directions
     `constraint_directions` and the numpy array of targets `constraint_targets`. The string should contain either the '<' or '>'
     character for the constraint at that index to be satisfied when it is less than or greater than the target respectively.
+
+    The rectangular bounds the decision variables were drawn from are recorded in `var_lower_bounds` and `var_upper_bounds`.
+    When they are not specified, the variables are treated as unbounded and the arrays are filled with -inf and +inf.
     """
 
     # The decision vars, objectives, and constraints
@@ -37,10 +68,11 @@ class Population(BaseModel):
 
     # Total number of function evaluations performed during optimization after this population was completed
     fevals: int
+
     # Optional lists of names for decision variables, objectives, and constraints
-    names_x: Optional[List[str]] = None
-    names_f: Optional[List[str]] = None
-    names_g: Optional[List[str]] = None
+    names_x: list[str] | None = None
+    names_f: list[str] | None = None
+    names_g: list[str] | None = None
 
     # Configuration of objectives/constraints (minimization or maximization problem, direction of and target of constraint)
     obj_directions: str  # '+' means maximize, '-' means minimize
@@ -48,6 +80,10 @@ class Population(BaseModel):
         str  # '<' means satisfied when less-than target, '>' means satisfied when greater-than target
     )
     constraint_targets: np.ndarray
+
+    # Rectangular bounds of the decision variables (-inf / +inf when unbounded)
+    var_lower_bounds: np.ndarray
+    var_upper_bounds: np.ndarray
 
     # Pydantic config
     model_config = ConfigDict(arbitrary_types_allowed=True, validate_assignment=True)
@@ -58,7 +94,8 @@ class Population(BaseModel):
         """
         Handles automatic setting of `x`, `f`,  `g`, `fevals` when some are not specified. The arrays are set to an empty array
         with a zero length non-batch dimension. The number of function evaluations (`fevals`) is set to the number of individuals
-        in the population (assuming here that each was evaluated to get to this point).
+        in the population (assuming here that each was evaluated to get to this point). Unspecified decision variable bounds
+        are set to -inf / +inf.
         """
         # Determine the batch size from the first non-None array
         batch_size = next(
@@ -83,6 +120,12 @@ class Population(BaseModel):
             values["constraint_directions"] = "<" * values["g"].shape[1]
         if values.get("constraint_targets") is None:
             values["constraint_targets"] = np.zeros(values["g"].shape[1], dtype=float)
+
+        # Treat the decision variables as unbounded if no bounds were given
+        if values.get("var_lower_bounds") is None:
+            values["var_lower_bounds"] = np.full(values["x"].shape[1], -np.inf)
+        if values.get("var_upper_bounds") is None:
+            values["var_upper_bounds"] = np.full(values["x"].shape[1], np.inf)
 
         # Set fevals to number of individuals if not included
         if values.get("fevals") is None:
@@ -140,19 +183,29 @@ class Population(BaseModel):
 
     @model_validator(mode="after")
     def validate_constraint_targets(self):
-        # Check the targets
-        attr = "constraint_targets"
-        if not isinstance(getattr(self, attr), np.ndarray):
-            raise ValueError(f"{attr} must be a numpy array, got: {type(getattr(self, attr))}")
-        if len(getattr(self, attr).shape) != 1:
-            raise ValueError(f"{attr} must be 1D, shape was: {getattr(self, attr).shape}")
-        if len(getattr(self, attr)) != self.g.shape[1]:
+        _validate_1d_float_array(
+            self.constraint_targets, "constraint_targets", self.g.shape[1], "number of constraints in g"
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_var_bounds(self):
+        """
+        Checks that the decision variable bounds are correctly sized and that each lower bound is at or below its
+        corresponding upper bound.
+        """
+        _validate_1d_float_array(
+            self.var_lower_bounds, "var_lower_bounds", self.x.shape[1], "number of decision variables in x"
+        )
+        _validate_1d_float_array(
+            self.var_upper_bounds, "var_upper_bounds", self.x.shape[1], "number of decision variables in x"
+        )
+        bad_idx = np.nonzero(self.var_lower_bounds > self.var_upper_bounds)[0]
+        if bad_idx.size:
             raise ValueError(
-                f"Length of {attr} must match number of constraints in g. Got {len(getattr(self, attr))} "
-                f"elements and {self.g.shape[1]} constraints from g"
+                f"var_lower_bounds must be less than or equal to var_upper_bounds. Got lower > upper at indices "
+                f"{bad_idx.tolist()}"
             )
-        if getattr(self, attr).dtype != np.float64:
-            raise ValueError(f"{attr} dtype must be {np.float64}. Got {getattr(self, attr).dtype}")
         return self
 
     @field_validator("x", "f", "g")
@@ -189,6 +242,8 @@ class Population(BaseModel):
             and self.obj_directions == other.obj_directions
             and self.constraint_directions == other.constraint_directions
             and np.array_equal(self.constraint_targets, other.constraint_targets)
+            and np.array_equal(self.var_lower_bounds, other.var_lower_bounds)
+            and np.array_equal(self.var_upper_bounds, other.var_upper_bounds)
         )
 
     @property
@@ -228,6 +283,10 @@ class Population(BaseModel):
             raise ValueError("constraint_directions are inconsistent between populations")
         if not np.array_equal(self.constraint_targets, other.constraint_targets):
             raise ValueError("constraint_targets are inconsistent between populations")
+        if not np.array_equal(self.var_lower_bounds, other.var_lower_bounds):
+            raise ValueError("var_lower_bounds are inconsistent between populations")
+        if not np.array_equal(self.var_upper_bounds, other.var_upper_bounds):
+            raise ValueError("var_upper_bounds are inconsistent between populations")
 
         # Concatenate the arrays along the batch dimension (axis=0)
         new_x = np.concatenate((self.x, other.x), axis=0)
@@ -255,9 +314,11 @@ class Population(BaseModel):
             obj_directions=self.obj_directions,
             constraint_directions=self.constraint_directions,
             constraint_targets=self.constraint_targets,
+            var_lower_bounds=self.var_lower_bounds,
+            var_upper_bounds=self.var_upper_bounds,
         )
 
-    def __getitem__(self, idx: Union[slice, np.ndarray, List[int]]) -> "Population":
+    def __getitem__(self, idx: slice | np.ndarray | list[int]) -> "Population":
         """
         Indexing operator to select along the batch dimension in the arrays.
 
@@ -282,6 +343,8 @@ class Population(BaseModel):
             obj_directions=self.obj_directions,
             constraint_directions=self.constraint_directions,
             constraint_targets=self.constraint_targets,
+            var_lower_bounds=self.var_lower_bounds,
+            var_upper_bounds=self.var_upper_bounds,
         )
 
     def get_nondominated_indices(self):
@@ -308,6 +371,7 @@ class Population(BaseModel):
         fevals: int = 0,
         generate_names: bool = False,
         generate_obj_constraint_settings: bool = False,
+        generate_bounds: bool = False,
     ) -> "Population":
         """
         Generate a randomized instance of the Population class.
@@ -328,6 +392,8 @@ class Population(BaseModel):
             Whether to include names for the decision variables, objectives, and constraints, by default False.
         generate_obj_constraint_settings : bool, optional
             Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
+        generate_bounds : bool, optional
+            Randomize the decision variable bounds, by default the variables are left unbounded
 
         Returns
         -------
@@ -371,6 +437,14 @@ class Population(BaseModel):
             constraint_directions = None
             constraint_targets = None
 
+        # Create randomized bounds which contain the decision variables
+        if generate_bounds:
+            var_lower_bounds = -np.random.rand(n_decision_vars)
+            var_upper_bounds = 1.0 + np.random.rand(n_decision_vars)
+        else:
+            var_lower_bounds = None
+            var_upper_bounds = None
+
         return cls(
             x=x,
             f=f,
@@ -382,6 +456,8 @@ class Population(BaseModel):
             obj_directions=obj_directions,
             constraint_directions=constraint_directions,
             constraint_targets=constraint_targets,
+            var_lower_bounds=var_lower_bounds,
+            var_upper_bounds=var_upper_bounds,
         )
 
     def __len__(self):
@@ -448,19 +524,19 @@ class Population(BaseModel):
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
         show_points: bool = True,
-        problem: Optional[Union[str, "Problem"]] = None,
+        problem: "str | Problem | None" = None,
         n_pf: int = 1000,
-        pf_objectives: Optional[np.ndarray] = None,
+        pf_objectives: np.ndarray | None = None,
         show_attainment: bool = False,
         show_dominated_area: bool = False,
-        dominated_area_zorder: Optional[int] = -2,
-        ref_point: Optional[Tuple[float, float]] = None,
+        dominated_area_zorder: int | None = -2,
+        ref_point: tuple[float, float] | None = None,
         ref_point_padding: float = 0.05,
-        label: Optional[str] = None,
-        legend_loc: Optional[str] = None,
+        label: str | None = None,
+        legend_loc: str | None = None,
         show_names: bool = True,
-        color: Optional[str] = None,
-        scale: Optional[np.ndarray] = None,
+        color: str | None = None,
+        scale: np.ndarray | None = None,
         flip_objs: bool = False,
     ):
         """
@@ -491,7 +567,7 @@ class Population(BaseModel):
             Plots the dominated region towards the larger values of each decision var
         dominated_area_zorder : int, optional
             What "zorder" to draw dominated region at. Mostly used internally to correctly show dominated area in history plots.
-        ref_point : Union[str, Tuple[float, float]], optional
+        ref_point : str | tuple[float, float], optional
             Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
             value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
             padding.
@@ -543,18 +619,19 @@ class Population(BaseModel):
 
     def plot_dvar_pairs(
         self,
-        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        dvars: int | slice | list[int] | tuple[int, int] | None = None,
         fig=None,
         axes=None,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
-        hist_bins: Optional[int] = None,
+        hist_bins: int | None = None,
         show_names: bool = True,
-        problem: Optional[Union[str, "Problem"]] = None,
-        lower_bounds: Optional[np.ndarray] = None,
-        upper_bounds: Optional[np.ndarray] = None,
-        color: Optional[str] = None,
-        scale: Optional[np.ndarray] = None,
+        problem: "str | Problem | None" = None,
+        lower_bounds: np.ndarray | None = None,
+        upper_bounds: np.ndarray | None = None,
+        color: str | None = None,
+        scale: np.ndarray | None = None,
+        plot_bounds: bool = True,
     ):
         """
         Creates a pairs plot (scatter matrix) showing correlations between decision variables
@@ -562,7 +639,7 @@ class Population(BaseModel):
 
         Parameters
         ----------
-        dvars : int, slice, List[int], or Tuple[int, int], optional
+        dvars : int, slice, list[int], or tuple[int, int], optional
             Specifies which decision variables to plot. See `selection_to_indices` for more details.
         fig : matplotlib.figure.Figure, optional
             Figure to plot on. If None and axes is None, creates a new figure.
@@ -580,14 +657,16 @@ class Population(BaseModel):
         problem : str/Problem, optional
             The problem for plotting decision variable bounds
         lower_bounds : array-like, optional
-            Lower bounds for each decision variable
+            Lower bounds for each decision variable. Defaults to the bounds carried by the population.
         upper_bounds : array-like, optional
-            Upper bounds for each decision variable
+            Upper bounds for each decision variable. Defaults to the bounds carried by the population.
         color : str, optional
             What color should we use for the points. Defaults to selecting from matplotlib color cycler
         scale : array-like, optional
             Scale factors for each variable. Must have the same length as the number of decision vars.
             If None, no scaling is applied.
+        plot_bounds : bool, optional
+            Whether to plot the decision variable bounds, by default True. Infinite bounds are not plotted.
 
         Returns
         -------
@@ -611,6 +690,7 @@ class Population(BaseModel):
             upper_bounds=upper_bounds,
             color=color,
             scale=scale,
+            plot_bounds=plot_bounds,
         )
 
 
@@ -624,9 +704,9 @@ class History(BaseModel):
      - Objective/constraint settings and names, if used, must be consistent across populations
     """
 
-    reports: List[Population]
+    reports: list[Population]
     problem: str
-    metadata: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_consistent_populations(self):
@@ -668,6 +748,14 @@ class History(BaseModel):
         if constraint_targets and len(set(constraint_targets)) != 1:
             raise ValueError(f"Inconsistent constraint_targets in reports: {constraint_targets}")
 
+        # Check the decision variable bounds
+        var_lower_bounds = [tuple(x.var_lower_bounds) for x in self.reports]
+        var_upper_bounds = [tuple(x.var_upper_bounds) for x in self.reports]
+        if var_lower_bounds and len(set(var_lower_bounds)) != 1:
+            raise ValueError(f"Inconsistent var_lower_bounds in reports: {var_lower_bounds}")
+        if var_upper_bounds and len(set(var_upper_bounds)) != 1:
+            raise ValueError(f"Inconsistent var_upper_bounds in reports: {var_upper_bounds}")
+
         return self
 
     def __eq__(self, other):
@@ -685,6 +773,7 @@ class History(BaseModel):
         pop_size: int,
         generate_names: bool = False,
         generate_obj_constraint_settings: bool = False,
+        generate_bounds: bool = False,
     ) -> "History":
         """
         Generate a randomized instance of the History class, including random problem name and metadata.
@@ -705,6 +794,8 @@ class History(BaseModel):
             Whether to include names for the decision variables, objectives, and constraints, by default False.
         generate_obj_constraint_settings : bool, optional
             Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
+        generate_bounds : bool, optional
+            Randomize the decision variable bounds, by default the variables are left unbounded
 
         Returns
         -------
@@ -748,6 +839,14 @@ class History(BaseModel):
                 report.constraint_directions = constraint_directions
                 report.constraint_targets = constraint_targets
 
+        # Create randomized decision variable bounds (must be consistent between objects)
+        if generate_bounds:
+            var_lower_bounds = -np.random.rand(n_decision_vars)
+            var_upper_bounds = 1.0 + np.random.rand(n_decision_vars)
+            for report in reports:
+                report.var_lower_bounds = var_lower_bounds
+                report.var_upper_bounds = var_upper_bounds
+
         return cls(reports=reports, problem=problem, metadata=metadata)
 
     def _to_h5py_group(self, g: h5py.Group):
@@ -790,6 +889,8 @@ class History(BaseModel):
 
         # Save the configuration data
         if self.reports:
+            g["x"].attrs["lower_bounds"] = self.reports[0].var_lower_bounds
+            g["x"].attrs["upper_bounds"] = self.reports[0].var_upper_bounds
             g["f"].attrs["directions"] = self.reports[0].obj_directions
             g["g"].attrs["directions"] = self.reports[0].constraint_directions
             g["g"].attrs["targets"] = self.reports[0].constraint_targets
@@ -819,6 +920,10 @@ class History(BaseModel):
         constraint_directions = grp["g"].attrs.get("directions", None)
         constraint_targets = grp["g"].attrs.get("targets", None)
 
+        # Files written before version 1.2.0 have no decision variable bounds and are treated as unbounded
+        var_lower_bounds = grp["x"].attrs.get("lower_bounds", None)
+        var_upper_bounds = grp["x"].attrs.get("upper_bounds", None)
+
         # Before file version 1.1.0 which introduced explicit constraint directions,
         # the default constraint type was g(x) >= 0.0
         if file_version == "1.0.0":
@@ -845,6 +950,8 @@ class History(BaseModel):
                     obj_directions=obj_directions,
                     constraint_directions=constraint_directions,
                     constraint_targets=constraint_targets,
+                    var_lower_bounds=var_lower_bounds,
+                    var_upper_bounds=var_upper_bounds,
                 )
             )
             start_idx += pop_size
@@ -883,27 +990,27 @@ class History(BaseModel):
 
     def plot_obj_scatter(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
         fig=None,
         ax=None,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
         show_points: bool = True,
         n_pf: int = 1000,
-        pf_objectives: Optional[np.ndarray] = None,
+        pf_objectives: np.ndarray | None = None,
         show_attainment: bool = False,
         show_dominated_area: bool = False,
-        ref_point: Optional[Tuple[float, float]] = None,
+        ref_point: tuple[float, float] | None = None,
         ref_point_padding: float = 0.05,
-        legend_loc: Optional[str] = None,
-        scale: Optional[np.ndarray] = None,
+        legend_loc: str | None = None,
+        scale: np.ndarray | None = None,
         flip_objs: bool = False,
         show_names: bool = True,
         show_pf: bool = False,
         colormap: str = "viridis",
-        cmap_label: Optional[str] = None,
+        cmap_label: str | None = None,
         generation_mode: Literal["cmap", "cumulative"] = "cmap",
-        single_color: Optional[str] = None,
+        single_color: str | None = None,
         label_mode: Literal["index", "fevals"] = "index",
     ):
         """
@@ -912,7 +1019,7 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to plot. See `selection_to_indices` for more details.
         fig : matplotlib figure, optional
             Figure to plot on, by default None
@@ -933,7 +1040,7 @@ class History(BaseModel):
             Whether to plot the attainment surface, by default False
         show_dominated_area : bool, optional
             Plots the dominated region towards the larger values of each decision var
-        ref_point : Union[str, Tuple[float, float]], optional
+        ref_point : str | tuple[float, float], optional
             Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
             value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
             padding.
@@ -952,13 +1059,13 @@ class History(BaseModel):
             Whether to plot the Pareto front, by default True
         colormap : str, optional
             Name of the colormap to use for generation colors, by default 'viridis'
-        cmap_label: Optional[str] = "Generation"
+        cmap_label: str | None = "Generation"
             Label for colorbar (only used when generation_mode is 'cmap')
         generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
             How to handle multiple generations:
             'cmap': Plot each generation separately with colors from colormap
             'cumulative': Merge all selected generations into single population
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         label_mode: Literal['index', 'fevals'] = 'index'
             Whether to use report index or function evaluations (fevals) for labels
@@ -998,21 +1105,21 @@ class History(BaseModel):
 
     def plot_dvar_pairs(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
-        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
+        dvars: int | slice | list[int] | tuple[int, int] | None = None,
         fig=None,
         axes=None,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
-        hist_bins: Optional[int] = None,
+        hist_bins: int | None = None,
         show_names: bool = True,
-        lower_bounds: Optional[np.ndarray] = None,
-        upper_bounds: Optional[np.ndarray] = None,
-        scale: Optional[np.ndarray] = None,
+        lower_bounds: np.ndarray | None = None,
+        upper_bounds: np.ndarray | None = None,
+        scale: np.ndarray | None = None,
         colormap: str = "viridis",
-        cmap_label: Optional[str] = None,
+        cmap_label: str | None = None,
         generation_mode: Literal["cmap", "cumulative"] = "cmap",
-        single_color: Optional[str] = None,
+        single_color: str | None = None,
         plot_bounds: bool = False,
         label_mode: Literal["index", "fevals"] = "index",
     ):
@@ -1022,9 +1129,9 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to plot. See `selection_to_indices` for more details.
-        dvars : int, slice, List[int], or Tuple[int, int], optional
+        dvars : int, slice, list[int], or tuple[int, int], optional
             Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
         fig : matplotlib figure, optional
             Figure to plot on, by default None
@@ -1047,13 +1154,13 @@ class History(BaseModel):
             If None, no scaling is applied.
         colormap : str, optional
             Name of the colormap to use for generation colors, by default 'viridis'
-        cmap_label: Optional[str] = "Generation"
+        cmap_label: str | None = "Generation"
             Label for colorbar (only used when generation_mode is 'cmap')
         generation_mode: Literal['cmap', 'cumulative'] = 'cmap'
             How to handle multiple generations:
             'cmap': Plot each generation separately with colors from colormap
             'cumulative': Merge all selected generations into single population
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         plot_bounds: bool = False
             Whether to plot bounds for the problem
@@ -1090,23 +1197,23 @@ class History(BaseModel):
 
     def plot_obj_animation(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
         interval: int = 200,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
         show_points: bool = True,
         n_pf: int = 1000,
-        pf_objectives: Optional[np.ndarray] = None,
+        pf_objectives: np.ndarray | None = None,
         show_attainment: bool = False,
         show_dominated_area: bool = False,
-        ref_point: Optional[Tuple[float, float]] = None,
+        ref_point: tuple[float, float] | None = None,
         ref_point_padding: float = 0.05,
-        legend_loc: Optional[str] = "upper right",
-        scale: Optional[np.ndarray] = None,
+        legend_loc: str | None = "upper right",
+        scale: np.ndarray | None = None,
         flip_objs: bool = False,
         show_names: bool = True,
         show_pf: bool = False,
-        single_color: Optional[str] = None,
+        single_color: str | None = None,
         dynamic_scaling: bool = False,
         cumulative: bool = False,
         scale_padding: float = 0.05,
@@ -1116,7 +1223,7 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to animate. See `selection_to_indices` for more details.
         interval : int, optional
             Delay between frames in milliseconds, by default 200
@@ -1135,7 +1242,7 @@ class History(BaseModel):
             Whether to plot the attainment surface, by default False
         show_dominated_area : bool, optional
             Plots the dominated region towards the larger values of each decision var
-        ref_point : Union[str, Tuple[float, float]], optional
+        ref_point : str | tuple[float, float], optional
             Where to stop plotting the dominated region / attainment surface. Must be a point to the upper right (increasing
             value of objectives in 3D) of all plotted points. By default, will set to right of max of each objective plus
             padding.
@@ -1152,7 +1259,7 @@ class History(BaseModel):
             Whether to show the names of the objectives if provided by population
         show_pf : bool, optional
             Whether to plot the Pareto front, by default True
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         dynamic_scaling : bool, optional
             If True, axes limits will update based on each frame's data.
@@ -1196,17 +1303,17 @@ class History(BaseModel):
 
     def plot_dvar_animation(
         self,
-        reports: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
-        dvars: Optional[Union[int, slice, List[int], Tuple[int, int]]] = None,
+        reports: int | slice | list[int] | tuple[int, int] | None = None,
+        dvars: int | slice | list[int] | tuple[int, int] | None = None,
         interval: int = 200,
         domination_filt: Literal["all", "dominated", "non-dominated"] = "all",
         feasibility_filt: Literal["all", "feasible", "infeasible"] = "all",
-        hist_bins: Optional[int] = None,
+        hist_bins: int | None = None,
         show_names: bool = True,
-        lower_bounds: Optional[np.ndarray] = None,
-        upper_bounds: Optional[np.ndarray] = None,
-        scale: Optional[np.ndarray] = None,
-        single_color: Optional[str] = None,
+        lower_bounds: np.ndarray | None = None,
+        upper_bounds: np.ndarray | None = None,
+        scale: np.ndarray | None = None,
+        single_color: str | None = None,
         plot_bounds: bool = False,
         dynamic_scaling: bool = False,
         cumulative: bool = False,
@@ -1217,9 +1324,9 @@ class History(BaseModel):
 
         Parameters
         ----------
-        reports : int, slice, List[int], or Tuple[int, int], optional
+        reports : int, slice, list[int], or tuple[int, int], optional
             Specifies which generations to animate. See `selection_to_indices` for more details.
-        dvars : int, slice, List[int], or Tuple[int, int], optional
+        dvars : int, slice, list[int], or tuple[int, int], optional
             Which decision vars to plot. See `population_dvar_pairs` docstring for more details.
         interval : int, optional
             Delay between frames in milliseconds, by default 200
@@ -1238,7 +1345,7 @@ class History(BaseModel):
         scale : array-like, optional
             Scale factors for each variable. Must have the same length as the number of decision vars.
             If None, no scaling is applied.
-        single_color: Optional[str] = None
+        single_color: str | None = None
             Color to use when generation_mode is 'cumulative'. If None, uses default color from matplotlib.
         plot_bounds: bool = False
             Whether to plot bounds for the problem
@@ -1335,14 +1442,14 @@ class Experiment(BaseModel):
     used to save the data.
     """
 
-    runs: List[History]
+    runs: list[History]
     name: str
     author: str = ""
     software: str = ""
     software_version: str = ""
     comment: str = ""
     creation_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    file_version: str = "1.1.0"
+    file_version: str = "1.2.0"
 
     def __eq__(self, other):
         if not isinstance(other, Experiment):
@@ -1384,6 +1491,7 @@ class Experiment(BaseModel):
         pop_size: int,
         generate_names: bool = False,
         generate_obj_constraint_settings: bool = False,
+        generate_bounds: bool = False,
     ) -> "Experiment":
         """
         Generate a randomized instance of the Experiment class.
@@ -1406,6 +1514,8 @@ class Experiment(BaseModel):
             Whether to include names for the decision variables, objectives, and constraints, by default False.
         generate_obj_constraint_settings : bool, optional
             Randomize the objective and constraint settings, default to minimization problem and g >= 0 constraint
+        generate_bounds : bool, optional
+            Randomize the decision variable bounds, by default the variables are left unbounded
 
         Returns
         -------
@@ -1422,6 +1532,7 @@ class Experiment(BaseModel):
                 pop_size,
                 generate_names=generate_names,
                 generate_obj_constraint_settings=generate_obj_constraint_settings,
+                generate_bounds=generate_bounds,
             )
             for _ in range(n_histories)
         ]
@@ -1461,7 +1572,7 @@ class Experiment(BaseModel):
             f.attrs["software_version"] = self.software_version
             f.attrs["comment"] = self.comment
             f.attrs["creation_time"] = self.creation_time.isoformat()
-            f.attrs["file_version"] = "1.1.0"
+            f.attrs["file_version"] = "1.2.0"
             f.attrs["file_format"] = "ParetoBench Multi-Objective Optimization Data"
 
             # Calculate the necessary zero padding based on the number of runs
